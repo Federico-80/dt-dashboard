@@ -26,7 +26,7 @@ namespace FedeDashboard
         }
 
         /// <summary>System.Windows.Visibility.Visible / Collapsed (senza riferimento a WPF in compilazione).</summary>
-        public static object Visibility(bool visible)
+        public static dynamic Visibility(bool visible)   // dynamic: assegnato a proprieta' di oggetti dynamic serve il tipo vero
         {
             return Enum.Parse(T("System.Windows.Visibility"), visible ? "Visible" : "Collapsed");
         }

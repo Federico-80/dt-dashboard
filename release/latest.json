@@ -1,5 +1,5 @@
 {
-  "version": "1.41",
-  "notes": "Giri di carburante come LMU: energia per giro x ratio carburante/EV (dal plugin LMU NeoRed o misurato). Ratio di LMU anche nella barra strategia.",
+  "version": "1.42",
+  "notes": "Corretto: la barra e la riga degli aggiornamenti non comparivano (errore interno nel mostrarle).",
   "date": "2026-10-22"
 }

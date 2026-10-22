@@ -362,12 +362,13 @@ namespace FedeDashboard
             {
                 if (manual) updateShowAlways = true;
                 var u = plugin.Updater;
+                // prima la riga di stato (cosi' si vede sempre, anche se il resto non va)
+                try { F("UpdateStatus").Text = u.Status.Length > 0 ? "Aggiornamenti: " + u.Status : ""; } catch (Exception ex) { FedeLog.Error("stato aggiornamenti", ex); }
                 dynamic bar = F("UpdateBar"), txt = F("UpdateText"), btn = F("BtnUpdate");
                 bool show = u.Available || u.Installed || u.Busy || (updateShowAlways && u.Status.Length > 0);
                 bar.Visibility = Wpf.Visibility(show);
                 txt.Text = u.Available && !u.Busy ? "Nuova versione " + u.LatestVersion + " disponibile su GitHub (tu hai la " + DTPlugin.VersionText + ")." : u.Status;
                 btn.Visibility = Wpf.Visibility(u.Available && !u.Busy);
-                F("UpdateStatus").Text = u.Status.Length > 0 ? "Aggiornamenti: " + u.Status : "";
             }
             catch (Exception ex) { FedeLog.Error("barra aggiornamenti", ex); }
         }
