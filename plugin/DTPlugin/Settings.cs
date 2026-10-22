@@ -16,6 +16,7 @@ namespace FedeDashboard
         public IdleSettings Idle { get; set; } = new IdleSettings();
         public TimingSettings Timing { get; set; } = new TimingSettings();
         public FontSettings Font { get; set; } = new FontSettings();
+        public AccessSettings Access { get; set; } = new AccessSettings();
         /// <summary>Finestra di avviso in SimHub quando esce una nuova versione.</summary>
         public bool UpdatePopup { get; set; } = true;
 
@@ -30,6 +31,7 @@ namespace FedeDashboard
             }
             if (Timing == null) Timing = new TimingSettings();
             Timing.Normalize();
+            if (Access == null) Access = new AccessSettings();
             if (Font == null) Font = new FontSettings();
             Font.Normalize();
             if (Idle == null) Idle = new IdleSettings();
@@ -465,5 +467,13 @@ namespace FedeDashboard
 
         public bool IsDefault { get { return Family == 0 && Weight == 0 && SizePct == 100; } }
         public string Key { get { return Family + "/" + Weight + "/" + SizePct; } }
+    }
+
+    /// <summary>Codice di accesso di questo PC (solo l'impronta) e ultima copia dell'elenco dei codici.</summary>
+    public class AccessSettings
+    {
+        public string Hash { get; set; } = "";
+        public string Salt { get; set; } = "";
+        public string CachedList { get; set; } = "";
     }
 }

@@ -53,6 +53,19 @@ namespace FedeDashboard
       </DockPanel>
     </Border>
 
+    <!-- codice di accesso -->
+    <Border x:Name='LockBar' DockPanel.Dock='Top' Margin='22,0,22,10' Padding='16,12' CornerRadius='6' Background='#FF3A1010' BorderBrush='#FFE53935' BorderThickness='1' Visibility='Collapsed'>
+      <StackPanel>
+        <TextBlock Text='DT Plugin bloccato' FontSize='16' FontWeight='Bold' Foreground='White'/>
+        <TextBlock x:Name='LockText' Margin='0,4,0,10' TextWrapping='Wrap' Foreground='#FFE0E0E0' FontSize='13'/>
+        <StackPanel Orientation='Horizontal'>
+          <TextBlock Text='Codice:' VerticalAlignment='Center' Foreground='White' Margin='0,0,10,0'/>
+          <PasswordBox x:Name='LockCode' Width='240' Padding='4,3'/>
+          <Button x:Name='BtnUnlock' Content='Sblocca' Padding='16,4' Margin='10,0,0,0'/>
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
     <!-- layout cambiato: SimHub deve ricaricare la dashboard -->
     <Border x:Name='ReloadBar' DockPanel.Dock='Top' Margin='22,0,22,10' Padding='14,8' CornerRadius='6' Background='#FF3D3500' BorderBrush='#FFFFD600' BorderThickness='1' Visibility='Collapsed'>
       <DockPanel>
@@ -295,6 +308,8 @@ namespace FedeDashboard
             Click("BtnExport", ExportSettings);
             Click("BtnCheckUpdate", () => { plugin.Updater.CheckAsync(DTPlugin.VersionText); ShowUpdate(true); });
             Click("BtnUpdate", () => plugin.Updater.InstallAsync());
+            Click("BtnUnlock", TryUnlock);
+            Wpf.On((object)F("LockCode"), "KeyDown", (s2, e2) => { try { if (((dynamic)e2).Key.ToString() == "Return") TryUnlock(); } catch { } });
             Click("BtnReload", () => { Save(); FedeLog.Write("Riavvio richiesto per ricaricare la dashboard"); plugin.Updater.RestartSimHub(); });
             Click("BtnImport", ImportSettings);
             Click("BtnReset", ResetEverything);
@@ -357,6 +372,7 @@ namespace FedeDashboard
             {
                 string tab = "";
                 try { object si = tabs.SelectedItem; if (si != null) tab = Convert.ToString(((dynamic)si).Header); } catch { }
+                ShowLock();
                 try { F("ReloadBar").Visibility = Wpf.Visibility(plugin.DashBuilder.NeedsReload && !plugin.DashBuilder.Working); } catch { }
                 if (tab == "Gomme e freni") UpdateTyreLive();
                 if (tab == "Tempi e posizioni") UpdateTimingLive();
@@ -366,8 +382,48 @@ namespace FedeDashboard
             Action upd = () => root.Dispatcher.BeginInvoke(new Action(() => ShowUpdate(false)));
             Wpf.On(Root, "Loaded", (s, e) => { plugin.Updater.Changed += upd; ShowUpdate(false); });
             Wpf.On(Root, "Unloaded", (s, e) => { plugin.Updater.Changed -= upd; });
-            Wpf.On(Root, "Loaded", (s, e) => { timer.Start(); plugin.PageChanged += OnPageChanged; RefreshAll(); BuildAlerts(); BuildTyres(); BuildIdle(); BuildTiming(); BuildFont(); });
+            Wpf.On(Root, "Loaded", (s, e) => { ShowLock(); timer.Start(); plugin.PageChanged += OnPageChanged; RefreshAll(); BuildAlerts(); BuildTyres(); BuildIdle(); BuildTiming(); BuildFont(); });
             Wpf.On(Root, "Unloaded", (s, e) => { timer.Stop(); plugin.PageChanged -= OnPageChanged; });
+        }
+
+        bool unlocking;
+
+        void TryUnlock()
+        {
+            if (unlocking) return;
+            string code = "";
+            try { code = (string)F("LockCode").Password; } catch { }
+            if (code.Trim().Length == 0) return;
+            unlocking = true;
+            try { F("LockText").Text = "Verifico il codice…"; F("BtnUnlock").IsEnabled = false; } catch { }
+            new System.Threading.Thread(() =>
+            {
+                bool ok = false;
+                try { ok = plugin.Access.TryUnlock(code); } catch (Exception ex) { FedeLog.Error("sblocco", ex); }
+                root.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    unlocking = false;
+                    try { F("BtnUnlock").IsEnabled = true; if (ok) F("LockCode").Password = ""; } catch { }
+                    ShowLock();
+                }));
+            }) { IsBackground = true }.Start();
+        }
+
+        bool lastLocked;
+
+        /// <summary>Senza codice valido: barra rossa con la casella del codice e schede disattivate.</summary>
+        void ShowLock()
+        {
+            try
+            {
+                var a = plugin.Access;
+                bool locked = a != null && !a.Unlocked;
+                F("LockBar").Visibility = Wpf.Visibility(locked);
+                if (locked && !unlocking) F("LockText").Text = a.Status;
+                if (locked != lastLocked || locked) F("Tabs").IsEnabled = !locked;
+                lastLocked = locked;
+            }
+            catch (Exception ex) { FedeLog.Error("barra accesso", ex); }
         }
 
         bool updateShowAlways;
@@ -1661,7 +1717,9 @@ namespace FedeDashboard
                 object r = dlg.ShowDialog();
                 if (r is bool && (bool)r)
                 {
-                    SettingsStore.SaveTo(S, (string)dlg.FileName);
+                    var acc = S.Access;
+                    S.Access = new AccessSettings();   // il codice di accesso non va nel file esportato
+                    try { SettingsStore.SaveTo(S, (string)dlg.FileName); } finally { S.Access = acc; }
                     Wpf.Alert("Impostazioni esportate.");
                 }
             }

@@ -1,5 +1,5 @@
 {
-  "version": "1.49",
-  "notes": "Cambi di disposizione (cornice, griglie, barra) e carattere visibili subito: il plugin fa ricaricare a SimHub la dashboard da solo.",
+  "version": "1.50",
+  "notes": "Codice di accesso: plugin e dashboard funzionano solo con un codice valido (inseriscilo in SimHub > DT Plugin).",
   "date": "2026-10-22"
 }

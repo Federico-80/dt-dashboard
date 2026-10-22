@@ -129,6 +129,12 @@ Scheda "Carattere e aggiornamenti":
  - Nuove versioni: con "Avvisami con una finestra" compare una finestra in SimHub quando su GitHub
    c'è una versione nuova (controllo all'avvio e ogni 30 minuti), con il pulsante "Installa e riavvia SimHub".
 
+Codice di accesso:
+ Plugin e dashboard funzionano solo con un codice valido (ogni pilota ha il suo).
+ La prima volta, in SimHub > DT Plugin compare una barra rossa: scrivi il codice e premi "Sblocca".
+ Il PC resta sbloccato. Se il codice viene revocato, plugin e dash si bloccano di nuovo.
+ Senza codice la dashboard mostra "DT DASHBOARD BLOCCATA". Gli aggiornamenti funzionano lo stesso.
+
 4) CAMBIARE PAGINA DAL VOLANTE
 ------------------------------
  SimHub > Controlli ed eventi > Nuova mappatura, azione:

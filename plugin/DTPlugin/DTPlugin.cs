@@ -24,11 +24,12 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.49";
+        public const string VersionText = "1.50";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
         public readonly DashBuilder DashBuilder = new DashBuilder();
+        public Access Access;
         public PluginManager PluginManager { get; set; }
         public string LeftMenuTitle { get { return "DT Plugin"; } }
 
@@ -96,10 +97,12 @@ namespace FedeDashboard
             try
             {
                 Settings = SettingsStore.Load();
+                Access = new Access(Settings.Access, SaveSettings);
+                Access.Start();
                 Updater.Changed += OnUpdaterChanged;
                 Updater.CheckAsync(VersionText);   // controllo aggiornamenti su GitHub in background
                 // e poi ogni 30 minuti, cosi' l'avviso arriva anche con SimHub sempre aperto
-                updateTimer = new System.Threading.Timer(_ => { try { if (!Updater.Busy && !Updater.Installed) Updater.CheckAsync(VersionText); } catch { } },
+                updateTimer = new System.Threading.Timer(_ => { try { Access.CheckAsync(); if (!Updater.Busy && !Updater.Installed) Updater.CheckAsync(VersionText); } catch { } },
                     null, TimeSpan.FromMinutes(30), TimeSpan.FromMinutes(30));
                 try { DashBuilder.Build(new List<PageSettings>(Settings.Pages), Settings.Font); } catch (Exception ex) { FedeLog.Error("componi dashboard", ex); }
                 DashBuilder.Started = true;
@@ -133,6 +136,7 @@ namespace FedeDashboard
 
             // Pagine e layout
             bridge.Attach("Pagina", () => Settings.ActivePage + 1);
+            bridge.Attach("Sbloccato", () => Access != null && Access.Unlocked);
             bridge.Attach("PaginaNome", () => Page.Name);
             bridge.Attach("Pagine", () => Settings.Pages.Count);
             bridge.Attach("MostraPagina", () => DateTime.Now < toastUntil);
@@ -483,6 +487,7 @@ namespace FedeDashboard
             var chans = new List<ChannelSettings>();
             foreach (var rt in Runtime) chans.Add(rt.Settings);
             ns.Channels = chans;
+            ns.Access = Settings.Access;   // il codice di accesso resta quello di questo PC (non si importa)
             Settings = ns;
             SaveSettings();
             SetActivePage(Math.Max(0, Math.Min(ns.ActivePage, ns.Pages.Count - 1)), false);
@@ -517,6 +522,7 @@ namespace FedeDashboard
         public void DataUpdate(PluginManager pluginManager, ref GameData data)
         {
             if (bridge == null) return;
+            if (Access != null && !Access.Unlocked) return;   // senza codice valido il plugin non calcola niente
             try
             {
                 var now = DateTime.Now;

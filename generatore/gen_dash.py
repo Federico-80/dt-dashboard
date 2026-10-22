@@ -934,6 +934,20 @@ def plugin_warning(big=False):
     return lay
 
 
+def lock_layer():
+    """Dashboard bloccata: copre tutto finche' il DT Plugin non ha un codice di accesso valido (o non c'e')."""
+    W, H = DASH_W, DASH_H
+    kids = [rect("Bloccata fondo", 0, 0, W, H, bg="#FF000000", radius=0),
+            rect("Bloccata riquadro", W / 2 - 300, H / 2 - 90, 600, 180, bg="#FF141414", border=RED, bw=3, radius=16),
+            text("Bloccata titolo", W / 2 - 300, H / 2 - 75, 600, 60, None, "DT DASHBOARD BLOCCATA", 34, WHITE, weight="Black"),
+            text("Bloccata testo", W / 2 - 290, H / 2 - 5, 580, 80, None,
+                 "Serve il DT Plugin con un codice di accesso valido.\nInseriscilo in SimHub > DT Plugin.", 17, "#FFBDBDBD", weight="Medium")]
+    lay = layer("Bloccata", kids)
+    lay["Bindings"] = {"Visible": js("return $prop('DTPlugin.Sbloccato') !== true;")}
+    lay["_pv"]["vis"] = ("Bloccata", 1)
+    return lay
+
+
 def engine_off_layer():
     """Schermo nero con "MOTORE SPENTO" quando in gioco il motore e' fermo (DTPlugin.MotoreSpento)."""
     W, H = DASH_W, DASH_H
@@ -1188,6 +1202,8 @@ def main_dash(pages=None):
     race.append(engine_off_layer())
     race.append(plugin_warning())
     idle.append(plugin_warning(big=True))
+    race.append(lock_layer())
+    idle.append(lock_layer())
     scr = [screen("Attesa", idle, ingame=False, idle=True, bg="#FF000000"),
            screen("Gara", race, ingame=True, bg="#FF000000")]
     meta = metadata(W, H, scr, title=DASH_NAME, ingame=[1], idle=[0], preview=1)
