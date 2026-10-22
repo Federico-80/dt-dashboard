@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.52";
+        public const string VersionText = "1.53";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -398,12 +398,10 @@ namespace FedeDashboard
                 {
                     try
                     {
-                        // riquadro verde acqua con il logo DT in nero
-                        dynamic img = Wpf.Xaml("<DrawingImage {NS}><DrawingImage.Drawing><DrawingGroup>" +
-                                               "<GeometryDrawing Brush='#FF00FED1'><GeometryDrawing.Geometry><RectangleGeometry Rect='0,0,120,120' RadiusX='26' RadiusY='26'/></GeometryDrawing.Geometry></GeometryDrawing>" +
-                                               "<DrawingGroup><DrawingGroup.Transform><TranslateTransform X='10' Y='34.85'/></DrawingGroup.Transform>" +
-                                               "<GeometryDrawing Brush='Black' Geometry='" + Logo.Geometry + "'/></DrawingGroup>" +
-                                               "</DrawingGroup></DrawingImage.Drawing></DrawingImage>");
+                        // menu di SimHub: solo il logo DT, in bianco
+                        dynamic img = Wpf.Xaml("<DrawingImage {NS}><DrawingImage.Drawing>" +
+                                               "<GeometryDrawing Brush='White' Geometry='" + Logo.Geometry + "'/>" +
+                                               "</DrawingImage.Drawing></DrawingImage>");
                         img.Freeze();
                         icon = (ImageSource)(object)img;
                     }
