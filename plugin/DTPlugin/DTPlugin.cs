@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.42";
+        public const string VersionText = "1.43";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -795,7 +795,9 @@ namespace FedeDashboard
             catch { }
             object fl = Raw("CurrentPlayer.mFlag"), yfs = Raw("Scoring.mScoringInfo.mYellowFlagState");
             blue = Num(fl) == 6;
-            bool yellow = under || fcy || sectorY;
+            // LMU spesso non passa le gialle di settore (mSectorFlag vuoto): allora vale la gialla di SimHub
+            bool simY = Num(bridge.GetPropertyValue("DataCorePlugin.GameData.Flag_Yellow")) > 0;
+            bool yellow = under || fcy || sectorY || (sf.Trim().Length == 0 && simY);
             // diario: ogni volta che cambia uno dei dati bandiera (max 300 righe) -> DTPlugin.log
             string snap = "SimHub Y=" + bridge.GetPropertyValue("DataCorePlugin.GameData.Flag_Yellow") + " B=" + bridge.GetPropertyValue("DataCorePlugin.GameData.Flag_Blue") +
                           " | LMU mUnderYellow=" + uy + " mGamePhase=" + ph + " mYellowFlagState=" + yfs + " mSectorFlag=" + sf.Trim() +

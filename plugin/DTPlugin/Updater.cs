@@ -99,15 +99,15 @@ namespace FedeDashboard
             try
             {
                 string json = null; rawError = null;
-                // 1) file nel repository (aggiornato a ogni pubblicazione)
-                string raw = "https://raw.githubusercontent.com/" + Repo + "/main/release/";
+                // 1) file nel repository, letti dalle API di GitHub (sempre aggiornate: raw.githubusercontent tiene copie per minuti)
+                string api = "https://api.github.com/repos/" + Repo + "/contents/release/";
                 try
                 {
-                    using (var wc = Client()) json = wc.DownloadString(raw + "latest.json?t=" + DateTime.UtcNow.Ticks);
+                    using (var wc = Client()) { wc.Headers[HttpRequestHeader.Accept] = "application/vnd.github.raw"; json = wc.DownloadString(api + "latest.json"); }
                     LatestVersion = Field(json, "version").TrimStart('v', 'V');
                     Notes = Field(json, "notes");
-                    dllUrl = raw + DllAsset;
-                    dashUrl = raw + DashAsset;
+                    dllUrl = api + DllAsset;
+                    dashUrl = api + DashAsset;
                 }
                 catch (WebException wex) { json = null; rawError = wex.Message; FedeLog.Write("Aggiornamenti (release/latest.json): " + wex.Message); }
                 // 2) in alternativa la "release" di GitHub
@@ -155,13 +155,13 @@ namespace FedeDashboard
                 {
                     Status = "Scarico la dashboard…"; Notify();
                     string zip = Path.Combine(tmp, "dash.simhubdash");
-                    using (var wc = Client()) wc.DownloadFile(dashUrl, zip);
+                    using (var wc = Client()) { wc.Headers[HttpRequestHeader.Accept] = "application/vnd.github.raw"; wc.DownloadFile(dashUrl, zip); }
                     InstallDash(zip, tmp);
                 }
                 // 2) plugin
                 Status = "Scarico il plugin…"; Notify();
                 string newDll = Path.Combine(tmp, DllAsset);
-                using (var wc = Client()) wc.DownloadFile(dllUrl, newDll);
+                using (var wc = Client()) { wc.Headers[HttpRequestHeader.Accept] = "application/vnd.github.raw"; wc.DownloadFile(dllUrl, newDll); }
                 if (new FileInfo(newDll).Length < 20000) throw new IOException("file del plugin scaricato non valido");
                 string own = typeof(Updater).Assembly.Location;
                 string old = own + ".old";
