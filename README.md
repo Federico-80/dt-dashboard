@@ -28,9 +28,9 @@ Non serve il Lovely Plugin.
 
 ## Installazione (la prima volta)
 
-1. Scarica l'ultima versione dalla pagina [Releases](../../releases/latest):
-   - `DTPlugin.dll`
-   - `DT.Dashboard.simhubdash`
+1. Scarica l'ultima versione dalla cartella [`release`](release):
+   - [`DTPlugin.dll`](release/DTPlugin.dll) (apri il file e premi il pulsante di download)
+   - [`DT.Dashboard.simhubdash`](release/DT.Dashboard.simhubdash)
 2. Chiudi SimHub e copia `DTPlugin.dll` nella cartella di SimHub, quella dove c'è `SimHubWPF.exe`.
    Se Windows lo blocca: tasto destro sul file → Proprietà → **Sblocca**.
 3. Apri SimHub e attiva **DT Plugin** quando te lo chiede.
@@ -38,7 +38,7 @@ Non serve il Lovely Plugin.
 
 ## Aggiornamenti
 
-Il plugin controlla da solo se su GitHub c'è una versione nuova.
+Il plugin controlla da solo se su GitHub c'è una versione nuova (file `release/latest.json`).
 Quando c'è, in **SimHub → DT Plugin** compare in alto **"Installa aggiornamento"**.
 Il pulsante scarica plugin e dashboard e li mette a posto da solo: dopo basta **riavviare SimHub**.
 Le tue impostazioni restano, perché sono salvate in `PluginsData\Common\DTPlugin.json`.
