@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.40";
+        public const string VersionText = "1.41";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -677,6 +677,8 @@ namespace FedeDashboard
             VeLapsLeft(out vs); FuelLapsLeft(out fs);
             sb.AppendLine("Giri energia   " + txt("VELaps") + "   (fonte: " + vs + ")");
             sb.AppendLine("Giri carburante " + txt("FuelLaps") + "  (fonte: " + fs + ")");
+            string rsr; double rr = FuelRatio(out rsr);
+            sb.AppendLine("Ratio carb./VE " + (double.IsNaN(rr) ? "-" : rr.ToString("0.00", CultureInfo.InvariantCulture) + "  (" + rsr + ")"));
             sb.Append("Post-It        " + (HasPostIt() ? "trovato" : "non trovato"));
             return sb.ToString();
         }
@@ -923,6 +925,11 @@ namespace FedeDashboard
 
         double FuelPerLap()
         {
+            {
+                string vs, rs;
+                double ve = VePercent(), vePer = VePerLap(out vs), ratio = FuelRatio(out rs);
+                if (!double.IsNaN(ve) && ve > 0 && vePer > 0.01 && !double.IsNaN(ratio)) return vePer * ratio;
+            }
             if (fuelLaps.Count > 0) { double sm = 0; foreach (var x in fuelLaps) sm += x; return sm / fuelLaps.Count; }
             double v = Num(bridge.GetPropertyValue("DataCorePlugin.Computed.Fuel_LastLapConsumption"));
             if (!double.IsNaN(v) && v > 0.01) return v;
@@ -1056,7 +1063,9 @@ namespace FedeDashboard
             d["Soste"] = stops.ToString(CultureInfo.InvariantCulture);
             d["Finestra"] = win;
             d["FinestraColore"] = wcol;
-            d["Ratio"] = nrg && fuelPer > 0 ? (fuelPer / vePer).ToString("0.00", CultureInfo.InvariantCulture) : "-";
+            string rsrc; double lmuRatio = FuelRatio(out rsrc);
+            d["Ratio"] = nrg ? (!double.IsNaN(lmuRatio) ? lmuRatio : (fuelPer > 0 ? fuelPer / vePer : double.NaN)).ToString("0.00", CultureInfo.InvariantCulture) : "-";
+            if (d["Ratio"] == "NaN") d["Ratio"] = "-";
             int stintLaps = stops > 0 ? Math.Max(0, closeLap - lap) : lapsToEnd;
             var stTs = TimeSpan.FromSeconds(stintLaps * avgLap);
             d["Stint"] = stTs.TotalHours >= 1 ? ((int)stTs.TotalHours + ":" + stTs.Minutes.ToString("00") + ":" + stTs.Seconds.ToString("00")) : (stTs.Minutes + ":" + stTs.Seconds.ToString("00"));
@@ -1080,8 +1089,42 @@ namespace FedeDashboard
         }
 
         /// <summary>Giri di carburante come RBR32: stima di SimHub, altrimenti litri / consumo dell'ultimo giro.</summary>
+        /// <summary>
+        /// Rapporto carburante / energia virtuale (litri per 1% di VE), come "Ratio carburante/EV" di LMU:
+        /// dal plugin LMU NeoRed (menu box), altrimenti misurato sui giri puliti (litri/giro : %VE/giro).
+        /// </summary>
+        public double FuelRatio(out string source)
+        {
+            foreach (var key in new[] { "LMU_NeoRedPlugin.PitMenu.FuelRatio", "TweaksOnTrack.Fuel.Ratio", "TweaksOnTrack.PitMenu.FuelRatio" })
+            {
+                double r = Num(bridge.GetPropertyValue(key));
+                if (!double.IsNaN(r) && r > 0.05 && r < 5) { source = key.StartsWith("LMU_Neo") ? "LMU NeoRed" : "TweaksOnTrack"; return r; }
+            }
+            source = "";
+            if (fuelLaps.Count > 0 && veLaps.Count > 0)
+            {
+                double f = 0, v = 0;
+                foreach (var x in fuelLaps) f += x;
+                foreach (var x in veLaps) v += x;
+                f /= fuelLaps.Count; v /= veLaps.Count;
+                if (v > 0.01 && f > 0) { source = "misurato"; return f / v; }
+            }
+            return double.NaN;
+        }
+
         double FuelLapsLeft(out string source)
         {
+            // auto con energia virtuale (LMU): carburante per giro = energia per giro x ratio -> giusto gia' dal primo giro
+            {
+                string vs, rs;
+                double ve = VePercent(), vePer = VePerLap(out vs), ratio = FuelRatio(out rs);
+                double fuelNowV = Num(bridge.GetPropertyValue("DataCorePlugin.GameData.Fuel"));
+                if (!double.IsNaN(ve) && ve > 0 && vePer > 0.01 && !double.IsNaN(ratio) && !double.IsNaN(fuelNowV) && fuelNowV > 0)
+                {
+                    source = "energia x ratio (" + vs + ", ratio " + ratio.ToString("0.00", CultureInfo.InvariantCulture) + " " + rs + ")";
+                    return fuelNowV / (vePer * ratio);
+                }
+            }
             // prima la media dei giri puliti (come per l'energia), poi SimHub
             if (fuelLaps.Count > 0)
             {

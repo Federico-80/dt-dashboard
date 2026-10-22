@@ -1,5 +1,5 @@
 {
-  "version": "1.40",
-  "notes": "Dashboard molto piu' leggera (da 554 a circa 45 sotto-dashboard): ora funziona anche sul VoCore. Il plugin compone la dash con i layout delle tue pagine.",
+  "version": "1.41",
+  "notes": "Giri di carburante come LMU: energia per giro x ratio carburante/EV (dal plugin LMU NeoRed o misurato). Ratio di LMU anche nella barra strategia.",
   "date": "2026-10-22"
 }

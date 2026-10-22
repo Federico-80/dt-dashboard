@@ -157,7 +157,9 @@ IMPORTANTE - CAMBIO NOME (da "Fede" a "DT")
   barra che si svuota, litri o % rimasti e tra parentesi i giri che riesci ancora a fare
   Come la dash RBR32: i giri di ENERGIA arrivano dai plugin LMU se ne hai uno installato
   (TweaksOnTrack, LMU NeoRed o doX SessionData); senza, li calcola il DT Plugin.
-  I giri di CARBURANTE: stima di SimHub, altrimenti litri / consumo dell'ultimo giro.
+  I giri di CARBURANTE (auto con energia virtuale): litri / (energia per giro x ratio carburante/EV),
+  come LMU: giusti dal primo giro. Il ratio arriva dal plugin LMU NeoRed; senza, viene misurato sui giri puliti.
+  Auto senza energia: media dei giri puliti, altrimenti stima di SimHub.
   Nella scheda "Tempi e posizioni" del plugin vedi da quale fonte arrivano.
   (carburante: stima di SimHub sul consumo medio; energia: media degli ultimi 5 giri PULITI:
   non contano il giro di uscita dai box/garage, il giro di rientro, il giro a metà quando avvii SimHub
