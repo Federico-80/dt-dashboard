@@ -1,5 +1,5 @@
 {
-  "version": "1.50",
-  "notes": "Codice di accesso: plugin e dashboard funzionano solo con un codice valido (inseriscilo in SimHub > DT Plugin).",
+  "version": "1.51",
+  "notes": "Pacchetto unico da scaricare (DT-Dashboard.zip). Elenco dei codici aggiornato anche dentro il plugin.",
   "date": "2026-10-22"
 }
