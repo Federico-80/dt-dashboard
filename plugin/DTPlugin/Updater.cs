@@ -109,9 +109,9 @@ namespace FedeDashboard
                     using (var wc = Client()) json = wc.DownloadString(Raw + "main/release/latest.json?t=" + DateTime.UtcNow.Ticks);
                     LatestVersion = Field(json, "version").TrimStart('v', 'V');
                     Notes = Field(json, "notes");
-                    // i file della versione esatta (etichetta vX.Y), poi le alternative
-                    dllUrl = Raw + "v" + LatestVersion + "/release/" + DllAsset;
-                    dashUrl = Raw + "v" + LatestVersion + "/release/" + DashAsset;
+                    // i file nella cartella della versione (indirizzo nuovo a ogni versione), poi le alternative
+                    dllUrl = Raw + "main/release/" + LatestVersion + "/" + DllAsset;
+                    dashUrl = Raw + "main/release/" + LatestVersion + "/" + DashAsset;
                     dllAlt.Add(Api + DllAsset); dllAlt.Add(Raw + "main/release/" + DllAsset);
                     dashAlt.Add(Api + DashAsset); dashAlt.Add(Raw + "main/release/" + DashAsset);
                 }
