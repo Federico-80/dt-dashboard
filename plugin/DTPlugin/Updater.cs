@@ -10,9 +10,10 @@ using System.Threading;
 namespace FedeDashboard
 {
     /// <summary>
-    /// Aggiornamento automatico da GitHub (release del repository pubblico):
-    ///  - controlla l'ultima release (tag "v1.36") all'avvio e a richiesta;
-    ///  - "Installa" scarica DTPlugin.dll e DT Dashboard.simhubdash dalla release,
+    /// Aggiornamento automatico da GitHub (cartella "release" del repository pubblico):
+    ///  - controlla release/latest.json ({"version":"1.37","notes":"..."}) all'avvio e a richiesta;
+    ///    se non c'e', prova l'ultima "release" di GitHub;
+    ///  - "Installa" scarica release/DTPlugin.dll e release/DT.Dashboard.simhubdash,
     ///    rinomina il plugin in uso in DTPlugin.dll.old (Windows lo permette anche se e' caricato),
     ///    mette il nuovo al suo posto e copia la dashboard in SimHub\DashTemplates;
     ///  - poi basta riavviare SimHub. Le impostazioni (DTPlugin.json) non vengono toccate.
@@ -84,13 +85,27 @@ namespace FedeDashboard
             Busy = true; Status = "Controllo aggiornamenti…"; Notify();
             try
             {
-                string json;
-                using (var wc = Client()) json = wc.DownloadString("https://api.github.com/repos/" + Repo + "/releases/latest");
-                string tag = Field(json, "tag_name");
-                LatestVersion = tag.TrimStart('v', 'V');
-                Notes = Field(json, "body");
-                dllUrl = AssetUrl(json, DllAsset);
-                dashUrl = AssetUrl(json, DashAsset) ?? AssetUrl(json, "DT Dashboard.simhubdash");
+                string json = null;
+                // 1) file nel repository (aggiornato a ogni pubblicazione)
+                string raw = "https://raw.githubusercontent.com/" + Repo + "/main/release/";
+                try
+                {
+                    using (var wc = Client()) json = wc.DownloadString(raw + "latest.json?t=" + DateTime.UtcNow.Ticks);
+                    LatestVersion = Field(json, "version").TrimStart('v', 'V');
+                    Notes = Field(json, "notes");
+                    dllUrl = raw + DllAsset;
+                    dashUrl = raw + DashAsset;
+                }
+                catch (WebException) { json = null; }
+                // 2) in alternativa la "release" di GitHub
+                if (json == null)
+                {
+                    using (var wc = Client()) json = wc.DownloadString("https://api.github.com/repos/" + Repo + "/releases/latest");
+                    LatestVersion = Field(json, "tag_name").TrimStart('v', 'V');
+                    Notes = Field(json, "body");
+                    dllUrl = AssetUrl(json, DllAsset);
+                    dashUrl = AssetUrl(json, DashAsset) ?? AssetUrl(json, "DT Dashboard.simhubdash");
+                }
                 Available = IsNewer(LatestVersion, currentVersion) && dllUrl != null;
                 Status = Available ? "Disponibile la versione " + LatestVersion + " (tu hai la " + currentVersion + ")."
                                    : "Hai l'ultima versione (" + currentVersion + ").";
