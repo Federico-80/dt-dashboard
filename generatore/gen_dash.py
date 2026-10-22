@@ -457,6 +457,9 @@ def best_grid(k, w, h, chars):
     return best[1], best[2]
 
 
+BLINK = "(Math.floor(Date.now() / 90) % 2 == 0)"   # lampeggio veloce (90 ms acceso / 90 ms spento)
+
+
 def card_items(card, w, h):
     kind = card["kind"]
     if kind == "empty":
@@ -482,7 +485,7 @@ def card_items(card, w, h):
         if aid:
             glow = "#FF0091EA" if aid == "TC" else "#FFFFAB00"
             items.append(layer("%s attivo" % aid, [rect("%s attivo fondo" % aid, 2, 2, w - 4, h - 4, bg=glow, radius=int(min(10, h / 4)))],
-                               None, ("Attivo_" + aid, 1), vis_js="return $prop('DTPlugin.Attivo_%s') === true;" % aid))
+                               None, ("Attivo_" + aid, 1), vis_js="return $prop('DTPlugin.Attivo_%s') === true && %s;" % (aid, BLINK)))
         chars, sample = CH[c][6], CH[c][7]
         vb = {"TextColor": js(DELTA_COLOR_JS % c)} if kind == "delta" else None
         vcol = WHITE if kind != "delta" else GREEN
@@ -512,8 +515,8 @@ def card_items(card, w, h):
         if aid:
             for itx in items:
                 if itx.get("Name") == "Nome":
-                    itx.setdefault("Bindings", {})["TextColor"] = js("return $prop('DTPlugin.Attivo_%s') === true ? '#FFFFFFFF' : '%s';"
-                                                                     % (aid, label_color(color)))
+                    itx.setdefault("Bindings", {})["TextColor"] = js("return ($prop('DTPlugin.Attivo_%s') === true && %s) ? '#FFFFFFFF' : '%s';"
+                                                                     % (aid, BLINK, label_color(color)))
         return items
 
     title = card.get("title", "")
@@ -772,6 +775,7 @@ def bar_file(w, h):
 
 # ------------------------------------------------------------------ schermata principale
 def center_items(fi):
+    BLINK_ = BLINK
     cg = center_geom(fi)
     it = []
     x, y, w, h = cg["delta"]
@@ -783,18 +787,27 @@ def center_items(fi):
     x, y, w, h = cg["gear"]
     it.append(rect("Marcia fondo", x, y, w, h, bg=CARD_BG, border=FRAME, bw=2, radius=12, bindings={
         "BackgroundColor": js("if ($prop('DTPlugin.PitLimiter_Valore') > 0) { return '#FF0D47A1'; }\r\n"
-                              "if ($prop('DTPlugin.FuoriGiri') === true) { return '#FFFF1744'; }\r\nreturn '#FF0B0B0B';")}))
+                              "if ($prop('DTPlugin.FuoriGiri') === true && %s) { return '#FFFF1744'; }\r\nreturn '#FF0B0B0B';" % BLINK)}))
     gfs = int(min(h * 0.62, 170))
     it.append(text("Marcia", x, y + 2, w, h * 0.7, ch_val("Gear"), CH["Gear"][7], gfs, WHITE, weight="Black"))
     it.append(text("Giri", x, y + h * 0.7, w, h * 0.14, ch_val("Rpm"), CH["Rpm"][7], clamp(int(h * 0.09), 12, 20), GREY, weight="Medium"))
     bx, by, bw, bh = x + 12, y + h - 16, w - 24, 7
-    it.append(rect("Giri barra fondo", bx, by, bw, bh, bg=TRACK, radius=3))
     v = "Math.max(0, Math.min(100, $prop('DTPlugin.RpmPct_Valore')))"
-    it.append(rect("Giri barra", bx, by, bw, bh, bg=GREEN, radius=3, bindings={
-        "Width": js("return %s * %d / 100;" % (v, bw)),
-        "BackgroundColor": js("var p = $prop('DTPlugin.RpmPct_Valore');\r\n"
-                              "return p >= 97 ? '#FFFF1744' : (p >= 85 ? '#FFFFD600' : '#FF00E676');")},
-        pv=dict(hfrac=0.78)))
+    rpm_bar = [rect("Giri barra fondo", bx, by, bw, bh, bg=TRACK, radius=3),
+               rect("Giri barra", bx, by, bw, bh, bg=GREEN, radius=3, bindings={
+                   "Width": js("return %s * %d / 100;" % (v, bw)),
+                   "BackgroundColor": js("var p = $prop('DTPlugin.RpmPct_Valore');\r\n"
+                                         "return p >= 97 ? '#FFFF1744' : (p >= 85 ? '#FFFFD600' : '#FF00E676');")},
+                    pv=dict(hfrac=0.78))]
+    it.append(layer("Barra giri", rpm_bar, None, ("BarrePedali", 0), vis_js="return $prop('DTPlugin.BarrePedali') !== true;"))
+    # in alternativa (opzione della pagina): acceleratore (verde) e freno (rosso), una sopra l'altra
+    ped = []
+    for (c, col, yy) in (("Throttle", GREEN, by - 5), ("Brake", RED, by + 3)):
+        vv = "Math.max(0, Math.min(100, $prop('DTPlugin.%s_Valore')))" % c
+        ped.append(rect("%s barra fondo" % c, bx, yy, bw, 6, bg=TRACK, radius=3))
+        ped.append(rect("%s barra" % c, bx, yy, bw, 6, bg=col, radius=3, bindings={"Width": js("return %s * %d / 100;" % (vv, bw))},
+                        pv=dict(hfrac=0.85 if c == "Throttle" else 0.15)))
+    it.append(layer("Barre acceleratore e freno", ped, None, ("BarrePedali", 1), vis_js="return $prop('DTPlugin.BarrePedali') === true;"))
     # motore spento: riquadro giallo con "MOTORE SPENTO" e la marcia (stile 0)
     x, y, w, h = cg["gear"]
     eo_fs = fit(w - 16, h * 0.24, 7, 0.95)

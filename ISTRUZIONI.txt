@@ -131,9 +131,11 @@ IMPORTANTE - CAMBIO NOME (da "Fede" a "DT")
  Giro, Tempo rimasto, Ultimo/Miglior/Stimato giro, Velocità, Giri motore, Carburante
  (litri/giri/consumo), ERS, Ora, Distacco avanti/dietro, Temp. aria/pista, Personalizzato 1-6.
  Barre laterali: Giri motore, Gas, Freno, Frizione, Carburante, ERS.
- Sempre visibili al centro: delta, marcia (sfondo blu col limitatore, ROSSO quando sei sui giri
+ Sempre visibili al centro: delta, marcia (sfondo blu col limitatore, LAMPEGGIA ROSSO ai giri
  da cambiata / linea rossa), giri + barra, velocità.
- Schede TC, TC Cut, TC Slip e ABS: il riquadro si illumina (azzurro TC, arancione ABS) quando interviene.
+ Sotto la marcia: barra dei giri oppure (opzione della pagina "Sotto la marcia: acceleratore e freno")
+ due barre acceleratore (verde) e freno (rosso).
+ Schede TC, TC Cut, TC Slip e ABS: il riquadro lampeggia veloce (azzurro TC, arancione ABS) quando interviene.
  Scheda "Danni (schema auto)" nella categoria Gomme e freni.
  Scheda "Strategia gara (soste, finestra, rifornimento)" (categoria Carburante ed energia), come la barra LMU di RBR32.
   Mettila nella barra in basso scegliendo "1 riquadro largo" (pulsante "1" in Pagine e layout): così ha tutte le colonne.

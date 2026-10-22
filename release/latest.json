@@ -1,5 +1,5 @@
 {
-  "version": "1.37",
-  "notes": "Aggiornamenti automatici dalla cartella release del repository (le release di GitHub non servono piu').",
+  "version": "1.38",
+  "notes": "TC/ABS e fuori giri lampeggiano veloce. Sotto la marcia si puo' scegliere barra dei giri oppure acceleratore e freno (Pagine e layout).",
   "date": "2026-10-22"
 }

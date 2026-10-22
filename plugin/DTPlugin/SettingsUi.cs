@@ -122,7 +122,7 @@ namespace FedeDashboard
                   <WrapPanel x:Name='GridRButtons' MaxWidth='560'/>
                 </StackPanel>
               </Grid>
-              <CheckBox Grid.Row='3' Grid.Column='1' x:Name='ChkInputs' Content='Barre gas/freno accanto alla marcia' Margin='0,8,0,0' Visibility='Collapsed'/>
+              <CheckBox Grid.Row='3' Grid.Column='1' x:Name='ChkInputs' Content='Sotto la marcia: acceleratore e freno (invece della barra dei giri)' Margin='0,8,0,0'/>
             </Grid>
             <Grid Margin='0,18,0,0'><Grid.ColumnDefinitions><ColumnDefinition Width='Auto'/><ColumnDefinition Width='*'/></Grid.ColumnDefinitions><TextBlock Text='ANTEPRIMA E SCHEDE' FontWeight='Bold' FontSize='14' Foreground='White'/><Border Grid.Column='1' Height='1' Background='#FF4A4A4A' VerticalAlignment='Center' Margin='12,0,0,0'/></Grid>
           </StackPanel>
