@@ -212,6 +212,7 @@ def write(out_dir):
         f.write(json.dumps(G.strip(doc), ensure_ascii=False, separators=(",", ":")))
     with open(os.path.join(folder, NAME + ".djson.metadata"), "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, indent=2)
+    G.write_thumbs(folder, NAME, doc, {})
     src = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts")
     for ttf in ("Roboto-Regular.ttf", "Roboto-Medium.ttf", "Roboto-Bold.ttf", "Roboto-Black.ttf"):
         shutil.copy(os.path.join(src, ttf), os.path.join(folder, "_SHFonts", ttf))

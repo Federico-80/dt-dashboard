@@ -1418,6 +1418,21 @@ def strip(o):
     return o
 
 
+def write_thumbs(folder, name, doc, ctx, card_files=None):
+    """Miniature per l'elenco di SimHub: nome.djson.png (531x300) e una per schermata (nome.djson.NN.png, alte 100)."""
+    import render as R
+    from PIL import Image, ImageDraw
+    w, h = int(doc["BaseWidth"]), int(doc["BaseHeight"])
+    shots = []
+    for i, sc in enumerate(doc["Screens"]):
+        img = Image.new("RGBA", (w * 2, h * 2), (0, 0, 0, 255))
+        R.draw(ImageDraw.Draw(img), sc["Items"], 0, 0, ctx, 2, card_files or {})
+        shots.append(img)
+        img.resize((int(round(w * 100.0 / h)), 100), Image.LANCZOS).save(os.path.join(folder, "%s.djson.%02d.png" % (name, i)))
+    main = shots[doc["Metadata"].get("MainPreviewIndex", 0) if doc.get("Metadata") else 0]
+    main.resize((int(round(w * 300.0 / h)), 300), Image.LANCZOS).save(os.path.join(folder, name + ".djson.png"))
+
+
 def write_all():
     fonts_src = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts")
     folder = os.path.join(OUT, DASH_NAME)
@@ -1494,6 +1509,11 @@ def write_all():
     for ttf in ("Roboto-Light.ttf", "Roboto-Regular.ttf", "Roboto-Medium.ttf", "Roboto-Bold.ttf", "Roboto-Black.ttf",
                 "RobotoCondensed-Light.ttf", "RobotoCondensed-Regular.ttf", "RobotoCondensed-Bold.ttf"):
         shutil.copy(os.path.join(fonts_src, ttf), os.path.join(folder, "_SHFonts", ttf))
+    try:
+        import render as R
+        write_thumbs(folder, DASH_NAME, main, R.page_ctx(DEFAULT_PAGES[0]), CARD_FILES)
+    except Exception as ex:
+        print("miniature non create:", ex)
     return main, files
 
 
