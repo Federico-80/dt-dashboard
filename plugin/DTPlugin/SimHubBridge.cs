@@ -43,6 +43,12 @@ namespace FedeDashboard
             {
                 path = Path.Combine(Folder, "DTPlugin.log");
                 File.WriteAllText(path, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "  DT Plugin avviato" + Environment.NewLine);
+                // righe lasciate dallo script di riavvio dopo un aggiornamento
+                string rl = Path.Combine(Folder, "DTPlugin-riavvio.log");
+                if (File.Exists(rl))
+                {
+                    try { File.AppendAllText(path, File.ReadAllText(rl)); File.Delete(rl); } catch { }
+                }
             }
             catch { path = null; }
         }

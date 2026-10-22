@@ -195,10 +195,38 @@ namespace FedeDashboard
             {
                 var me = Process.GetCurrentProcess();
                 string exe = me.MainModule.FileName;
-                string ps = "Wait-Process -Id " + me.Id + " -ErrorAction SilentlyContinue; Start-Sleep -Seconds 2; Start-Process -FilePath '" + exe.Replace("'", "''") + "'";
-                var psi = new ProcessStartInfo("powershell.exe", "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command \"" + ps + "\"")
+                string dir = Path.GetDirectoryName(exe);
+                string tmp = Path.Combine(Path.GetTempPath(), "DTPlugin-riavvio");
+                Directory.CreateDirectory(tmp);
+                string rlog = Path.Combine(FedeLog.Folder, "DTPlugin-riavvio.log");
+                Func<string, string> q = x => "'" + x.Replace("'", "''") + "'";
+                // script che aspetta la chiusura di SimHub e lo riapre
+                string waiter = Path.Combine(tmp, "attendi.ps1");
+                File.WriteAllText(waiter,
+                    "$ErrorActionPreference = 'SilentlyContinue'\r\n" +
+                    "$log = " + q(rlog) + "\r\n" +
+                    "function L($m) { Add-Content -Path $log -Value ((Get-Date -Format 'HH:mm:ss') + '  Riavvio: ' + $m) }\r\n" +
+                    "L 'attendo la chiusura di SimHub'\r\n" +
+                    "Wait-Process -Id " + me.Id + " -Timeout 90\r\n" +
+                    "if (Get-Process -Id " + me.Id + ") { L 'SimHub ancora aperto dopo 90 s, lo chiudo'; Stop-Process -Id " + me.Id + " -Force; Start-Sleep -Seconds 2 }\r\n" +
+                    "Start-Sleep -Seconds 2\r\n" +
+                    "try { Start-Process -FilePath " + q(exe) + " -WorkingDirectory " + q(dir) + " -ErrorAction Stop; L 'SimHub riaperto' } catch { L ('errore: ' + $_.Exception.Message) }\r\n",
+                    new UTF8Encoding(true));
+                // lancio lo script fuori dal processo di SimHub (tramite WMI), cosi' non viene chiuso insieme a SimHub
+                string launcher = Path.Combine(tmp, "lancia.ps1");
+                string cmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"" + waiter + "\"";
+                File.WriteAllText(launcher,
+                    "$ErrorActionPreference = 'SilentlyContinue'\r\n" +
+                    "$r = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = " + q(cmd) + " }\r\n" +
+                    "if (-not $r -or $r.ReturnValue -ne 0) { Add-Content -Path " + q(rlog) + " -Value ((Get-Date -Format 'HH:mm:ss') + '  Riavvio: WMI non disponibile, avvio diretto'); " +
+                    "Start-Process -FilePath powershell.exe -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-WindowStyle','Hidden','-File'," + q("\"" + waiter + "\"") + " -WindowStyle Hidden }\r\n",
+                    new UTF8Encoding(true));
+                var psi = new ProcessStartInfo("powershell.exe", "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"" + launcher + "\"")
                 { CreateNoWindow = true, UseShellExecute = false, WindowStyle = ProcessWindowStyle.Hidden };
-                Process.Start(psi);
+                var lp = Process.Start(psi);
+                // aspetto che il lanciatore abbia fatto partire lo script prima di chiudere SimHub
+                try { if (lp != null) lp.WaitForExit(15000); } catch { }
+                FedeLog.Write("Riavvio: script avviato, chiudo SimHub");
                 // chiusura normale dell'applicazione WPF di SimHub
                 var appType = Wpf.T("System.Windows.Application");
                 object app = appType.GetProperty("Current").GetValue(null, null);

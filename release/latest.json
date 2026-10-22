@@ -1,5 +1,5 @@
 {
-  "version": "1.44",
-  "notes": "Settori: verde = tuo migliore, striscia viola sotto = migliore della tua categoria, tutto viola = migliore di tutti, giallo = più lento. Al primo giro verde, non più viola.",
+  "version": "1.45",
+  "notes": "Riavvio automatico di SimHub dopo l'aggiornamento reso indipendente da SimHub (prima SimHub si chiudeva ma non si riapriva). Il riavvio viene scritto nel log.",
   "date": "2026-10-22"
 }
