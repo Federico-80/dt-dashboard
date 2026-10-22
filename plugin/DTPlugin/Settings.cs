@@ -15,6 +15,9 @@ namespace FedeDashboard
         public TyreSettings Tyres { get; set; } = new TyreSettings();
         public IdleSettings Idle { get; set; } = new IdleSettings();
         public TimingSettings Timing { get; set; } = new TimingSettings();
+        public FontSettings Font { get; set; } = new FontSettings();
+        /// <summary>Finestra di avviso in SimHub quando esce una nuova versione.</summary>
+        public bool UpdatePopup { get; set; } = true;
 
         /// <summary>Completa/ripara le impostazioni lette da file (canali nuovi, liste corte, indici fuori range).</summary>
         public void Normalize()
@@ -27,6 +30,8 @@ namespace FedeDashboard
             }
             if (Timing == null) Timing = new TimingSettings();
             Timing.Normalize();
+            if (Font == null) Font = new FontSettings();
+            Font.Normalize();
             if (Idle == null) Idle = new IdleSettings();
             Idle.Normalize();
             if (Tyres == null) Tyres = new TyreSettings();
@@ -436,5 +441,29 @@ namespace FedeDashboard
             if (PositionMode < 0 || PositionMode >= PositionModes.Length) PositionMode = 0;
             if (GapMode < 0 || GapMode >= GapModes.Length) GapMode = 0;
         }
+    }
+
+    /// <summary>Carattere dei testi della dashboard (applicato riscrivendo i file della dash).</summary>
+    public class FontSettings
+    {
+        public static readonly string[] Families = { "Roboto", "Roboto Condensed", "Bahnschrift", "Segoe UI", "Arial" };
+        public static readonly string[] FamilyNames = { "Roboto (originale)", "Roboto Condensed (stretto)", "Bahnschrift (Windows)", "Segoe UI (Windows)", "Arial" };
+        public static readonly string[] Weights = { "Come in origine", "Un po' più leggero", "Leggero", "Più marcato" };
+        public static readonly int[] WeightSteps = { 0, -1, -2, 1 };
+        public static readonly int[] Sizes = { 100, 95, 90, 85, 80, 110 };
+
+        public int Family { get; set; }
+        public int Weight { get; set; }
+        public int SizePct { get; set; } = 100;
+
+        public void Normalize()
+        {
+            if (Family < 0 || Family >= Families.Length) Family = 0;
+            if (Weight < 0 || Weight >= Weights.Length) Weight = 0;
+            if (SizePct < 70 || SizePct > 120) SizePct = 100;
+        }
+
+        public bool IsDefault { get { return Family == 0 && Weight == 0 && SizePct == 100; } }
+        public string Key { get { return Family + "/" + Weight + "/" + SizePct; } }
     }
 }

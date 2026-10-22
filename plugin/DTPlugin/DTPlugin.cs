@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.45";
+        public const string VersionText = "1.46";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -96,8 +96,12 @@ namespace FedeDashboard
             try
             {
                 Settings = SettingsStore.Load();
+                Updater.Changed += OnUpdaterChanged;
                 Updater.CheckAsync(VersionText);   // controllo aggiornamenti su GitHub in background
-                try { DashBuilder.Build(new List<PageSettings>(Settings.Pages)); } catch (Exception ex) { FedeLog.Error("componi dashboard", ex); }
+                // e poi ogni 30 minuti, cosi' l'avviso arriva anche con SimHub sempre aperto
+                updateTimer = new System.Threading.Timer(_ => { try { if (!Updater.Busy && !Updater.Installed) Updater.CheckAsync(VersionText); } catch { } },
+                    null, TimeSpan.FromMinutes(30), TimeSpan.FromMinutes(30));
+                try { DashBuilder.Build(new List<PageSettings>(Settings.Pages), Settings.Font); } catch (Exception ex) { FedeLog.Error("componi dashboard", ex); }
                 BuildRuntime();
                 bridge = new SimHubBridge(this, pluginManager);
                 RegisterProperties();
@@ -297,8 +301,62 @@ namespace FedeDashboard
             }
         }
 
+        System.Threading.Timer updateTimer;
+        string popupShownFor = "";
+        dynamic updatePopup;
+
+        /// <summary>Nuova versione trovata: finestra di avviso in SimHub (una volta per versione).</summary>
+        void OnUpdaterChanged()
+        {
+            try
+            {
+                if (!Updater.Available || Updater.Busy || Updater.Installed) return;
+                if (Settings == null || !Settings.UpdatePopup) return;
+                string ver = Updater.LatestVersion;
+                if (string.IsNullOrEmpty(ver) || ver == popupShownFor) return;
+                popupShownFor = ver;
+                var appType = Wpf.T("System.Windows.Application");
+                object app = appType.GetProperty("Current").GetValue(null, null);
+                if (app == null) return;
+                object disp = appType.GetProperty("Dispatcher").GetValue(app, null);
+                Action show = () => ShowUpdatePopup(ver);
+                disp.GetType().GetMethod("BeginInvoke", new[] { typeof(Delegate), typeof(object[]) }).Invoke(disp, new object[] { show, new object[0] });
+            }
+            catch (Exception ex) { FedeLog.Error("avviso aggiornamento", ex); }
+        }
+
+        void ShowUpdatePopup(string ver)
+        {
+            try
+            {
+                if (updatePopup != null) { try { updatePopup.Close(); } catch { } updatePopup = null; }
+                string notes = Updater.Notes ?? "";
+                dynamic w = Wpf.Xaml(
+                    "<Window {NS} Title='DT Plugin - aggiornamento' Width='460' SizeToContent='Height' WindowStartupLocation='CenterScreen' " +
+                    "ResizeMode='NoResize' Topmost='True' ShowInTaskbar='True' Background='#FF1E1E1E'>" +
+                    "<StackPanel Margin='20,18,20,16'>" +
+                    "<TextBlock Text='È disponibile DT Plugin " + Wpf.Esc(ver) + "' FontSize='17' FontWeight='Bold' Foreground='White'/>" +
+                    "<TextBlock Text='Hai la versione " + Wpf.Esc(VersionText) + ". Plugin e dashboard vengono scaricati da GitHub, poi SimHub si riavvia. Le tue impostazioni restano.' " +
+                    "TextWrapping='Wrap' FontSize='12' Foreground='#FFBDBDBD' Margin='0,8,0,0'/>" +
+                    (notes.Length > 0 ? "<TextBlock Text='" + Wpf.Esc("Novità: " + notes) + "' TextWrapping='Wrap' FontSize='12' Foreground='#FF64B5F6' Margin='0,10,0,0'/>" : "") +
+                    "<StackPanel Orientation='Horizontal' HorizontalAlignment='Right' Margin='0,18,0,0'>" +
+                    "<Button x:Name='BtnLater' Content='Più tardi' Padding='14,6' Margin='0,0,10,0'/>" +
+                    "<Button x:Name='BtnInstall' Content='Installa e riavvia SimHub' Padding='14,6' FontWeight='Bold' Background='#FF1565C0' Foreground='White'/>" +
+                    "</StackPanel></StackPanel></Window>");
+                object later = Wpf.Find(w, "BtnLater"), inst = Wpf.Find(w, "BtnInstall");
+                object wo = w;
+                Wpf.On(later, "Click", (a, b) => { try { ((dynamic)wo).Close(); } catch { } });
+                Wpf.On(inst, "Click", (a, b) => { try { ((dynamic)wo).Close(); } catch { } Updater.InstallAsync(); });
+                updatePopup = w;
+                w.Show();
+                FedeLog.Write("Avviso aggiornamento mostrato: " + ver);
+            }
+            catch (Exception ex) { FedeLog.Error("finestra aggiornamento", ex); }
+        }
+
         public void End(PluginManager pluginManager)
         {
+            try { if (updateTimer != null) updateTimer.Dispose(); } catch { }
             SaveSettings();
             FedeLog.Write("Chiusura");
         }

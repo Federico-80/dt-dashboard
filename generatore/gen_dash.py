@@ -1475,7 +1475,8 @@ def write_all():
     os.makedirs(os.path.join(folder, "JavascriptExtensions"))
     with open(os.path.join(folder, "JavascriptExtensions", "DT-Dashboard.js"), "w", encoding="utf-8") as f:
         f.write(js_extension())
-    for ttf in ("Roboto-Regular.ttf", "Roboto-Medium.ttf", "Roboto-Bold.ttf", "Roboto-Black.ttf"):
+    for ttf in ("Roboto-Light.ttf", "Roboto-Regular.ttf", "Roboto-Medium.ttf", "Roboto-Bold.ttf", "Roboto-Black.ttf",
+                "RobotoCondensed-Light.ttf", "RobotoCondensed-Regular.ttf", "RobotoCondensed-Bold.ttf"):
         shutil.copy(os.path.join(fonts_src, ttf), os.path.join(folder, "_SHFonts", ttf))
     return main, files
 

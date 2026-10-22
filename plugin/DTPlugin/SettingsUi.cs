@@ -168,6 +168,12 @@ namespace FedeDashboard
         </ScrollViewer>
       </TabItem>
 
+      <TabItem Header='Carattere e aggiornamenti'>
+        <ScrollViewer VerticalScrollBarVisibility='Auto'>
+          <StackPanel x:Name='FontPanel' Margin='22,18,22,22' MaxWidth='1100' HorizontalAlignment='Left'/>
+        </ScrollViewer>
+      </TabItem>
+
       <TabItem Header='Valori (dati)'>
         <DockPanel Margin='22,18,22,16'>
           <StackPanel DockPanel.Dock='Top'>
@@ -349,7 +355,7 @@ namespace FedeDashboard
             Action upd = () => root.Dispatcher.BeginInvoke(new Action(() => ShowUpdate(false)));
             Wpf.On(Root, "Loaded", (s, e) => { plugin.Updater.Changed += upd; ShowUpdate(false); });
             Wpf.On(Root, "Unloaded", (s, e) => { plugin.Updater.Changed -= upd; });
-            Wpf.On(Root, "Loaded", (s, e) => { timer.Start(); plugin.PageChanged += OnPageChanged; RefreshAll(); BuildAlerts(); BuildTyres(); BuildIdle(); BuildTiming(); });
+            Wpf.On(Root, "Loaded", (s, e) => { timer.Start(); plugin.PageChanged += OnPageChanged; RefreshAll(); BuildAlerts(); BuildTyres(); BuildIdle(); BuildTiming(); BuildFont(); });
             Wpf.On(Root, "Unloaded", (s, e) => { timer.Stop(); plugin.PageChanged -= OnPageChanged; });
         }
 
@@ -1111,7 +1117,7 @@ namespace FedeDashboard
             catch (Exception ex) { FedeLog.Error("scheda tempi", ex); }
         }
 
-        dynamic Tiles(string title, string[] names, string[] subs, int selected, int disabled, Action<int> set)
+        dynamic Tiles(string title, string[] names, string[] subs, int selected, int disabled, Action<int> set, Action after = null, string[] families = null)
         {
             dynamic box = Wpf.Xaml("<StackPanel {NS} Margin='0,0,0,18'/>");
             box.Children.Add(Wpf.Xaml("<TextBlock {NS} Text='" + Wpf.Esc(title) + "' FontWeight='Bold' FontSize='13' Foreground='White' Margin='0,0,0,8'/>"));
@@ -1124,17 +1130,64 @@ namespace FedeDashboard
                 string bg = sel ? "#FF15304A" : "#FF262626";
                 dynamic tile = Wpf.Xaml("<Border {NS} Width='250' MinHeight='86' Margin='0,0,10,10' Padding='12,10' CornerRadius='6' BorderThickness='" + (sel ? 2 : 1) +
                     "' BorderBrush='" + border + "' Background='" + bg + "' Cursor='Hand' Opacity='" + (off ? "0.4" : "1") + "'>" +
-                    "<StackPanel><TextBlock Text='" + Wpf.Esc(names[i]) + "' FontWeight='Bold' FontSize='13' Foreground='" + (sel ? "#FF64B5F6" : "White") + "'/>" +
+                    "<StackPanel><TextBlock Text='" + Wpf.Esc(names[i]) + "' FontWeight='Bold' FontSize='13' Foreground='" + (sel ? "#FF64B5F6" : "White") + "'" +
+                    (families != null && i < families.Length ? " FontFamily='" + Wpf.Esc(families[i]) + ", Segoe UI'" : "") + "/>" +
                     "<TextBlock Text='" + Wpf.Esc(i < subs.Length ? subs[i] : "") + "' TextWrapping='Wrap' FontSize='11' Foreground='#FF9A9A9A' Margin='0,4,0,0'/></StackPanel></Border>");
                 if (!off)
                 {
                     object tO = tile;
-                    Wpf.On(tO, "MouseLeftButtonUp", (s, e) => { set(v); TimingChanged(); });
+                    Wpf.On(tO, "MouseLeftButtonUp", (s, e) => { set(v); if (after != null) after(); else TimingChanged(); });
                 }
                 wrap.Children.Add(tile);
             }
             box.Children.Add(wrap);
             return box;
+        }
+
+        // ---------------------------------------------------------------- carattere e aggiornamenti
+        dynamic fontPanel;
+
+        void FontChanged()
+        {
+            Save();
+            root.Dispatcher.BeginInvoke(new Action(BuildFont));
+        }
+
+        void BuildFont()
+        {
+            try
+            {
+                if (fontPanel == null) fontPanel = F("FontPanel");
+                fontPanel.Children.Clear();
+                var f = S.Font;
+                fontPanel.Children.Add(Section("Carattere della dashboard"));
+                fontPanel.Children.Add(Help("Cambia tipo, spessore e grandezza di tutti i testi della dashboard. Il plugin riscrive i file della dash: " +
+                    "se SimHub non la aggiorna subito, riapri la dashboard (o riavvia SimHub).", "0,-4,0,14"));
+                string[] famSub = { "Quello di sempre.", "Più stretto: i numeri occupano meno spazio.",
+                                    "Font da strumentazione, già presente in Windows 10/11.", "Il font di Windows, più morbido.", "Classico, molto leggibile." };
+                fontPanel.Children.Add(Tiles("Tipo di carattere", FontSettings.FamilyNames, famSub, f.Family, -1, v => f.Family = v, FontChanged, FontSettings.Families));
+                string[] wSub = { "Spessori come sono stati disegnati.", "Ogni testo di uno spessore più sottile (grassetto → medio).",
+                                  "Due spessori più sottile (grassetto → normale).", "Ogni testo un po' più spesso." };
+                fontPanel.Children.Add(Tiles("Spessore", FontSettings.Weights, wSub, f.Weight, -1, v => f.Weight = v, FontChanged));
+                var sizeNames = new string[FontSettings.Sizes.Length];
+                var sizeSubs = new string[FontSettings.Sizes.Length];
+                int selSize = 0;
+                for (int i = 0; i < sizeNames.Length; i++)
+                {
+                    int pct = FontSettings.Sizes[i];
+                    sizeNames[i] = pct + "%";
+                    sizeSubs[i] = pct == 100 ? "Grandezza originale." : (pct < 100 ? "Testi più piccoli del " + (100 - pct) + "%." : "Testi più grandi del " + (pct - 100) + "%.");
+                    if (pct == f.SizePct) selSize = i;
+                }
+                fontPanel.Children.Add(Tiles("Grandezza", sizeNames, sizeSubs, selSize, -1, v => f.SizePct = FontSettings.Sizes[v], FontChanged));
+
+                fontPanel.Children.Add(Section("Aggiornamenti"));
+                string[] uNames = { "Avvisami con una finestra", "Solo qui nella pagina del plugin" };
+                string[] uSub = { "Quando su GitHub esce una versione nuova compare una finestra in SimHub (controllo all'avvio e ogni 30 minuti).",
+                                  "Nessuna finestra: l'avviso si vede solo in alto in questa pagina." };
+                fontPanel.Children.Add(Tiles("Nuove versioni", uNames, uSub, S.UpdatePopup ? 0 : 1, -1, v => S.UpdatePopup = v == 0, FontChanged));
+            }
+            catch (Exception ex) { FedeLog.Error("scheda carattere", ex); }
         }
 
         void UpdateTimingLive()
