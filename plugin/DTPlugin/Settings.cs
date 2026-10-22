@@ -457,16 +457,23 @@ namespace FedeDashboard
         public int Family { get; set; }
         public int Weight { get; set; }
         public int SizePct { get; set; } = 100;
+        /// <summary>Spessore del bordo (px) dei riquadri centrali: marcia, velocita', righe centrali. 0 = nessun bordo.</summary>
+        public int CenterBorder { get; set; } = 0;
+        /// <summary>Spessore del bordo (px) delle schede ai lati e in basso.</summary>
+        public int CardBorder { get; set; } = 2;
+        public static readonly int[] BorderSizes = { 0, 1, 2, 3, 4 };
 
         public void Normalize()
         {
+            if (CenterBorder < 0 || CenterBorder > 6) CenterBorder = 0;
+            if (CardBorder < 0 || CardBorder > 6) CardBorder = 2;
             if (Family < 0 || Family >= Families.Length) Family = 0;
             if (Weight < 0 || Weight >= Weights.Length) Weight = 0;
             if (SizePct < 70 || SizePct > 120) SizePct = 100;
         }
 
-        public bool IsDefault { get { return Family == 0 && Weight == 0 && SizePct == 100; } }
-        public string Key { get { return Family + "/" + Weight + "/" + SizePct; } }
+        public bool IsDefault { get { return Family == 0 && Weight == 0 && SizePct == 100 && CenterBorder == 0 && CardBorder == 2; } }
+        public string Key { get { return Family + "/" + Weight + "/" + SizePct + "/" + CenterBorder + "/" + CardBorder; } }
     }
 
     /// <summary>Codice di accesso di questo PC (solo l'impronta) e ultima copia dell'elenco dei codici.</summary>

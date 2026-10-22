@@ -1,5 +1,5 @@
 {
-  "version": "1.59",
-  "notes": "Miniature delle dashboard nell'elenco di SimHub (DT Dashboard e DT Rally).",
+  "version": "1.60",
+  "notes": "Parte centrale senza bordi bianchi; nuova opzione per lo spessore dei bordi (centro e schede) in Aspetto e aggiornamenti.",
   "date": "2026-10-22"
 }

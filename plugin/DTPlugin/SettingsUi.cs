@@ -187,7 +187,7 @@ namespace FedeDashboard
         </ScrollViewer>
       </TabItem>
 
-      <TabItem Header='Carattere e aggiornamenti'>
+      <TabItem Header='Aspetto e aggiornamenti'>
         <ScrollViewer VerticalScrollBarVisibility='Auto'>
           <StackPanel x:Name='FontPanel' Margin='22,18,22,22' MaxWidth='1100' HorizontalAlignment='Left'/>
         </ScrollViewer>
@@ -1245,6 +1245,22 @@ namespace FedeDashboard
                     if (pct == f.SizePct) selSize = i;
                 }
                 fontPanel.Children.Add(Tiles("Grandezza", sizeNames, sizeSubs, selSize, -1, v => f.SizePct = FontSettings.Sizes[v], FontChanged));
+
+                fontPanel.Children.Add(Section("Bordi dei riquadri"));
+                fontPanel.Children.Add(Help("Spessore in pixel della cornice dei riquadri. 0 = nessun bordo.", "0,-4,0,14"));
+                var bNames = new string[FontSettings.BorderSizes.Length];
+                var bSubs = new string[FontSettings.BorderSizes.Length];
+                int selC = 0, selK = 0;
+                for (int i = 0; i < bNames.Length; i++)
+                {
+                    int px = FontSettings.BorderSizes[i];
+                    bNames[i] = px == 0 ? "Nessuno" : px + " px";
+                    bSubs[i] = px == 0 ? "Senza cornice." : (px == 1 ? "Sottile." : (px == 2 ? "Normale." : "Spesso."));
+                    if (px == f.CenterBorder) selC = i;
+                    if (px == f.CardBorder) selK = i;
+                }
+                fontPanel.Children.Add(Tiles("Parte centrale (marcia, velocità, righe al centro)", bNames, bSubs, selC, -1, v => f.CenterBorder = FontSettings.BorderSizes[v], FontChanged));
+                fontPanel.Children.Add(Tiles("Schede ai lati e in basso", bNames, bSubs, selK, -1, v => f.CardBorder = FontSettings.BorderSizes[v], FontChanged));
 
                 fontPanel.Children.Add(Section("Aggiornamenti"));
                 string[] uNames = { "Avvisami con una finestra", "Solo qui nella pagina del plugin" };

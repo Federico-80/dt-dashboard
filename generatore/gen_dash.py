@@ -411,8 +411,17 @@ def strategy_items(w, h):
     return it
 
 
+CENTER_BW = 0      # bordo dei riquadri della parte centrale (il DT Plugin lo puo' cambiare)
+CARD_BW = 2        # bordo delle schede ai lati e in basso
+
+
+def center_card_sizes():
+    return {(int(round(w)), int(round(h))) for fi in range(len(FRAMES)) for (x, y, w, h) in center_geom(fi)["rows"]}
+
+
 def frame_rect(w, h, color):
-    return rect("Cornice", 0, 0, w, h, bg=CARD_BG, border=color, bw=2, radius=int(min(12, h / 4)))
+    bw = CENTER_BW if (int(round(w)), int(round(h))) in center_card_sizes() else CARD_BW
+    return rect("Cornice", 0, 0, w, h, bg=CARD_BG, border=color, bw=bw, radius=int(min(12, h / 4)))
 
 
 def entry_items(c, color, x, y, w, h, prefix, sub=None):
@@ -790,7 +799,7 @@ def center_items(fi):
                    bindings={"TextColor": js(DELTA_COLOR_JS % "Delta")}))
     it += sector_bars(x + 6, y + h - sbh - 4, w - 12, sbh, gap=3)
     x, y, w, h = cg["gear"]
-    it.append(rect("Marcia fondo", x, y, w, h, bg=CARD_BG, border=FRAME, bw=2, radius=12, bindings={
+    it.append(rect("Marcia fondo", x, y, w, h, bg=CARD_BG, border=FRAME, bw=CENTER_BW, radius=12, bindings={
         "BackgroundColor": js("if ($prop('DTPlugin.PitLimiter_Valore') > 0) { return '#FF0D47A1'; }\r\n"
                               "if ($prop('DTPlugin.FuoriGiri') === true && %s) { return '#FFFF1744'; }\r\nreturn '#FF0B0B0B';" % BLINK)}))
     gfs = int(min(h * 0.62, 170))
@@ -835,7 +844,7 @@ def center_items(fi):
             "Top": js("return %d - %s * %d / 100;" % (bb, v, BH))}, pv=dict(vfrac=0.86 if c == "Throttle" else 0.12)))
     pk = None  # barre gas/freno accanto alla marcia rimosse su richiesta
     x, y, w, h = cg["speed"]
-    it.append(rect("Velocità fondo", x, y, w, h, bg=CARD_BG, border=FRAME, bw=2, radius=10))
+    it.append(rect("Velocità fondo", x, y, w, h, bg=CARD_BG, border=FRAME, bw=CENTER_BW, radius=10))
     it.append(text("Velocità", x, y, w, h, ch_val("Speed"), CH["Speed"][7], 28, WHITE))
     it.append(flag_box(x, y, w, h))   # bandiere: sopra la velocita', sempre nello stesso posto
     for i, (x, y, w, h) in enumerate(cg["rows"]):

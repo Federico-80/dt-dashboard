@@ -110,7 +110,7 @@ namespace FedeDashboard
             }
             string tpl = File.ReadAllText(tplPath, Encoding.UTF8);
             if (!tpl.Contains("\"@@PAGINE@@\"")) throw new InvalidDataException("modello senza @@PAGINE@@");
-            string json = ApplyFont(tpl.Replace("\"@@PAGINE@@\"", string.Join(",", layers)), font);
+            string json = ApplyStyle(tpl.Replace("\"@@PAGINE@@\"", string.Join(",", layers)), font, true, false);
             try { if (ApplyFontToOtherFiles(folder, outPath, font) > 0 && Started) NeedsReload = true; } catch (Exception ex) { FedeLog.Error("carattere schede", ex); }
 
             if (File.Exists(outPath) && File.ReadAllText(outPath, Encoding.UTF8) == json)
@@ -134,10 +134,34 @@ namespace FedeDashboard
         static readonly Regex WeightRx = new Regex("\"FontWeight\":\"(Light|Normal|Medium|Bold|Black)\"", RegexOptions.Compiled);
         static readonly Regex SizeRx = new Regex("\"FontSize\":(\\d+(?:\\.\\d+)?)", RegexOptions.Compiled);
 
+        static readonly Regex BorderRx = new Regex("\"BorderStyle\":\\{\"BorderTop\":\\d+,\"BorderBottom\":\\d+,\"BorderLeft\":\\d+,\"BorderRight\":\\d+", RegexOptions.Compiled);
+
+        /// <summary>Carattere + bordi. centerFile = scheda delle righe centrali (Schede_172x36).</summary>
+        public static string ApplyStyle(string json, FontSettings f, bool mainFile, bool centerFile)
+        {
+            if (f == null) return json;
+            json = ApplyFont(json, f);
+            int center = f.CenterBorder, card = f.CardBorder;
+            if (center == 0 && card == 2) return json;   // come generata
+            return BorderRx.Replace(json, m =>
+            {
+                int at = json.LastIndexOf("\"Name\":\"", m.Index, StringComparison.Ordinal);
+                if (at < 0) return m.Value;
+                int st = at + 8, en = json.IndexOf('"', st);
+                string name = en > st ? json.Substring(st, en - st) : "";
+                int px;
+                if (mainFile && (name == "Marcia fondo" || name == "Velocità fondo")) px = center;
+                else if (!mainFile && name == "Cornice") px = centerFile ? center : card;
+                else return m.Value;
+                string v = px.ToString(CultureInfo.InvariantCulture);
+                return "\"BorderStyle\":{\"BorderTop\":" + v + ",\"BorderBottom\":" + v + ",\"BorderLeft\":" + v + ",\"BorderRight\":" + v;
+            });
+        }
+
         /// <summary>Cambia famiglia, spessore e dimensione dei testi nel json di una dashboard.</summary>
         public static string ApplyFont(string json, FontSettings f)
         {
-            if (f == null || f.IsDefault) return json;
+            if (f == null || (f.Family == 0 && f.Weight == 0 && f.SizePct == 100)) return json;
             string fam = FontSettings.Families[f.Family < 0 || f.Family >= FontSettings.Families.Length ? 0 : f.Family];
             int step = FontSettings.WeightSteps[f.Weight < 0 || f.Weight >= FontSettings.WeightSteps.Length ? 0 : f.Weight];
             double k = f.SizePct / 100.0;
@@ -172,8 +196,11 @@ namespace FedeDashboard
             {
                 var parts = File.ReadAllText(stampPath).Trim().Split('/');
                 int a, b, c;
-                if (parts.Length == 3 && int.TryParse(parts[0], out a) && int.TryParse(parts[1], out b) && int.TryParse(parts[2], out c))
-                { last.Family = a; last.Weight = b; last.SizePct = c; last.Normalize(); }
+                int d, e;
+                if (parts.Length >= 3 && int.TryParse(parts[0], out a) && int.TryParse(parts[1], out b) && int.TryParse(parts[2], out c))
+                { last.Family = a; last.Weight = b; last.SizePct = c; }
+                if (parts.Length >= 5 && int.TryParse(parts[3], out d) && int.TryParse(parts[4], out e)) { last.CenterBorder = d; last.CardBorder = e; }
+                last.Normalize();
             }
             var now = font ?? new FontSettings();
             if (now.IsDefault && last.IsDefault && !File.Exists(stampPath)) return 0;   // mai cambiato: niente da fare
@@ -184,12 +211,13 @@ namespace FedeDashboard
                 string cur = File.ReadAllText(file, Encoding.UTF8);
                 string origPath = file + ".orig";
                 string orig = File.Exists(origPath) ? File.ReadAllText(origPath, Encoding.UTF8) : null;
-                if (orig == null || ApplyFont(orig, last) != cur)
+                bool centerFile = Path.GetFileName(file).StartsWith("Schede_172x36", StringComparison.OrdinalIgnoreCase);
+                if (orig == null || ApplyStyle(orig, last, false, centerFile) != cur)
                 {
                     orig = cur;   // file nuovo o reimportato: questo e' l'originale
                     File.WriteAllText(origPath, orig, new UTF8Encoding(false));
                 }
-                string want = ApplyFont(orig, now);
+                string want = ApplyStyle(orig, now, false, centerFile);
                 if (want != cur)
                 {
                     string tmp = file + ".tmp";

@@ -120,12 +120,14 @@ IMPORTANTE - CAMBIO NOME (da "Fede" a "DT")
   - Custom1..6 = valori liberi, si vedono con le schede "Personalizzato 1..6".
 
 
-Scheda "Carattere e aggiornamenti":
+Scheda "Aspetto e aggiornamenti":
  - Tipo di carattere: Roboto (originale), Roboto Condensed (stretto), Bahnschrift, Segoe UI, Arial.
  - Spessore: come in origine, un po' più leggero, leggero, più marcato.
  - Grandezza: dall'80% al 110%.
    Il plugin riscrive i file della dashboard (gli originali restano in "*.djson.orig").
    Se SimHub non aggiorna subito la dash, riaprila o riavvia SimHub.
+ - Bordi dei riquadri: spessore in px (0 = nessuno) per la parte centrale (marcia, velocità,
+   righe al centro) e per le schede ai lati e in basso. Di base: centro senza bordo, schede 2 px.
  - Nuove versioni: con "Avvisami con una finestra" compare una finestra in SimHub quando su GitHub
    c'è una versione nuova (controllo all'avvio e ogni 30 minuti), con il pulsante "Installa e riavvia SimHub".
 
