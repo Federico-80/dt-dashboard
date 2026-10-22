@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.61";
+        public const string VersionText = "1.62";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -160,6 +160,12 @@ namespace FedeDashboard
                     string key = "Gomma_" + w + "_Stato";
                     colors[key] = "";
                     bridge.Attach(key, () => ColorOf(key));
+                }
+                {
+                    string key = "Gomma_" + w + "_Mescola", keyC = key + "Colore";
+                    colors[key] = ""; colors[keyC] = "#FFFFFFFF";
+                    bridge.Attach(key, () => ColorOf(key));
+                    bridge.Attach(keyC, () => ColorOf(keyC));
                 }
                 for (int j = 1; j <= 3; j++)
                 {
@@ -1539,6 +1545,37 @@ namespace FedeDashboard
             return Lerp(Red, Red, 0);
         }
 
+        /// <summary>
+        /// Mescola della gomma: lettera e colore (S rossa, M gialla, H bianca, W blu).
+        /// LMU: nome della mescola anteriore / posteriore dalla telemetria; iRacing: asciutto/bagnato; altrimenti SimHub.
+        /// </summary>
+        string Compound(int w, out string color)
+        {
+            color = "#FFFFFFFF";
+            string name = "";
+            try
+            {
+                bool front = w < 2;
+                name = SectorTracker.Str(Raw("CurrentPlayerTelemetry." + (front ? "mFrontTireCompoundName" : "mRearTireCompoundName")));
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    object ir = Raw("Telemetry.PlayerTireCompound");
+                    if (ir != null && isIRacing) name = AsInt(ir) >= 1 ? "Wet" : "";
+                }
+                if (string.IsNullOrWhiteSpace(name))
+                    name = Convert.ToString(bridge.GetPropertyValue("DataCorePlugin.GameData.TyreCompound") ?? "");
+            }
+            catch { }
+            string n = (name ?? "").Trim().ToUpperInvariant();
+            if (n.Length == 0) return "";
+            if (n.Contains("WET") || n.Contains("RAIN") || n.Contains("INTER") || n == "W") { color = "#FF2979FF"; return "W"; }
+            if (n.Contains("SOFT") || n == "S") { color = "#FFFF1744"; return "S"; }
+            if (n.Contains("MED") || n == "M") { color = "#FFFFD600"; return "M"; }
+            if (n.Contains("HARD") || n == "H") { color = "#FFFFFFFF"; return "H"; }
+            color = "#FF9E9E9E";
+            return n.Substring(0, 1);
+        }
+
         void UpdateTyreColors()
         {
             var t = Settings.Tyres;
@@ -1550,6 +1587,9 @@ namespace FedeDashboard
                 next["TyreT" + k] = ThreeColors(tt != null ? tt.Value : double.NaN, t.TyreCold, t.TyreOptimal, t.TyreHot);
                 next["TyreP" + k] = ThreeColors(tp != null ? tp.Value : double.NaN, t.PressLow, t.PressOptimal, t.PressHigh);
                 next["Gomma_" + k + "_Stato"] = TyreState(w);
+                string mc, ml = Compound(w, out mc);
+                next["Gomma_" + k + "_Mescola"] = ml;
+                next["Gomma_" + k + "_MescolaColore"] = mc;
                 var tw = Find("TyreW" + k);
                 double wear = tw != null && tw.Text != ValueFormatter.Empty ? tw.Value : double.NaN;
                 next["TyreW" + k] = double.IsNaN(wear) || wear <= 0 ? "#FF9E9E9E" : (wear >= 60 ? "#FF00E676" : (wear >= 30 ? "#FFFFD600" : "#FFFF1744"));
@@ -1687,7 +1727,7 @@ namespace FedeDashboard
 
         volatile int lmuPlace, lmuCars;
 
-        class LmuCar { public int Place; public double Tbl, Best, Last, Progress, LapsBehindLeader; public string Cls = "", Name = ""; public bool Player; }
+        class LmuCar { public int Place; public double Tbl, Tbn, Lbn, Best, Last, Progress, LapsBehindLeader; public string Cls = "", Name = ""; public bool Player; }
         readonly int[] boxLaps = { 0, 0 };
 
         /// <summary>Distacchi, nomi e categorie dal punteggio di LMU (sempre presenti, anche quando SimHub non ha il distacco).</summary>
@@ -1713,7 +1753,9 @@ namespace FedeDashboard
                     Player = Num(SectorTracker.Get(v, "mIsPlayer")) > 0,
                     Best = Num(SectorTracker.Get(v, "mBestLapTime")),
                     Last = Num(SectorTracker.Get(v, "mLastLapTime")),
-                    LapsBehindLeader = Num(SectorTracker.Get(v, "mLapsBehindLeader"))
+                    LapsBehindLeader = Num(SectorTracker.Get(v, "mLapsBehindLeader")),
+                    Tbn = Num(SectorTracker.Get(v, "mTimeBehindNext")),
+                    Lbn = Num(SectorTracker.Get(v, "mLapsBehindNext"))
                 };
                 double laps = Num(SectorTracker.Get(v, "mTotalLaps")), dist = Num(SectorTracker.Get(v, "mLapDist"));
                 c.Progress = (double.IsNaN(laps) ? 0 : laps) + (trackLen > 0 && !double.IsNaN(dist) ? Math.Max(0, Math.Min(1, dist / trackLen)) : 0);
@@ -1732,10 +1774,22 @@ namespace FedeDashboard
             LmuCar ahead = idx > 0 ? list[idx - 1] : null, behind = idx >= 0 && idx < list.Count - 1 ? list[idx + 1] : null;
             string st = Convert.ToString(bridge.GetPropertyValue("DataCorePlugin.GameData.SessionTypeName") ?? "").ToUpperInvariant();
             bool race = st.Contains("RACE") || st.Contains("GARA");
-            boxLaps[0] = ahead != null && race ? LapsBetween(ahead, me) : 0;
-            boxLaps[1] = behind != null && race ? LapsBetween(me, behind) : 0;
-            if (ahead != null) gapAhead = -Math.Abs(GapBetween(ahead, me, race));
-            if (behind != null) gapBehind = Math.Abs(GapBetween(me, behind, race));
+            boxLaps[0] = 0; boxLaps[1] = 0;
+            if (race)
+            {
+                // gara: distacchi calcolati da LMU (tempo dalla macchina davanti, sommato sulle auto in mezzo)
+                int la = 0, lb = 0;
+                double ga = ahead != null ? ChainGap(cars, ahead, me, out la) : double.NaN;
+                double gb = behind != null ? ChainGap(cars, me, behind, out lb) : double.NaN;
+                if (ahead != null) { if (double.IsNaN(ga)) { ga = GapBetween(ahead, me, true); la = LapsBetween(ahead, me); } boxLaps[0] = la; gapAhead = -Math.Abs(ga); }
+                if (behind != null) { if (double.IsNaN(gb)) { gb = GapBetween(me, behind, true); lb = LapsBetween(me, behind); } boxLaps[1] = lb; gapBehind = Math.Abs(gb); }
+            }
+            else
+            {
+                // prove e qualifica: come la tabella di LMU, differenza tra i giri migliori
+                if (ahead != null) gapAhead = -Math.Abs(GapBetween(ahead, me, false));
+                if (behind != null) gapBehind = Math.Abs(GapBetween(me, behind, false));
+            }
 
             // colore classe e numero dalla lista di SimHub (stesso nome), se c'e'
             var extra = new Dictionary<string, object>();
@@ -1753,6 +1807,28 @@ namespace FedeDashboard
         /// Gara: tempo dal leader di LMU; se non c'e', come RBR32: differenza di giri percorsi x tempo sul giro.
         /// Prove/qualifica: differenza tra i giri migliori.
         /// </summary>
+        /// <summary>
+        /// Distacco di LMU tra a (davanti) e b: somma di mTimeBehindNext delle auto da a (esclusa) a b (inclusa), in ordine di posizione.
+        /// NaN se LMU non lo fornisce (tutti zero).
+        /// </summary>
+        static double ChainGap(List<LmuCar> overall, LmuCar a, LmuCar b, out int laps)
+        {
+            laps = 0;
+            double t = 0, l = 0;
+            bool any = false;
+            foreach (var c in overall)
+            {
+                if (c.Place <= a.Place || c.Place > b.Place) continue;
+                if (double.IsNaN(c.Tbn) || c.Tbn < 0) return double.NaN;
+                if (c.Tbn > 0.0005) any = true;
+                t += c.Tbn;
+                if (!double.IsNaN(c.Lbn) && c.Lbn > 0) l += c.Lbn;
+            }
+            if (!any) return double.NaN;
+            laps = l >= 1 ? (int)Math.Round(l) : 0;
+            return t;
+        }
+
         /// <summary>Giri interi di differenza (a davanti a b): 0 se sono nello stesso giro.</summary>
         static int LapsBetween(LmuCar a, LmuCar b)
         {
@@ -1792,7 +1868,7 @@ namespace FedeDashboard
             if (double.IsNaN(gap)) { boxGap[k] = ""; boxGapCard[k] = "-"; return; }
             double a = Math.Abs(gap);
             boxGap[k] = (k == 0 ? "-" : "+") + a.ToString(a < 10 ? "0.00" : "0.0", CultureInfo.InvariantCulture);
-            boxGapCard[k] = a.ToString("0.0", CultureInfo.InvariantCulture);
+            boxGapCard[k] = (k == 0 ? "-" : "+") + a.ToString("0.0", CultureInfo.InvariantCulture);
         }
 
         double simhubClassBest = double.NaN;
@@ -1828,7 +1904,7 @@ namespace FedeDashboard
         {
             if (o == null) { boxName[k] = ""; boxNum[k] = ""; boxClass[k] = ""; boxGap[k] = ""; boxGapCard[k] = "-"; return; }
             boxLaps[k] = laps;
-            boxGapCard[k] = laps >= 1 ? "+" + laps + "L" : (double.IsNaN(gap) ? "-" : Math.Abs(gap).ToString("0.0", CultureInfo.InvariantCulture));
+            boxGapCard[k] = laps >= 1 ? "+" + laps + "L" : (double.IsNaN(gap) ? "-" : (k == 0 ? "-" : "+") + Math.Abs(gap).ToString("0.0", CultureInfo.InvariantCulture));
             boxName[k] = ShortName(Convert.ToString(GetMember(o, "Name") ?? ""));
             boxNum[k] = Convert.ToString(GetMember(o, "CarNumber") ?? "");
             boxClass[k] = Convert.ToString(GetMember(o, "CarClass") ?? "");

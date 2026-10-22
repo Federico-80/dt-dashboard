@@ -315,33 +315,19 @@ def gap_side_items(side, x, y, w, h):
         lay["Bindings"] = vis
         return [lay]
 
-    if h >= 100 or (w < 150 and h >= 64):
-        lh = clamp(round(h * 0.15), 9, 16)
-        vh = h * 0.42
-        nh = h * 0.18
-        bh = h - lh - vh - nh - 4
+    # tutto centrato: distacco grande in alto, nome del pilota sotto, categoria piccola in fondo
+    lh = clamp(round(h * 0.13), 9, 15) if h >= 90 else 0
+    if lh:
         it.append(text("%s etichetta" % side, x, y, w, lh, None, label, int(lh * 0.8), GREY, weight="Medium"))
-        it.append(text("%s distacco" % side, x, y + lh, w, vh, None, CH[ch][7], fit(w - 6, vh, 5, 0.85), col, bindings=gap_b))
-        it.append(text("%s nome" % side, x + 2, y + lh + vh, w - 4, nh, None, nm, fit(w - 8, nh, 12, 0.8), WHITE, weight="Medium",
-                       bindings=name_b))
-        bw_ = min(w - 8, 110)
-        bhh = max(10, bh - 2)
-        it += badges(x + (w - min(bw_, clamp(int(min(bhh, 24) * 0.7), 7, 16) * 4.2)) / 2, y + lh + vh + nh + 1, bhh, bw_)
-    else:
-        # riquadro basso: distacco a sinistra, nome e categoria a destra
-        vw = w * 0.42
-        lh = clamp(round(h * 0.18), 9, 14) if h >= 50 else 0
-        if lh:
-            it.append(text("%s etichetta" % side, x + 2, y, vw, lh, None, label, int(lh * 0.8), GREY, weight="Medium", ha=0))
-        it.append(text("%s distacco" % side, x + 2, y + lh, vw, h - lh, None, CH[ch][7], fit(vw - 4, h - lh, 4.4, 0.85), col, ha=0, bindings=gap_b))
-        rx, rw = x + vw + 2, w - vw - 6
-        nh = h * 0.5
-        if lh:
-            nh = (h - lh) * 0.5
-            y, h = y + lh, h - lh
-        it.append(text("%s nome" % side, rx, y + 1, rw, nh, None, nm, fit(rw, nh, 11, 0.8), WHITE, weight="Medium", ha=0,
-                       bindings=name_b))
-        it += badges(rx, y + nh + 1, h - nh - 3, rw)
+    ah = h - lh
+    vh, nh = ah * 0.50, ah * 0.27
+    bh = ah - vh - nh - 2
+    it.append(text("%s distacco" % side, x, y + lh, w, vh, None, CH[ch][7], fit(w - 6, vh, 5, 0.9), col, bindings=gap_b))
+    it.append(text("%s nome" % side, x + 2, y + lh + vh, w - 4, nh, None, nm, fit(w - 8, nh, 12, 0.8), WHITE, weight="Medium",
+                   bindings=name_b))
+    bhh = max(9, min(bh, 20))
+    bw_ = clamp(int(bhh * 0.7), 7, 14) * 4.2
+    it += badges(x + (w - bw_) / 2, y + lh + vh + nh + 1 + (bh - bhh) / 2, bhh, bw_)
     return it
 
 
@@ -575,6 +561,11 @@ def card_items(card, w, h):
                                  sub=sub[i] if rh >= 40 else None)
         for i, (wk, prop, it) in enumerate(WHEELS):
             r, k = divmod(i, cols)
+            if rh >= 40 and cw >= 60:
+                # mescola nell'angolo in alto, verso l'esterno della macchina
+                d = clamp(rh * 0.2, 12, 20)
+                bx = ix + k * cw + 3 if wk in ("FL", "RL") else ix + (k + 1) * cw - d - 3
+                items.append(compound_badge(wk, bx, iy + r * rh + 3, d))
             items.append(tyre_state_overlay(wk, ix + k * cw + 2, iy + r * rh + 2, cw - 4, rh - 4))
         return items
 
@@ -681,6 +672,23 @@ def damage_items(bx, by, bw, bh):
     return it
 
 
+TYRE_SAMPLE_COMP = {"FL": ("M", "#FFFFD600"), "FR": ("M", "#FFFFD600"), "RL": ("S", "#FFFF1744"), "RR": ("S", "#FFFF1744")}
+
+
+def compound_badge(k, x, y, d):
+    """Mescola della gomma: cerchio colorato con la lettera (S rossa, M gialla, H bianca, W blu)."""
+    d = max(10, int(round(d)))
+    col = js("var c = $prop('DTPlugin.Gomma_%s_MescolaColore');\r\nreturn c ? c : '#FFFFFFFF';" % k)
+    letter, sc = TYRE_SAMPLE_COMP[k]
+    bw = 2 if d >= 14 else 1
+    g = [rect("Mescola %s cerchio" % k, x, y, d, d, bg="#00000000", border=sc, bw=bw, radius=d // 2, border_bind=col),
+         text("Mescola %s" % k, x, y, d, d, "[DTPlugin.Gomma_%s_Mescola]" % k, letter, max(7, int(d * 0.62)), sc, weight="Black",
+              bindings={"TextColor": col})]
+    lay = layer("Mescola %s" % k, g)
+    lay["Bindings"] = {"Visible": js("var m = $prop('DTPlugin.Gomma_%s_Mescola');\r\nreturn m != null && m !== '';" % k)}
+    return lay
+
+
 def tyre_state_overlay(k, x, y, w, h):
     """Riquadro rosso "PERSA"/"FORATA" sopra la gomma quando la telemetria dice che e' andata."""
     fs = fit(w - 8, h * 0.5, 6, 0.8, cap=40)
@@ -710,6 +718,8 @@ def tyres2_items(ix, iy, iw, ih):
         lh = 0 if small else clamp(round(h * 0.15), 10, 18)
         if lh:
             items.append(text("Gomma %s nome" % k, x, y + 2, w, lh, None, it, int(lh * 0.8), GREY, weight="Medium"))
+            # mescola accanto al nome (AS, AD...)
+            items.append(compound_badge(k, x + w / 2 + lh * 0.75, y + 2 + lh * 0.05, lh * 0.95))
         # strisce superficie (lato interno della macchina)
         sw = clamp(w * 0.26, 12, 44)
         sh = h - lh - 10
