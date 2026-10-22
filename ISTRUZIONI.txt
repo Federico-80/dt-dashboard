@@ -138,7 +138,7 @@ Codice di accesso:
 DT Rally (dashboard semplificata per i rally):
  Nel pacchetto c'è anche "DT Rally.simhubdash": doppio clic per importarla, poi sceglila in SimHub
  per lo schermo quando corri nei rally (AC Rally, EA WRC, DiRT Rally, RBR).
- Contagiri a barra in alto (lampeggia blu quando devi cambiare), marcia e velocità al centro,
+ Contagiri a barra in alto che parte dai lati e si chiude al centro (lampeggia blu quando devi cambiare), marcia e velocità al centro,
  barre di freno e gas, avviso freno a mano, tempo prova, ultimo e migliore, gomme, acqua, olio,
  carburante, TC/ABS/ripartitore e avanzamento della prova. Si aggiorna insieme al plugin.
 

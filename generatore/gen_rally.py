@@ -60,20 +60,24 @@ def temp_color(prop, cold, hot):
 
 # ------------------------------------------------------------------ contagiri a barra
 def rpm_bar():
+    """Contagiri a barra che parte dai due lati e si chiude verso il centro."""
     it = []
-    n, x0, y0, bw_, gap, hh = 30, 14, 10, 0, 4, 46
-    seg = (W - 2 * x0 - (n - 1) * gap) / n
+    n, x0, y0, gap, hh = 15, 14, 10, 4, 46      # segmenti per lato
+    half = (W - 2 * x0 - 12) / 2.0               # 12 px di spazio al centro
+    seg = (half - (n - 1) * gap) / n
+    off = "#FF1A1A1A"
     for i in range(n):
         thr = (i + 1) / n * 100.0
         frac = i / (n - 1)
         col = GREEN if frac < 0.55 else (YELLOW if frac < 0.75 else (ORANGE if frac < 0.88 else RED))
-        off = "#FF1A1A1A"
         code = (RPM_PCT + SHIFT +
                 "if (pc >= 97) { return blink ? '%s' : '%s'; }\r\nreturn pc >= %.1f ? '%s' : '%s';" % (BLUE, off, thr - 100.0 / n * 0.5, col, off))
-        # i segmenti crescono un po' verso destra, come una barra da rally
-        h = hh * (0.62 + 0.38 * frac)
-        it.append(rect("Giri %d" % (i + 1), x0 + i * (seg + gap), y0 + hh - h, seg, h, bg=col, radius=3, bind={"BackgroundColor": js(code)}))
-    it.append(text("Giri valore", W - 214, 60, 200, 24, "7450 RPM", 16, GREY, "Medium", ha=2,
+        h = hh * (0.62 + 0.38 * frac)            # piu' alti verso il centro
+        xl = x0 + i * (seg + gap)                # da sinistra verso il centro
+        xr = W - x0 - (i + 1) * seg - i * gap    # da destra verso il centro
+        for side, x in (("S", xl), ("D", xr)):
+            it.append(rect("Giri %s%d" % (side, i + 1), x, y0 + hh - h, seg, h, bg=col, radius=3, bind={"BackgroundColor": js(code)}))
+    it.append(text("Giri valore", W / 2 - 100, 60, 200, 24, "7450 RPM", 16, GREY, "Medium",
                    bind={"Text": js("var r = %s;\r\nreturn (r == null) ? '' : Math.round(r) + ' RPM';" % p("Rpms"))}))
     return it
 
