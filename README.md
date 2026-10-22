@@ -27,19 +27,20 @@ Funziona con **Le Mans Ultimate** (dati completi del gioco) e con **iRacing**.
 
 ## Installazione (la prima volta)
 
-1. Scarica l'ultima versione dalla cartella [`release`](release):
-   - [`DTPlugin.dll`](release/DTPlugin.dll) (apri il file e premi il pulsante di download)
-   - [`DT.Dashboard.simhubdash`](release/DT.Dashboard.simhubdash)
+**[⬇ Scarica il pacchetto (DT-Dashboard.zip)](https://github.com/Federico-80/dt-dashboard/raw/main/release/DT-Dashboard.zip)**: dentro ci sono il plugin, la dashboard e le istruzioni.
+
+1. Estrai lo zip.
 2. Chiudi SimHub e copia `DTPlugin.dll` nella cartella di SimHub, quella dove c'è `SimHubWPF.exe`.
    Se Windows lo blocca: tasto destro sul file → Proprietà → **Sblocca**.
 3. Apri SimHub e attiva **DT Plugin** quando te lo chiede.
-4. Fai doppio clic su `DT.Dashboard.simhubdash` per importare la dashboard.
+4. Fai doppio clic su `DT Dashboard.simhubdash` per importare la dashboard.
+5. In **SimHub → DT Plugin** scrivi il tuo **codice di accesso** nella barra rossa e premi **Sblocca**.
+   Il codice te lo dà il team: senza codice plugin e dashboard restano bloccati.
 
 ## Aggiornamenti
 
 Il plugin controlla da solo se su GitHub c'è una versione nuova (file `release/latest.json`).
-Quando c'è, in **SimHub → DT Plugin** compare in alto **"Installa aggiornamento"**.
-Il pulsante scarica plugin e dashboard e li mette a posto da solo: dopo basta **riavviare SimHub**.
+Quando c'è, compare una finestra in SimHub con **"Installa e riavvia SimHub"**: scarica plugin e dashboard, li mette a posto e riavvia SimHub da solo.
 Le tue impostazioni restano, perché sono salvate in `PluginsData\Common\DTPlugin.json`.
 
 Puoi anche controllare a mano con **"Controlla aggiornamenti"** nella pagina del plugin.
