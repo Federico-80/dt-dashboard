@@ -13,7 +13,7 @@ Funziona con **Le Mans Ultimate** (dati completi del gioco) e con **iRacing**.
   - distacchi con nome e categoria, doppiati (+1L);
   - schema danni;
   - stato dell'auto (luci, bandiera, tergicristalli, motore).
-- Delta con i 3 settori colorati: verde = tuo migliore, fucsia = migliore della classe, giallo = più lento.
+- Delta con i 3 settori colorati: verde = tuo migliore (con striscia viola sotto se è anche il migliore della tua categoria), viola = migliore di tutti, giallo = più lento del tuo migliore.
 - Barra strategia gara come quella di RBR32: soste, finestra box, ratio, stint, giri alla fine, energia necessaria, "riempi a". Si attiva subito, come in LMU.
 - Avvisi configurabili:
   - box / pit limiter, con la schermata completa;
