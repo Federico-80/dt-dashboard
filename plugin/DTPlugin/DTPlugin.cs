@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.46";
+        public const string VersionText = "1.47";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -102,6 +102,9 @@ namespace FedeDashboard
                 updateTimer = new System.Threading.Timer(_ => { try { if (!Updater.Busy && !Updater.Installed) Updater.CheckAsync(VersionText); } catch { } },
                     null, TimeSpan.FromMinutes(30), TimeSpan.FromMinutes(30));
                 try { DashBuilder.Build(new List<PageSettings>(Settings.Pages), Settings.Font); } catch (Exception ex) { FedeLog.Error("componi dashboard", ex); }
+                DashBuilder.Started = true;
+                // cerco in SimHub un modo per ricaricare la dashboard senza riavviarlo (scritto nel log)
+                new System.Threading.Thread(() => { System.Threading.Thread.Sleep(15000); DashProbe.Run(); }) { IsBackground = true, Name = "DT sonda" }.Start();
                 BuildRuntime();
                 bridge = new SimHubBridge(this, pluginManager);
                 RegisterProperties();

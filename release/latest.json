@@ -1,5 +1,5 @@
 {
-  "version": "1.46",
-  "notes": "Avviso automatico con finestra quando esce una nuova versione (controllo all'avvio e ogni 30 minuti). Nuova scheda Carattere e aggiornamenti: tipo di carattere, spessore e grandezza dei testi della dashboard.",
+  "version": "1.47",
+  "notes": "Avviso giallo quando cambi la disposizione delle pagine: SimHub vede la nuova dash solo riaprendola, con pulsante per riavviare SimHub. Il log ora elenca i comandi di SimHub per ricaricare la dash.",
   "date": "2026-10-22"
 }

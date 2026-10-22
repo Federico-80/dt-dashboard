@@ -53,6 +53,15 @@ namespace FedeDashboard
       </DockPanel>
     </Border>
 
+    <!-- layout cambiato: SimHub deve ricaricare la dashboard -->
+    <Border x:Name='ReloadBar' DockPanel.Dock='Top' Margin='22,0,22,10' Padding='14,8' CornerRadius='6' Background='#FF3D3500' BorderBrush='#FFFFD600' BorderThickness='1' Visibility='Collapsed'>
+      <DockPanel>
+        <Button x:Name='BtnReload' DockPanel.Dock='Right' Content='Riavvia SimHub ora' Padding='14,4' Margin='12,0,0,0'/>
+        <TextBlock x:Name='ReloadText' VerticalAlignment='Center' TextWrapping='Wrap' Foreground='White' FontSize='13'
+          Text='Hai cambiato la disposizione (cornice, griglie, barra) o il carattere: la dashboard è stata aggiornata, ma SimHub la ricarica solo quando la riapri. Riapri la dash nello schermo oppure riavvia SimHub. Le schede dentro i riquadri invece cambiano subito.'/>
+      </DockPanel>
+    </Border>
+
     <TabControl x:Name='Tabs' Margin='16,0,16,0'>
       <TabItem Header='Schermata iniziale'>
         <ScrollViewer VerticalScrollBarVisibility='Auto'>
@@ -286,6 +295,7 @@ namespace FedeDashboard
             Click("BtnExport", ExportSettings);
             Click("BtnCheckUpdate", () => { plugin.Updater.CheckAsync(DTPlugin.VersionText); ShowUpdate(true); });
             Click("BtnUpdate", () => plugin.Updater.InstallAsync());
+            Click("BtnReload", () => { Save(); FedeLog.Write("Riavvio richiesto per ricaricare la dashboard"); plugin.Updater.RestartSimHub(); });
             Click("BtnImport", ImportSettings);
             Click("BtnReset", ResetEverything);
             tabs = F("Tabs");
@@ -347,6 +357,7 @@ namespace FedeDashboard
             {
                 string tab = "";
                 try { object si = tabs.SelectedItem; if (si != null) tab = Convert.ToString(((dynamic)si).Header); } catch { }
+                try { F("ReloadBar").Visibility = Wpf.Visibility(plugin.DashBuilder.NeedsReload); } catch { }
                 if (tab == "Gomme e freni") UpdateTyreLive();
                 if (tab == "Tempi e posizioni") UpdateTimingLive();
                 if (tab != "Valori (dati)") return;

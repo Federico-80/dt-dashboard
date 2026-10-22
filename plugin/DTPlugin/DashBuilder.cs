@@ -21,6 +21,10 @@ namespace FedeDashboard
         DateTime nextCheck = DateTime.MinValue;
         volatile bool working;
         public volatile string Status = "";
+        /// <summary>True quando la dash e' stata riscritta dopo l'avvio: SimHub la vede solo riaprendola.</summary>
+        public volatile bool NeedsReload;
+        /// <summary>Da mettere a true dopo la prima composizione all'avvio (prima che SimHub carichi la dash).</summary>
+        public volatile bool Started;
 
         public static string DashFolder
         {
@@ -96,7 +100,7 @@ namespace FedeDashboard
             string tpl = File.ReadAllText(tplPath, Encoding.UTF8);
             if (!tpl.Contains("\"@@PAGINE@@\"")) throw new InvalidDataException("modello senza @@PAGINE@@");
             string json = ApplyFont(tpl.Replace("\"@@PAGINE@@\"", string.Join(",", layers)), font);
-            try { ApplyFontToOtherFiles(folder, outPath, font); } catch (Exception ex) { FedeLog.Error("carattere schede", ex); }
+            try { if (ApplyFontToOtherFiles(folder, outPath, font) > 0 && Started) NeedsReload = true; } catch (Exception ex) { FedeLog.Error("carattere schede", ex); }
 
             if (File.Exists(outPath) && File.ReadAllText(outPath, Encoding.UTF8) == json)
             {
@@ -109,6 +113,7 @@ namespace FedeDashboard
             else File.Move(tmp, outPath);
             Status = "Dashboard ricomposta per " + pages.Count + " pagine.";
             FedeLog.Write("Dashboard ricomposta: " + pages.Count + " pagine");
+            if (Started) NeedsReload = true;
             return true;
         }
 
@@ -148,7 +153,7 @@ namespace FedeDashboard
         /// L'originale di ogni file resta in "nome.djson.orig"; se il file e' stato sostituito (dashboard reimportata)
         /// l'originale viene ripreso dal file nuovo.
         /// </summary>
-        static void ApplyFontToOtherFiles(string folder, string mainPath, FontSettings font)
+        static int ApplyFontToOtherFiles(string folder, string mainPath, FontSettings font)
         {
             string stampPath = Path.Combine(folder, DashName + ".carattere");
             var last = new FontSettings();
@@ -160,7 +165,7 @@ namespace FedeDashboard
                 { last.Family = a; last.Weight = b; last.SizePct = c; last.Normalize(); }
             }
             var now = font ?? new FontSettings();
-            if (now.IsDefault && last.IsDefault && !File.Exists(stampPath)) return;   // mai cambiato: niente da fare
+            if (now.IsDefault && last.IsDefault && !File.Exists(stampPath)) return 0;   // mai cambiato: niente da fare
             int changed = 0;
             foreach (var file in Directory.GetFiles(folder, "*.djson"))
             {
@@ -184,6 +189,7 @@ namespace FedeDashboard
             }
             File.WriteAllText(stampPath, now.Key);
             if (changed > 0) FedeLog.Write("Carattere applicato a " + changed + " schede: " + now.Key);
+            return changed;
         }
 
         static int Clamp(int v, int n) { return v < 0 ? 0 : (v >= n ? n - 1 : v); }
