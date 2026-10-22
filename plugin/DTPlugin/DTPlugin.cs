@@ -24,10 +24,11 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.39";
+        public const string VersionText = "1.40";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
+        public readonly DashBuilder DashBuilder = new DashBuilder();
         public PluginManager PluginManager { get; set; }
         public string LeftMenuTitle { get { return "DT Plugin"; } }
 
@@ -96,6 +97,7 @@ namespace FedeDashboard
             {
                 Settings = SettingsStore.Load();
                 Updater.CheckAsync(VersionText);   // controllo aggiornamenti su GitHub in background
+                try { DashBuilder.Build(new List<PageSettings>(Settings.Pages)); } catch (Exception ex) { FedeLog.Error("componi dashboard", ex); }
                 BuildRuntime();
                 bridge = new SimHubBridge(this, pluginManager);
                 RegisterProperties();
@@ -491,6 +493,7 @@ namespace FedeDashboard
                 try { UpdateEngineOff(now, AsBool(GetMember(data, "GameRunning"))); } catch { }
                 try { sectors.Update(now, AsBool(GetMember(data, "GameRunning"))); } catch { }
                 try { UpdateAids(now); } catch { }
+                try { DashBuilder.Tick(Settings, now); } catch { }
                 if (now >= nextStrategy)
                 {
                     nextStrategy = now.AddSeconds(1);

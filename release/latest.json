@@ -1,5 +1,5 @@
 {
-  "version": "1.39",
-  "notes": "Stato degli aggiornamenti sempre visibile in alto; 'Installa e riavvia SimHub' installa e riavvia SimHub da solo.",
+  "version": "1.40",
+  "notes": "Dashboard molto piu' leggera (da 554 a circa 45 sotto-dashboard): ora funziona anche sul VoCore. Il plugin compone la dash con i layout delle tue pagine.",
   "date": "2026-10-22"
 }

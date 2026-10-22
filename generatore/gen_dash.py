@@ -881,6 +881,41 @@ def frame_layer(fi):
     return layer("Cornice %d - %s" % (fi, FRAMES[fi][0]), kids, None, ("Cornice", fi), vis_js=vis_eq("Cornice", fi))
 
 
+# ------------------------------------------------------------------ pagine (dashboard leggera)
+# La dash contiene solo i layout delle pagine configurate (non tutte le combinazioni cornice x griglia x barra):
+# il DT Plugin la ricompone dai "pezzi" quando cambi cornice, griglia o barra di una pagina.
+def piece_grid(fi, key, gi):
+    g = frame_geom(fi)
+    x0, x1 = g["left" if key == "L" else "right"]
+    return [widget("Slot %s%d" % (key, i + 1), x, y, w, h, card_file(w, h), "Slot_%s%d" % (key, i + 1))
+            for i, (x, y, w, h) in enumerate(grid_cells(x0, x1, g["top"], g["bottom"], gi))]
+
+
+def piece_toolbar(fi, ti):
+    if not frame_geom(fi)["toolbar"]:
+        return []
+    return [widget("Slot T%d" % (i + 1), x, y, w, h, card_file(w, h), "Slot_T%d" % (i + 1))
+            for i, (x, y, w, h) in enumerate(toolbar_cells(fi, ti))]
+
+
+def piece_sidebars(fi):
+    if not frame_geom(fi)["sidebars"]:
+        return []
+    return [widget("Barra %s" % k, x, y, w, h, bar_file(w, h), "Slot_" + k)
+            for k, (x, y, w, h) in zip(("SL", "SR"), sidebar_cells(fi))]
+
+
+def page_vis(idx):
+    return "var p = $prop('DTPlugin.Pagina');\r\nif (p == null) { p = 1; }\r\nreturn p == %s;" % idx
+
+
+def page_layer(pi, page):
+    fi = page["frame"]
+    kids = center_items(fi) + piece_grid(fi, "L", page["grid_l"]) + piece_grid(fi, "R", page["grid_r"]) \
+        + piece_toolbar(fi, page["toolbar"]) + piece_sidebars(fi)
+    return layer("Pagina %d" % (pi + 1), kids, None, ("Pagina", pi + 1), vis_js=page_vis(pi + 1))
+
+
 def plugin_warning(big=False):
     """Avviso visibile solo se le proprieta' del DT Plugin non esistono (la dash usa i valori di SimHub)."""
     W, H = DASH_W, DASH_H
@@ -1127,11 +1162,11 @@ def idle_items():
     return it
 
 
-def main_dash():
+def main_dash(pages=None):
     W, H = DASH_W, DASH_H
     idle = idle_items()
     race = [rect("Sfondo", 0, 0, W, H, bg="#FF000000", radius=0)]
-    race += [frame_layer(fi) for fi in range(len(FRAMES))]
+    race += [page_layer(i, pg) for i, pg in enumerate(pages if pages is not None else DEFAULT_PAGES)]
     flag_js = ("if ($prop('DTPlugin.FlagBlue_Valore') > 0) { return '#FF2979FF'; }\r\n"
                "return '#FFFFD600';")
     race.append(rect("Bandiera", 0, 0, W, H, bg="#00000000", border=YELLOW, bw=5, radius=0,
@@ -1369,6 +1404,17 @@ def write_all():
         shutil.rmtree(OUT)
     os.makedirs(os.path.join(folder, "_SHFonts"))
     main, meta = main_dash()
+    # pezzi per il DT Plugin: centro, griglie, barre per ogni cornice (crea anche tutti i file delle schede)
+    pieces = {}
+    for fi in range(len(FRAMES)):
+        pieces["CENTRO_%d" % fi] = center_items(fi)
+        pieces["LATERALI_%d" % fi] = piece_sidebars(fi)
+        for gi in range(len(GRIDS)):
+            pieces["GRIGLIA_%d_L_%d" % (fi, gi)] = piece_grid(fi, "L", gi)
+            pieces["GRIGLIA_%d_R_%d" % (fi, gi)] = piece_grid(fi, "R", gi)
+        for ti in range(len(TOOLBARS)):
+            pieces["BARRA_%d_%d" % (fi, ti)] = piece_toolbar(fi, ti)
+    page_tpl = layer("Pagina @@IDX@@", ["@@FIGLI@@"], None, ("Pagina", 0), vis_js=page_vis("@@IDX@@"))
     files = {DASH_NAME + ".djson": main}
     files.update(CARD_FILES)
     import hashlib, icons
@@ -1395,8 +1441,11 @@ def write_all():
         used = [n for n in ICONS if ('"%s"' % n) in body or ("'%s'" % n) in body
                  or (n.startswith("dt-dz") and "'dt-dz" in body)]      # zone danno scelte a runtime ('dt-dz3-' + livello)
         if used:
-            doc["Images"] = [{"Name": n, "Extension": ".png", "Modified": False, "Optimized": True, "Width": icons.S, "Height": icons.S,
-                              "Length": len(ICONS[n]), "MD5": hashlib.md5(ICONS[n]).hexdigest()} for n in used]
+            import struct
+            def png_size(b):
+                return struct.unpack(">II", b[16:24])
+            doc["Images"] = [{"Name": n, "Extension": ".png", "Modified": False, "Optimized": True, "Width": png_size(ICONS[n])[0],
+                              "Height": png_size(ICONS[n])[1], "Length": len(ICONS[n]), "MD5": hashlib.md5(ICONS[n]).hexdigest()} for n in used]
             with zipfile.ZipFile(os.path.join(folder, fn + ".ressources"), "w", zipfile.ZIP_DEFLATED) as z:
                 for n in used:
                     z.writestr(n + ".png", ICONS[n])
@@ -1405,6 +1454,19 @@ def write_all():
             f.write(body)
     with open(os.path.join(folder, DASH_NAME + ".djson.metadata"), "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, indent=2)
+    # modello della dash (le pagine al posto di "@@PAGINE@@") + pezzi, per il DT Plugin
+    import copy
+    tpl = copy.deepcopy(main)
+    items = tpl["Screens"][1]["Items"]
+    first = next(i for i, it in enumerate(items) if isinstance(it, dict) and str(it.get("Name", "")).startswith("Pagina "))
+    tpl["Screens"][1]["Items"] = [it for it in items if not (isinstance(it, dict) and str(it.get("Name", "")).startswith("Pagina "))]
+    tpl["Screens"][1]["Items"].insert(first, "@@PAGINE@@")
+    with open(os.path.join(folder, DASH_NAME + ".djson.modello"), "w", encoding="utf-8") as f:
+        f.write(json.dumps(strip(tpl), ensure_ascii=False, separators=(",", ":")))
+    with open(os.path.join(folder, DASH_NAME + ".pezzi"), "w", encoding="utf-8", newline="\n") as f:
+        f.write("PAGINA\t" + json.dumps(strip(page_tpl), ensure_ascii=False, separators=(",", ":")) + "\n")
+        for k, v in pieces.items():
+            f.write(k + "\t" + json.dumps(strip(v), ensure_ascii=False, separators=(",", ":")) + "\n")
     os.makedirs(os.path.join(folder, "JavascriptExtensions"))
     with open(os.path.join(folder, "JavascriptExtensions", "DT-Dashboard.js"), "w", encoding="utf-8") as f:
         f.write(js_extension())

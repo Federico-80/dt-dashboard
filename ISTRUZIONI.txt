@@ -35,6 +35,10 @@ IMPORTANTE - CAMBIO NOME (da "Fede" a "DT")
 
 
 2) INSTALLARE LA DASHBOARD
+ (Nota: la dashboard contiene solo i layout delle tue pagine. Quando cambi cornice, griglia o barra
+  di una pagina, il DT Plugin la ricompone da solo in DashTemplates\DT Dashboard. Se lo schermo non
+  si aggiorna subito, riseleziona la dashboard o riavvia SimHub. Così è leggera e funziona anche
+  sugli schermi come il VoCore.)
 --------------------------
  Doppio clic su "DT Dashboard.simhubdash" (oppure SimHub > Dash Studio > Importa).
  È una dashboard 850x480 con due schermate: "Attesa" (gioco chiuso) e "Gara".

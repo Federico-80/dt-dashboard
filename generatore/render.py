@@ -25,7 +25,7 @@ def col(c):
 
 def page_ctx(p):
     d = {"Cornice": p["frame"], "Griglia_L": p["grid_l"], "Griglia_R": p["grid_r"], "BarraInferiore": p["toolbar"],
-         "Slot_SL": p["SL"], "Slot_SR": p["SR"], "MostraPagina": 0}
+         "Slot_SL": p["SL"], "Slot_SR": p["SR"], "MostraPagina": 0, "Pagina": 1}
     for k in ("L", "R", "T", "C"):
         for i, v in enumerate(p[k]):
             d["Slot_%s%d" % (k, i + 1)] = v
@@ -83,7 +83,7 @@ def draw(dr, items, ox, oy, ctx, s, files):
 
 
 def render(page, path, s=2, screen_index=1):
-    main, _ = GEN.main_dash()
+    main, _ = GEN.main_dash([page])
     img = Image.new("RGBA", (GEN.DASH_W * s, GEN.DASH_H * s), (0, 0, 0, 255))
     dr = ImageDraw.Draw(img)
     draw(dr, main["Screens"][screen_index]["Items"], 0, 0, page_ctx(page), s, GEN.CARD_FILES)
