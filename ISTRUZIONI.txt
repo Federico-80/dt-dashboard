@@ -1,0 +1,185 @@
+﻿DT DASHBOARD + FEDE PLUGIN  -  istruzioni
+============================================
+
+La dashboard non usa più il Lovely Plugin: tutti i dati arrivano dal DT Plugin
+(proprietà DTPlugin.*), che a sua volta li legge da SimHub.
+Quindi il plugin va installato, altrimenti la dashboard resta vuota.
+Le impostazioni del plugin sono salvate in PluginsData\Common\DTPlugin.json.
+
+
+IMPORTANTE - CAMBIO NOME (da "Fede" a "DT")
+ Se avevi installato la versione "Fede Plugin":
+  1. chiudi SimHub e CANCELLA il vecchio FedePlugin.dll dalla cartella di SimHub
+     (altrimenti girano due plugin insieme);
+  2. copia DTPlugin.dll al suo posto;
+  3. importa "DT Dashboard.simhubdash" (la vecchia "Fede Dashboard" puoi eliminarla da Dash Studio);
+  4. se avevi collegato i tasti del volante, ricollegali alle azioni DTPlugin.PaginaSuccessiva ecc.
+ Le impostazioni vengono riprese da sole dal vecchio FedePlugin.json.
+
+1) INSTALLARE IL PLUGIN (DTPlugin.dll, già compilato)
+-------------------------------------------------------
+ a. Chiudi SimHub.
+ b. Copia DTPlugin.dll nella cartella di SimHub
+    (di solito C:\Program Files (x86)\SimHub\ , dove c'è SimHubWPF.exe).
+    Se Windows chiede i permessi di amministratore, conferma.
+ c. Se Windows ha "bloccato" il file scaricato: tasto destro su DTPlugin.dll >
+    Proprietà > spunta "Sblocca" > OK.
+ d. Apri SimHub: chiede se attivare il nuovo plugin "DT Plugin" -> Sì.
+    Nel menu a sinistra compare "DT Plugin".
+ Se qualcosa non va, guarda il file PluginsData\Common\DTPlugin.log nella cartella
+ di SimHub (e mandalo a chi ti aiuta).
+
+ Compilarlo da solo (facoltativo): apri DTPlugin.sln con Visual Studio 2022 Community,
+ scegli "Release" e Compila > Compila soluzione (se SimHub non è in
+ C:\Program Files (x86)\SimHub\ correggi <SimHubPath> in DTPlugin.csproj).
+
+
+2) INSTALLARE LA DASHBOARD
+--------------------------
+ Doppio clic su "DT Dashboard.simhubdash" (oppure SimHub > Dash Studio > Importa).
+ È una dashboard 850x480 con due schermate: "Attesa" (gioco chiuso) e "Gara".
+ Niente è bloccato: in Dash Studio puoi spostare e modificare tutto.
+
+
+3) SCEGLIERE COSA VEDERE  (SimHub > DT Plugin)
+------------------------------------------------
+ Scheda "Schermata iniziale"  (quella che si vede prima di entrare in gioco)
+  - Numero e nome del pilota (si/no, testo, colore).
+  - Sfondo: colore o sfumatura (verticale / orizzontale / dal centro) con 2 colori,
+    oppure un'immagine dal PC ("Scegli…"), oppure animato (scie in movimento o "respiro").
+  - Orologio in alto e scritta "In attesa del gioco" si/no.  A destra l'anteprima.
+  - Motore spento: in gioco, con il motore fermo, il riquadro della marcia diventa giallo con
+    "MOTORE SPENTO" e la marcia (oppure, a scelta, tutto lo schermo nero). Si può disattivare.
+  - Stemma: cerchio con colore, bordo (colore e spessore), logo (PNG, meglio trasparente) e nome dentro.
+    "Preset: DT Racing Team" imposta tutto con il logo DT già incluso nel plugin.
+
+ Scheda "Pagine e layout"
+  - Pagina: crea, duplica, rinomina, elimina, sposta. "Attiva da sola in" Prove/Qualifica/Gara:
+    la pagina si apre automaticamente in quel tipo di sessione.
+  - Barre: Entrambe / Solo in basso / Solo laterali / Nessuna / Doppia + laterali / Doppia in basso.
+    Riquadri in basso: 3, 4, 5, 6 oppure 1 largo.
+    "Doppia": due righe in basso, sopra i riquadri scelti (3-6) e sotto un riquadro largo (l'ultimo),
+    pensato per la scheda "Strategia gara".
+  - Griglia lato sinistro / destro: clicca la miniatura che preferisci.
+  - Anteprima: CLIC su un riquadro -> a destra la tavolozza delle schede per categoria, clic sulla scheda.
+               TRASCINA un riquadro sopra un altro -> li scambi.   TASTO DESTRO -> svuoti il riquadro.
+  Ogni modifica si vede subito sulla dashboard.
+
+ Scheda "Avvisi"
+  Cinque avvisi che compaiono sopra la dashboard
+  (priorità: box > danni > bandiere > cambio valori > fine giro):
+  - Box / limitatore: compare solo col limitatore davvero inserito (letto dalla telemetria LMU);
+    Schermata "Completa" (predefinita): blu pieno con auto davanti e dietro (numero, classe, nome,
+    distacco), tempo in corsia box, velocità, marcia, giri motore e posizione. "Semplice" = come prima;
+    "Anche in corsia box" lo mostra anche senza limitatore (spento di serie).
+  - Danni: quando prendi un colpo compare lo schema della macchina vista dall'alto con la zona
+    colpita (giallo = lieve, arancione = medio, rosso = grave) e le gomme forate (arancio) o perse (rosso).
+    I danni arrivano dalla telemetria di LMU (8 zone: muso, angoli, fiancate, posteriore, alettone).
+    Lo stesso schema si può tenere fisso in un riquadro: scheda "Danni (schema auto)".
+    Accanto all'auto, se c'è spazio: stato di ogni angolo (OK / LIEVE / MEDIO / GRAVE, oppure FORATA / PERSA)
+    e AERO (muso + alettone). LMU non fornisce i danni alle sospensioni: l'angolo indica l'ammaccatura
+    di quella zona e lo stato della gomma.
+  - Bandiere: compaiono SOPRA LA VELOCITÀ (al centro) (colore della bandiera + nome).
+    In "Dove" puoi scegliere invece "Avviso a schermo".
+    Gialla, blu, nera, bianca, arancione (meatball) restano finché sono esposte;
+    verde e scacchi per qualche secondo. Con "Del colore della bandiera" lo sfondo prende il colore
+    della bandiera. Con LMU gialla e blu sono lette dal punteggio del gioco (gialla nel tuo settore,
+    full course yellow, blu per te); le altre da SimHub. I cambi della gialla finiscono in DTPlugin.log.
+  - Cambio valori: quando cambi TC, TC Cut, ABS, BB, mappa... mostra il nuovo valore per qualche secondo.
+  - Fine giro: a ogni giro mostra fino a 4 valori a scelta (es. ultimo giro, diff. dal migliore,
+    consumo del giro, giri di carburante).
+  Per ognuno: attivo sì/no, dimensione (pieno schermo / metà / piccolo), posizione (centro/alto/basso),
+  colore sfondo (o codice #RRGGBB), trasparenza, colore testo, durata, titolo.
+  "Prova" lo mostra subito sulla dashboard.
+
+ Scheda "Gomme e freni"
+  - Fonte della temperatura gomme (numero grande): per LMU letta dalla telemetria del gioco come
+    nella correzione fatta sulla Lovely. Scegli: Carcassa (predefinita), Strato interno, Superficie
+    (media o centro) oppure il valore standard di SimHub. Correzione in °C facoltativa.
+  - Soglie dei colori per gomme, freni e pressioni: blu sotto "freddo", verde a "ottimale",
+    rosso sopra "caldo" (sfumato in mezzo).
+  - In basso vedi i valori attuali delle 4 gomme per controllare.
+  Scheda da usare nella dashboard: "Gomme complete (temp. carcassa, pressione, freni)".
+
+ Scheda "Tempi e posizioni"  (come le "Timing Options" della Lovely)
+  - Giro stimato e delta: Gioco (delta calcolato da LMU), SimHub, oppure Post-It Note Racing.
+  - Distacchi avanti/dietro: assoluti oppure solo nella tua classe.
+  - Posizione: assoluta, nella classe (calcolata da SimHub) oppure Post-It Note Racing (classe).
+  Le opzioni Post-It sono attive solo se il plugin Post-It Note Racing è installato in SimHub.
+  In basso vedi i valori attuali.
+
+ Scheda "Valori (dati)"
+  - Per ogni valore: etichetta, proprietà SimHub da cui leggerlo, decimali, unità.
+  - "Valore attuale" si aggiorna dal vivo: serve a controllare che la proprietà sia giusta.
+  - TC CUT è vuoto di default: inserisci la proprietà giusta per il tuo gioco
+    (la trovi in SimHub fra le proprietà disponibili).
+  - Custom1..6 = valori liberi, si vedono con le schede "Personalizzato 1..6".
+
+
+4) CAMBIARE PAGINA DAL VOLANTE
+------------------------------
+ SimHub > Controlli ed eventi > Nuova mappatura, azione:
+   DTPlugin.PaginaSuccessiva   /   DTPlugin.PaginaPrecedente
+   DTPlugin.VaiAPagina1 ... DTPlugin.VaiAPagina6
+
+
+5) SCHEDE DISPONIBILI
+---------------------
+ Gomme (pressione+temperatura), Gomme (temperature), Usura gomme, Temperature freni,
+ Tempi giro, Carburante, Sessione, Distacchi, Pedali, Meteo, Motore (acqua/olio),
+ Assetto (TC/ABS/BB/MAP), Delta, e schede singole: TC, TC Cut, ABS, BB, Mappa, Posizione,
+ Giro, Tempo rimasto, Ultimo/Miglior/Stimato giro, Velocità, Giri motore, Carburante
+ (litri/giri/consumo), ERS, Ora, Distacco avanti/dietro, Temp. aria/pista, Personalizzato 1-6.
+ Barre laterali: Giri motore, Gas, Freno, Frizione, Carburante, ERS.
+ Sempre visibili al centro: delta, marcia (sfondo blu col limitatore, ROSSO quando sei sui giri
+ da cambiata / linea rossa), giri + barra, velocità.
+ Schede TC, TC Cut, TC Slip e ABS: il riquadro si illumina (azzurro TC, arancione ABS) quando interviene.
+ Scheda "Danni (schema auto)" nella categoria Gomme e freni.
+ Scheda "Strategia gara (soste, finestra, rifornimento)" (categoria Carburante ed energia), come la barra LMU di RBR32.
+  Mettila nella barra in basso scegliendo "1 riquadro largo" (pulsante "1" in Pagine e layout): così ha tutte le colonne.
+  SOSTE = soste che servono per finire; FINESTRA = giri in cui puoi fermarti (rossa = non ancora aperta,
+  verde = aperta / box al prossimo giro, grigia = niente rifornimento); RATIO = rapporto carburante/energia
+  consigliato (auto con energia virtuale); STINT = tempo fino alla chiusura della finestra; GIRI = giri alla fine;
+  RIEMPI A = a quanto riempire se ti fermi in questo giro, al prossimo o all'ultimo utile (% energia o litri).
+  NECESSARIA = energia (o carburante) che manca per arrivare alla fine, come "VE necessaria" di LMU.
+  Si attiva subito in gara, come LMU: basta un consumo per giro (stima dei plugin LMU/SimHub) e un tempo sul giro
+  (prima del tuo primo giro usa i migliori giri della tua classe). Usa gli stessi consumi delle schede carburante/energia.
+ Scheda "Meteo": icone + valori di temperatura pista, temperatura aria, pista bagnata % e pioggia %
+  (bagnato e pioggia letti da LMU). Nei riquadri bassi e stretti mostra solo pista e aria.
+ Scheda "Motore (acqua/olio)": icone acqua e olio con le temperature.
+ Schede "Carburante (barra + giri)" e "Energia virtuale (barra + giri)" (categoria Carburante ed energia):
+  barra che si svuota, litri o % rimasti e tra parentesi i giri che riesci ancora a fare
+  Come la dash RBR32: i giri di ENERGIA arrivano dai plugin LMU se ne hai uno installato
+  (TweaksOnTrack, LMU NeoRed o doX SessionData); senza, li calcola il DT Plugin.
+  I giri di CARBURANTE: stima di SimHub, altrimenti litri / consumo dell'ultimo giro.
+  Nella scheda "Tempi e posizioni" del plugin vedi da quale fonte arrivano.
+  (carburante: stima di SimHub sul consumo medio; energia: media degli ultimi 5 giri PULITI:
+  non contano il giro di uscita dai box/garage, il giro di rientro, il giro a metà quando avvii SimHub
+  e i giri molto diversi dagli altri, es. sotto FCY).
+ Scheda "Stato auto (luci, bandiera, tergi, motore)" nella categoria Sessione e gara: 4 riquadri con
+  luci (azzurro = accese), bandiera (il riquadro prende il colore della bandiera esposta),
+  tergicristalli (A = automatico, 1 = lento, 2 = veloce), motore (giallo = quadro acceso, verde = in moto).
+ Settori sotto il delta (centrale e scheda Delta): 3 barre, fucsia = miglior settore della tua classe,
+  verde = tuo miglior settore, giallo = più lento del tuo migliore, grigio = non ancora fatto.
+  A fine giro le 3 barre si azzerano (tornano grigie). Dati dal punteggio di LMU.
+
+
+6) IRACING
+----------
+ Il plugin riconosce da solo il gioco. Con iRacing:
+  - distacchi, nomi, categorie (con il colore della classe di iRacing) e doppiati (+1L) dalla classifica di SimHub;
+  - bandiere da SimHub; meteo: pista bagnata (TrackWetness) e pioggia (Precipitation) di iRacing;
+  - TC2 e mappa (miscela) dai comandi di iRacing quando la proprietà normale non c'è;
+  - settori sotto il delta dai tempi settore di SimHub: verde = tuo migliore, giallo = più lento
+    (il fucsia "migliore della classe" non c'è: iRacing non dà i settori degli altri);
+  - carburante, giri di carburante e barra strategia (solo carburante) come per LMU.
+ Cosa iRacing non fornisce in pista: temperature/pressioni/usura gomme dal vivo (solo ai box),
+ temperature freni, danni, energia virtuale. Quelle schede restano vuote o con l'ultimo valore dei box.
+
+7) MODIFICHE FUTURE (facoltativo)
+---------------------------------
+ La cartella "generatore" contiene gli script Python che hanno creato dashboard e catalogo:
+ catalog.py è l'elenco unico di valori, schede e griglie. Dopo una modifica:
+   python gen_dash.py      -> rigenera la dashboard (cartella build)
+   python gen_cs.py ..\DTPlugin\Catalog.generated.cs   -> aggiorna il plugin
+ e ricompila il plugin. Servono i font Roboto nella sottocartella "fonts".

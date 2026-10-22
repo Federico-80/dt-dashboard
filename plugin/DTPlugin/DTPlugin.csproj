@@ -1,0 +1,46 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    DT Plugin per SimHub.
+    Se SimHub NON e' installato in "C:\Program Files (x86)\SimHub\", cambia SimHubPath qui sotto.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <OutputType>Library</OutputType>
+    <AssemblyName>DTPlugin</AssemblyName>
+    <RootNamespace>FedeDashboard</RootNamespace>
+    <LangVersion>7.3</LangVersion>
+    <Version>1.0.0</Version>
+    <Product>DT Plugin</Product>
+    <Authors>Fede</Authors>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <SimHubPath Condition="'$(SimHubPath)' == ''">C:\Program Files (x86)\SimHub\</SimHubPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+
+    <Reference Include="SimHub.Plugins">
+      <HintPath>$(SimHubPath)SimHub.Plugins.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="GameReaderCommon">
+      <HintPath>$(SimHubPath)GameReaderCommon.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- Dopo la compilazione copia DTPlugin.dll nella cartella di SimHub (chiudi SimHub prima di compilare). -->
+  <Target Name="CopiaInSimHub" AfterTargets="Build" Condition="Exists('$(SimHubPath)SimHub.Plugins.dll')">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(SimHubPath)" ContinueOnError="true" />
+    <Message Importance="high" Text="DTPlugin.dll copiato in $(SimHubPath)" />
+  </Target>
+
+</Project>
