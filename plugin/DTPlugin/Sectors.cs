@@ -8,7 +8,9 @@ namespace FedeDashboard
 {
     /// <summary>
     /// Colori dei 3 settori dal punteggio LMU (GameRawData.CurrentPlayer / Scoring.mVehicles).
-    /// Fucsia = miglior settore della classe, verde = tuo miglior settore, giallo = piu' lento del tuo migliore.
+    /// Verde = tuo miglior settore (con striscia viola sotto se e' anche il migliore della tua classe),
+    /// tutto viola = migliore di tutti (tutte le classi), giallo = piu' lento del tuo migliore.
+    /// Senza tempi degli altri da confrontare (es. primo giro) resta verde.
     /// Durante il settore 1 mostra i settori del giro appena finito.
     /// </summary>
     public class SectorTracker
@@ -18,6 +20,7 @@ namespace FedeDashboard
         readonly Func<string, object> raw;
         readonly double[] myBest = { double.NaN, double.NaN, double.NaN };
         readonly string[] cur = { Grey, Grey, Grey }, last = { Grey, Grey, Grey };
+        readonly bool[] curStrip = new bool[3], lastStrip = new bool[3];
         bool showLast;
         double prevCur1 = -1, prevCur2 = -1;
         int prevLaps = -1;
@@ -69,9 +72,16 @@ namespace FedeDashboard
             return showLast ? last[i] : cur[i];
         }
 
+        /// <summary>Striscia viola sotto la barra: tuo migliore ed e' il migliore della tua classe.</summary>
+        public bool Strip(int i)
+        {
+            if (i < 0 || i > 2) return false;
+            return showLast ? lastStrip[i] : curStrip[i];
+        }
+
         public void Reset()
         {
-            for (int i = 0; i < 3; i++) { myBest[i] = double.NaN; cur[i] = Grey; last[i] = Grey; }
+            for (int i = 0; i < 3; i++) { myBest[i] = double.NaN; cur[i] = Grey; last[i] = Grey; curStrip[i] = false; lastStrip[i] = false; }
             showLast = false; prevCur1 = -1; prevCur2 = -1; prevLaps = -1; pendingS3 = false;
         }
 
@@ -91,13 +101,13 @@ namespace FedeDashboard
             // settore 1 completato
             if (cur1 > 0 && prevCur1 <= 0)
             {
-                cur[0] = Judge(0, cur1);
-                cur[1] = Grey; cur[2] = Grey;
+                cur[0] = Judge(0, cur1, out curStrip[0]);
+                cur[1] = Grey; cur[2] = Grey; curStrip[1] = false; curStrip[2] = false;
                 showLast = false;
             }
             // settore 2 completato
             if (!double.IsNaN(cur2) && cur2 > 0 && prevCur2 <= 0 && cur1 > 0)
-                cur[1] = Judge(1, cur2 - cur1);
+                cur[1] = Judge(1, cur2 - cur1, out curStrip[1]);
 
             // giro completato -> settore 3 (il tempo del giro puo' arrivare un attimo dopo)
             if (prevLaps >= 0 && lapsI == prevLaps + 1) { pendingS3 = true; pendingUntil = now.AddSeconds(3); }
@@ -106,10 +116,10 @@ namespace FedeDashboard
                 double lastLap = N(src("CurrentPlayer.mLastLapTime")), last2 = N(src("CurrentPlayer.mLastSector2"));
                 if (lastLap > 0 && last2 > 0 && lastLap > last2)
                 {
-                    cur[2] = Judge(2, lastLap - last2);
-                    Array.Copy(cur, last, 3);
+                    cur[2] = Judge(2, lastLap - last2, out curStrip[2]);
+                    Array.Copy(cur, last, 3); Array.Copy(curStrip, lastStrip, 3);
                     showLast = false;   // a fine giro le 3 barre si azzerano (grigie)
-                    for (int i = 0; i < 3; i++) cur[i] = Grey;
+                    for (int i = 0; i < 3; i++) { cur[i] = Grey; curStrip[i] = false; }
                     pendingS3 = false;
                 }
                 else if (now > pendingUntil)
@@ -117,27 +127,29 @@ namespace FedeDashboard
                     // giro non valido / senza tempo: mostra quel che c'e' e riparti
                     Array.Copy(cur, last, 3);
                     showLast = false;   // a fine giro le 3 barre si azzerano (grigie)
-                    for (int i = 0; i < 3; i++) cur[i] = Grey;
+                    for (int i = 0; i < 3; i++) { cur[i] = Grey; curStrip[i] = false; }
                     pendingS3 = false;
                 }
             }
             prevCur1 = cur1; prevCur2 = double.IsNaN(cur2) ? -1 : cur2; prevLaps = lapsI;
         }
 
-        string Judge(int i, double t)
+        string Judge(int i, double t, out bool strip)
         {
+            strip = false;
             if (!(t > 0) || t > 3600) return Grey;
-            double classBest = genericMode ? double.NaN : ClassBest(i);
             bool personal = double.IsNaN(myBest[i]) || t <= myBest[i] + 0.0005;
             if (personal) myBest[i] = double.IsNaN(myBest[i]) ? t : Math.Min(myBest[i], t);
-            // senza i settori degli altri (iRacing) il fucsia non si puo' calcolare: solo verde / giallo
-            if (genericMode) return personal ? Green : Yellow;
-            if (personal && (double.IsNaN(classBest) || t <= classBest + 0.0005)) return Purple;
-            return personal ? Green : Yellow;
+            if (!personal) return Yellow;
+            // senza i settori degli altri (iRacing) il viola non si puo' calcolare: solo verde / giallo
+            if (genericMode) return Green;
+            double overall = OthersBest(i, false), cls = OthersBest(i, true);
+            // viola solo se batte tempi veri degli altri: senza confronto (primo giro, nessun tempo) resta verde
+            if (!double.IsNaN(overall) && t <= overall + 0.0005) return Purple;
+            if (!double.IsNaN(cls) && t <= cls + 0.0005) strip = true;
+            return Green;
         }
-
-        /// <summary>Miglior settore i delle altre auto della mia classe (NaN se non disponibile).</summary>
-        double ClassBest(int i)
+        double OthersBest(int i, bool sameClass)
         {
             double best = double.NaN;
             try
@@ -149,7 +161,7 @@ namespace FedeDashboard
                 {
                     if (v == null) continue;
                     if (N(Get(v, "mIsPlayer")) > 0) continue;
-                    if (myClass.Length > 0 && Str(Get(v, "mVehicleClass")) != myClass) continue;
+                    if (sameClass && myClass.Length > 0 && Str(Get(v, "mVehicleClass")) != myClass) continue;
                     double b1 = N(Get(v, "mBestSector1")), b2 = N(Get(v, "mBestSector2")), bl = N(Get(v, "mBestLapTime"));
                     double t = i == 0 ? b1 : (i == 1 ? (b2 > 0 && b1 > 0 ? b2 - b1 : double.NaN) : (bl > 0 && b2 > 0 ? bl - b2 : double.NaN));
                     if (t > 0 && (double.IsNaN(best) || t < best)) best = t;

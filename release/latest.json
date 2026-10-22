@@ -1,5 +1,5 @@
 {
-  "version": "1.43",
-  "notes": "Aggiornamenti letti dalle API di GitHub (sempre aggiornati). Bandiera gialla: se LMU non passa le gialle di settore si usa quella di SimHub.",
+  "version": "1.44",
+  "notes": "Settori: verde = tuo migliore, striscia viola sotto = migliore della tua categoria, tutto viola = migliore di tutti, giallo = più lento. Al primo giro verde, non più viola.",
   "date": "2026-10-22"
 }

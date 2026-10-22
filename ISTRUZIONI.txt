@@ -167,8 +167,10 @@ IMPORTANTE - CAMBIO NOME (da "Fede" a "DT")
  Scheda "Stato auto (luci, bandiera, tergi, motore)" nella categoria Sessione e gara: 4 riquadri con
   luci (azzurro = accese), bandiera (il riquadro prende il colore della bandiera esposta),
   tergicristalli (A = automatico, 1 = lento, 2 = veloce), motore (giallo = quadro acceso, verde = in moto).
- Settori sotto il delta (centrale e scheda Delta): 3 barre, fucsia = miglior settore della tua classe,
-  verde = tuo miglior settore, giallo = più lento del tuo migliore, grigio = non ancora fatto.
+ Settori sotto il delta (centrale e scheda Delta): 3 barre.
+  verde = tuo miglior settore; verde con striscia viola sotto = tuo migliore e anche il migliore della tua categoria;
+  tutto viola = migliore di tutti (tutte le categorie); giallo = più lento del tuo migliore; grigio = non ancora fatto.
+  Se nessun altro ha ancora un tempo (es. primo giro) il tuo settore è verde.
   A fine giro le 3 barre si azzerano (tornano grigie). Dati dal punteggio di LMU.
 
 
@@ -179,7 +181,7 @@ IMPORTANTE - CAMBIO NOME (da "Fede" a "DT")
   - bandiere da SimHub; meteo: pista bagnata (TrackWetness) e pioggia (Precipitation) di iRacing;
   - TC2 e mappa (miscela) dai comandi di iRacing quando la proprietà normale non c'è;
   - settori sotto il delta dai tempi settore di SimHub: verde = tuo migliore, giallo = più lento
-    (il fucsia "migliore della classe" non c'è: iRacing non dà i settori degli altri);
+    (viola e striscia viola non ci sono: iRacing non dà i settori degli altri);
   - carburante, giri di carburante e barra strategia (solo carburante) come per LMU.
  Cosa iRacing non fornisce in pista: temperature/pressioni/usura gomme dal vivo (solo ai box),
  temperature freni, danni, energia virtuale. Quelle schede restano vuote o con l'ultimo valore dei box.

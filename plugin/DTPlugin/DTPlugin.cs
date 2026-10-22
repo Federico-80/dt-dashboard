@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.43";
+        public const string VersionText = "1.44";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -165,7 +165,7 @@ namespace FedeDashboard
             bridge.Attach("Attesa_NomeColore", () => NormalizeColor(Settings.Idle.NameColor, "#FFFFFFFF"));
             bridge.Attach("Attesa_Modo", () => Settings.Idle.Mode);
             sectors = new SectorTracker(p => Raw(p), p => bridge.GetPropertyValue(p));
-            for (int i = 0; i < 3; i++) { int si = i; bridge.Attach("Settore_" + (si + 1) + "_Colore", () => sectors.Color(si)); }
+            for (int i = 0; i < 3; i++) { int si = i; bridge.Attach("Settore_" + (si + 1) + "_Colore", () => sectors.Color(si)); bridge.Attach("Settore_" + (si + 1) + "_Striscia", () => sectors.Strip(si)); }
             foreach (var key in new[] { "Attiva", "Soste", "Finestra", "FinestraColore", "Ratio", "Stint", "Giri", "Necessaria", "Questo", "Prossimo", "Chiusura" })
             {
                 string kk = key;

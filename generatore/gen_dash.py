@@ -84,13 +84,18 @@ SECTOR_GREY = "#FF4A4A4A"
 
 
 def sector_bars(x, y, w, h, gap=4):
-    """3 barre dei settori: verde = tuo migliore, fucsia = migliore della classe, giallo = piu' lento del tuo migliore."""
+    """3 barre dei settori: verde = tuo migliore (striscia viola = migliore della classe), viola = migliore di tutti, giallo = piu' lento."""
     bw = (w - 2 * gap) / 3.0
     samples = ["#FFD500F9", "#FFD500F9", SECTOR_GREY]
     it = []
     for i in range(3):
         it.append(rect("Settore %d" % (i + 1), x + i * (bw + gap), y, bw, h, bg=samples[i], radius=min(3, h / 2), bindings={
             "BackgroundColor": js("var c = $prop('DTPlugin.Settore_%d_Colore');\r\nreturn c ? c : '%s';" % (i + 1, SECTOR_GREY))}))
+    # striscia viola sotto: tuo migliore ed e' anche il migliore della tua classe
+    sh = max(2, int(round(h * 0.28)))
+    for i in range(3):
+        it.append(rect("Settore %d classe" % (i + 1), x + i * (bw + gap), y + h - sh, bw, sh, bg="#FFD500F9", radius=min(3, sh // 2), bindings={
+            "Visible": js("return $prop('DTPlugin.Settore_%d_Striscia') == true;" % (i + 1))}))
     return it
 
 
