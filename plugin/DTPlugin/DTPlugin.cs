@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.60";
+        public const string VersionText = "1.61";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -1387,7 +1387,7 @@ namespace FedeDashboard
             {
                 var rt = Find(singleId);
                 alertTitle = rt != null ? rt.Settings.Label : "";
-                alertL[0] = string.IsNullOrEmpty(a.Title) ? "" : a.Title;
+                alertL[0] = "";   // cambio valori: solo il valore, nessuna scritta sotto
             }
             else alertTitle = titleOverride ?? a.Title ?? "";
             alertN = n;

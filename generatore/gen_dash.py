@@ -974,7 +974,7 @@ def pit_box_items():
     bgcol = js("var c = $prop('DTPlugin.Avviso_Sfondo');\r\nreturn c ? c : '#FF0000FF';")
     tb = {"TextColor": tcol}
     it = [rect("Box sfondo", 0, 0, W, H, bg="#FF0000FF", radius=0, bindings={"BackgroundColor": bgcol}),
-          text("Box titolo", 0, 16, W, 64, "[DTPlugin.Avviso_Titolo]", "PIT LIMITER", 40, WHITE, bindings=dict(tb))]
+          text("Box titolo", 0, 16, W, 64, "[DTPlugin.Avviso_Titolo]", "PIT LIMITER", 30, WHITE, weight="Medium", bindings=dict(tb))]
 
     def car(side, badge_y, name_y, gap_y, sample):
         nm, num, cls = sample
@@ -1018,7 +1018,7 @@ def alert_layer():
                   border_bind=None if full else tcol)
         th = round(h * (0.17 if not full else 0.15))
         kids = [bg, text("Avviso titolo", x + 10, y + h * 0.03, w - 20, th, "[DTPlugin.Avviso_Titolo]", "PIT LIMITER",
-                         fit(w - 20, th, 12, 0.8), WHITE, weight="Black", bindings={"TextColor": tcol})]
+                         int(fit(w - 20, th, 12, 0.8) * 0.7), WHITE, weight="Bold", bindings={"TextColor": tcol})]
         iy = y + h * 0.03 + th
         ih = y + h - iy - h * 0.05
         ix, iw = x + w * 0.04, w * 0.92
@@ -1040,8 +1040,16 @@ def alert_layer():
                 items.append(text("Avviso nome %d" % (i + 1), cx, cy + vh, cw, rh - vh, "[DTPlugin.Avviso_L%d]" % (i + 1),
                                   ["KM/H", "ULTIMO", "CONSUMO", "GIRI CARB."][i], lfs, WHITE, weight="Medium", va=0,
                                   bindings={"TextColor": tcol}))
-            nl.append(layer("Valori %d" % n, items, None, ("Avviso_N", n),
-                            vis_js="return $prop('DTPlugin.Avviso_N') == %d && $prop('DTPlugin.Avviso_Danni') !== true;" % n))
+            if n == 1:
+                # un solo valore senza scritta sotto (cambio valori): il valore usa tutto lo spazio
+                solo = [text("Avviso valore solo", ix, iy, iw, ih, "[DTPlugin.Avviso_V1]", "4",
+                             fit(iw - 10, ih * 0.85, 6, 0.85, cap=260), WHITE, bindings={"TextColor": tcol})]
+                nl.append(layer("Valore solo", solo, None, ("Avviso_Solo", 1),
+                                vis_js="var l = $prop('DTPlugin.Avviso_L1');\r\nreturn $prop('DTPlugin.Avviso_N') == 1 && (l == null || l === '') && $prop('DTPlugin.Avviso_Danni') !== true;"))
+                vis = ("var l = $prop('DTPlugin.Avviso_L1');\r\nreturn $prop('DTPlugin.Avviso_N') == 1 && l != null && l !== '' && $prop('DTPlugin.Avviso_Danni') !== true;")
+            else:
+                vis = "return $prop('DTPlugin.Avviso_N') == %d && $prop('DTPlugin.Avviso_Danni') !== true;" % n
+            nl.append(layer("Valori %d" % n, items, None, ("Avviso_N", n), vis_js=vis))
         kids += nl
         kids.append(layer("Schema danni", damage_items(ix, iy, iw, ih), None, ("Avviso_Danni", 1),
                           vis_js="return $prop('DTPlugin.Avviso_Danni') === true;"))

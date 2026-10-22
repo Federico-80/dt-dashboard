@@ -1083,9 +1083,12 @@ namespace FedeDashboard
                 body.Children.Add(r);
             }
 
-            r = LRow(a.Id == "Change" ? "Scritta sotto il valore" : "Titolo");
-            r.Children.Add(TextInput(a.Title, 220, v => { a.Title = v; AlertChanged(); }));
-            body.Children.Add(r);
+            if (a.Id != "Change")   // il cambio valori mostra solo nome e valore
+            {
+                r = LRow("Titolo");
+                r.Children.Add(TextInput(a.Title, 220, v => { a.Title = v; AlertChanged(); }));
+                body.Children.Add(r);
+            }
 
             if (a.Id == "Damage" || a.Id == "Flag")
             {

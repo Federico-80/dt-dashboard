@@ -1,5 +1,5 @@
 {
-  "version": "1.60",
-  "notes": "Parte centrale senza bordi bianchi; nuova opzione per lo spessore dei bordi (centro e schede) in Aspetto e aggiornamenti.",
+  "version": "1.61",
+  "notes": "Avviso cambio valori: solo nome e valore, senza scritta sotto. Titoli degli avvisi meno grossi.",
   "date": "2026-10-22"
 }
