@@ -21,10 +21,13 @@ namespace FedeDashboard
         DateTime nextCheck = DateTime.MinValue;
         volatile bool working;
         public volatile string Status = "";
+        public bool Working { get { return working; } }
         /// <summary>True quando la dash e' stata riscritta dopo l'avvio: SimHub la vede solo riaprendola.</summary>
         public volatile bool NeedsReload;
         /// <summary>Da mettere a true dopo la prima composizione all'avvio (prima che SimHub carichi la dash).</summary>
         public volatile bool Started;
+        /// <summary>Chiamata (sul thread del builder) quando la dash e' stata riscritta dopo l'avvio.</summary>
+        public Func<bool> ReloadDash;
 
         public static string DashFolder
         {
@@ -52,7 +55,15 @@ namespace FedeDashboard
             var font = s.Font;
             new Thread(() =>
             {
-                try { if (Build(pages, font)) lastSignature = sig; }
+                try
+                {
+                    if (Build(pages, font)) lastSignature = sig;
+                    if (NeedsReload && ReloadDash != null)
+                    {
+                        Thread.Sleep(300);
+                        if (ReloadDash()) { NeedsReload = false; Status = "Dashboard aggiornata e ricaricata in SimHub."; }
+                    }
+                }
                 catch (Exception ex) { Status = "Errore nel comporre la dashboard: " + ex.Message; FedeLog.Error("componi dashboard", ex); }
                 finally { working = false; }
             }) { IsBackground = true, Name = "DT dash builder" }.Start();

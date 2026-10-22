@@ -58,7 +58,7 @@ namespace FedeDashboard
       <DockPanel>
         <Button x:Name='BtnReload' DockPanel.Dock='Right' Content='Riavvia SimHub ora' Padding='14,4' Margin='12,0,0,0'/>
         <TextBlock x:Name='ReloadText' VerticalAlignment='Center' TextWrapping='Wrap' Foreground='White' FontSize='13'
-          Text='Hai cambiato la disposizione (cornice, griglie, barra) o il carattere: la dashboard è stata aggiornata, ma SimHub la ricarica solo quando la riapri. Riapri la dash nello schermo oppure riavvia SimHub. Le schede dentro i riquadri invece cambiano subito.'/>
+          Text='Hai cambiato la disposizione o il carattere, ma SimHub non è riuscito a ricaricare la dashboard da solo. Riapri la dash nello schermo oppure riavvia SimHub.'/>
       </DockPanel>
     </Border>
 
@@ -357,7 +357,7 @@ namespace FedeDashboard
             {
                 string tab = "";
                 try { object si = tabs.SelectedItem; if (si != null) tab = Convert.ToString(((dynamic)si).Header); } catch { }
-                try { F("ReloadBar").Visibility = Wpf.Visibility(plugin.DashBuilder.NeedsReload); } catch { }
+                try { F("ReloadBar").Visibility = Wpf.Visibility(plugin.DashBuilder.NeedsReload && !plugin.DashBuilder.Working); } catch { }
                 if (tab == "Gomme e freni") UpdateTyreLive();
                 if (tab == "Tempi e posizioni") UpdateTimingLive();
                 if (tab != "Valori (dati)") return;

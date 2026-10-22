@@ -1,5 +1,5 @@
 {
-  "version": "1.48",
-  "notes": "Aggiornamenti letti dai file normali di GitHub (niente più errore 403 per troppe richieste); le API restano come riserva.",
+  "version": "1.49",
+  "notes": "Cambi di disposizione (cornice, griglie, barra) e carattere visibili subito: il plugin fa ricaricare a SimHub la dashboard da solo.",
   "date": "2026-10-22"
 }
