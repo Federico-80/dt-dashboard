@@ -2,7 +2,6 @@
 
 Dashboard per SimHub (850×480) con il suo plugin, **DT Plugin**, che decide cosa mostrare e come.
 Funziona con **Le Mans Ultimate** (dati completi del gioco) e con **iRacing**.
-Non serve il Lovely Plugin.
 
 ## Cosa fa
 
