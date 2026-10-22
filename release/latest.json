@@ -1,5 +1,5 @@
 {
-  "version": "1.47",
-  "notes": "Avviso giallo quando cambi la disposizione delle pagine: SimHub vede la nuova dash solo riaprendola, con pulsante per riavviare SimHub. Il log ora elenca i comandi di SimHub per ricaricare la dash.",
+  "version": "1.48",
+  "notes": "Aggiornamenti letti dai file normali di GitHub (niente più errore 403 per troppe richieste); le API restano come riserva.",
   "date": "2026-10-22"
 }

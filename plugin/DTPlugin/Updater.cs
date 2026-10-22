@@ -31,6 +31,9 @@ namespace FedeDashboard
         public volatile string Notes = "";
         public volatile bool Available, Busy, Installed;
         string dllUrl, dashUrl, rawError;
+        readonly System.Collections.Generic.List<string> dllAlt = new System.Collections.Generic.List<string>(), dashAlt = new System.Collections.Generic.List<string>();
+        const string Raw = "https://raw.githubusercontent.com/" + Repo + "/";
+        const string Api = "https://api.github.com/repos/" + Repo + "/contents/release/";
         public event Action Changed;
 
         static string SimHubDir { get { return AppDomain.CurrentDomain.BaseDirectory; } }
@@ -99,17 +102,34 @@ namespace FedeDashboard
             try
             {
                 string json = null; rawError = null;
-                // 1) file nel repository, letti dalle API di GitHub (sempre aggiornate: raw.githubusercontent tiene copie per minuti)
-                string api = "https://api.github.com/repos/" + Repo + "/contents/release/";
+                dllAlt.Clear(); dashAlt.Clear();
+                // 1) file normale del repository (nessun limite di richieste; la copia puo' essere vecchia di qualche minuto)
                 try
                 {
-                    using (var wc = Client()) { wc.Headers[HttpRequestHeader.Accept] = "application/vnd.github.raw"; json = wc.DownloadString(api + "latest.json"); }
+                    using (var wc = Client()) json = wc.DownloadString(Raw + "main/release/latest.json?t=" + DateTime.UtcNow.Ticks);
                     LatestVersion = Field(json, "version").TrimStart('v', 'V');
                     Notes = Field(json, "notes");
-                    dllUrl = api + DllAsset;
-                    dashUrl = api + DashAsset;
+                    // i file della versione esatta (etichetta vX.Y), poi le alternative
+                    dllUrl = Raw + "v" + LatestVersion + "/release/" + DllAsset;
+                    dashUrl = Raw + "v" + LatestVersion + "/release/" + DashAsset;
+                    dllAlt.Add(Api + DllAsset); dllAlt.Add(Raw + "main/release/" + DllAsset);
+                    dashAlt.Add(Api + DashAsset); dashAlt.Add(Raw + "main/release/" + DashAsset);
                 }
-                catch (WebException wex) { json = null; rawError = wex.Message; FedeLog.Write("Aggiornamenti (release/latest.json): " + wex.Message); }
+                catch (WebException wex) { json = null; rawError = wex.Message; FedeLog.Write("Aggiornamenti (raw latest.json): " + wex.Message); }
+                // 2) API di GitHub (limite di 60 richieste all'ora)
+                if (json == null)
+                {
+                    try
+                    {
+                        using (var wc = Client()) { wc.Headers[HttpRequestHeader.Accept] = "application/vnd.github.raw"; json = wc.DownloadString(Api + "latest.json"); }
+                        LatestVersion = Field(json, "version").TrimStart('v', 'V');
+                        Notes = Field(json, "notes");
+                        dllUrl = Api + DllAsset;
+                        dashUrl = Api + DashAsset;
+                        dllAlt.Add(Raw + "main/release/" + DllAsset); dashAlt.Add(Raw + "main/release/" + DashAsset);
+                    }
+                    catch (WebException wex) { json = null; rawError = wex.Message; FedeLog.Write("Aggiornamenti (API latest.json): " + wex.Message); }
+                }
                 // 2) in alternativa la "release" di GitHub
                 if (json == null)
                 {
@@ -127,13 +147,38 @@ namespace FedeDashboard
             catch (WebException ex)
             {
                 var r = ex.Response as HttpWebResponse;
-                Status = rawError != null ? "Impossibile leggere gli aggiornamenti da GitHub (" + rawError + ")."
+                Status = rawError != null && rawError.Contains("403") ? "GitHub ha bloccato per un po' i controlli (troppe richieste): riprova più tardi."
+                       : rawError != null ? "Impossibile leggere gli aggiornamenti da GitHub (" + rawError + ")."
                        : r != null && r.StatusCode == HttpStatusCode.NotFound ? "Nessuna versione pubblicata su GitHub per ora."
                        : "Impossibile controllare gli aggiornamenti (connessione?).";
                 FedeLog.Write("Aggiornamenti: " + ex.Message);
             }
             catch (Exception ex) { Status = "Errore nel controllo aggiornamenti."; FedeLog.Error("aggiornamenti", ex); }
             Busy = false; Notify();
+        }
+
+        /// <summary>Scarica un file provando l'indirizzo principale e poi le alternative.</summary>
+        static void Download(string url, System.Collections.Generic.List<string> alternatives, string dest)
+        {
+            var urls = new System.Collections.Generic.List<string> { url };
+            if (alternatives != null) urls.AddRange(alternatives);
+            Exception last = null;
+            foreach (var u in urls)
+            {
+                if (string.IsNullOrEmpty(u)) continue;
+                try
+                {
+                    using (var wc = Client())
+                    {
+                        if (u.StartsWith("https://api.github.com")) wc.Headers[HttpRequestHeader.Accept] = "application/vnd.github.raw";
+                        wc.DownloadFile(u, dest);
+                    }
+                    if (new FileInfo(dest).Length > 1000) return;
+                    last = new IOException("file vuoto");
+                }
+                catch (Exception ex) { last = ex; FedeLog.Write("Download non riuscito da " + u + ": " + ex.Message); }
+            }
+            throw last ?? new IOException("nessun indirizzo");
         }
 
         /// <summary>Scarica e installa plugin e dashboard. Restituisce true se serve riavviare SimHub.</summary>
@@ -155,13 +200,13 @@ namespace FedeDashboard
                 {
                     Status = "Scarico la dashboard…"; Notify();
                     string zip = Path.Combine(tmp, "dash.simhubdash");
-                    using (var wc = Client()) { wc.Headers[HttpRequestHeader.Accept] = "application/vnd.github.raw"; wc.DownloadFile(dashUrl, zip); }
+                    Download(dashUrl, dashAlt, zip);
                     InstallDash(zip, tmp);
                 }
                 // 2) plugin
                 Status = "Scarico il plugin…"; Notify();
                 string newDll = Path.Combine(tmp, DllAsset);
-                using (var wc = Client()) { wc.Headers[HttpRequestHeader.Accept] = "application/vnd.github.raw"; wc.DownloadFile(dllUrl, newDll); }
+                Download(dllUrl, dllAlt, newDll);
                 if (new FileInfo(newDll).Length < 20000) throw new IOException("file del plugin scaricato non valido");
                 string own = typeof(Updater).Assembly.Location;
                 string old = own + ".old";
