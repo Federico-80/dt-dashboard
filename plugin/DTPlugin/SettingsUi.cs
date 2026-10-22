@@ -24,12 +24,9 @@ namespace FedeDashboard
       <StackPanel Orientation='Horizontal'>
         <Border Width='42' Height='42' CornerRadius='10' Margin='0,0,12,0'>
           <Border.Background>
-            <LinearGradientBrush StartPoint='0,0' EndPoint='1,1'>
-              <GradientStop Color='#FF1E9BD7' Offset='0'/>
-              <GradientStop Color='#FF00FED1' Offset='1'/>
-            </LinearGradientBrush>
+            <SolidColorBrush Color='#FF00FED1'/>
           </Border.Background>
-          <TextBlock Text='DT' FontSize='19' FontWeight='Black' FontStyle='Italic' Foreground='White' HorizontalAlignment='Center' VerticalAlignment='Center'/>
+          <Path Data='{LOGO}' Fill='Black' Stretch='Uniform' Margin='6,10'/>
         </Border>
         <StackPanel VerticalAlignment='Center'>
           <TextBlock Text='DT DASHBOARD' FontSize='22' FontWeight='Black' FontStyle='Italic' Foreground='White'/>
@@ -293,15 +290,16 @@ namespace FedeDashboard
         {
             this.plugin = plugin;
             // pannello con lo stile grafico; se lo stile non si carica, pannello con l'aspetto standard
+            string mainXaml = MainXaml.Replace("{LOGO}", Logo.Geometry);
             try
             {
-                int at = MainXaml.IndexOf('>', MainXaml.IndexOf("<UserControl")) + 1;
-                Root = (object)Wpf.Xaml(MainXaml.Substring(0, at) + "<UserControl.Resources>" + UiStyles.Dictionary + "</UserControl.Resources>" + MainXaml.Substring(at));
+                int at = mainXaml.IndexOf('>', mainXaml.IndexOf("<UserControl")) + 1;
+                Root = (object)Wpf.Xaml(mainXaml.Substring(0, at) + "<UserControl.Resources>" + UiStyles.Dictionary + "</UserControl.Resources>" + mainXaml.Substring(at));
             }
             catch (Exception ex)
             {
                 FedeLog.Error("stile grafico (uso l'aspetto standard)", ex);
-                Root = (object)Wpf.Xaml(MainXaml);
+                Root = (object)Wpf.Xaml(mainXaml);
             }
             root = Root;
             F("VersionText").Text = "DT Plugin  v" + DTPlugin.VersionText;

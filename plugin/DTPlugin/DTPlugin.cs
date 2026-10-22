@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.51";
+        public const string VersionText = "1.52";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -398,9 +398,12 @@ namespace FedeDashboard
                 {
                     try
                     {
-                        dynamic img = Wpf.Xaml("<DrawingImage {NS}><DrawingImage.Drawing>" +
-                                               "<GeometryDrawing Brush='White' Geometry='M2,1 L14,1 L14,4 L6,4 L6,7 L12,7 L12,10 L6,10 L6,15 L2,15 Z'/>" +
-                                               "</DrawingImage.Drawing></DrawingImage>");
+                        // riquadro verde acqua con il logo DT in nero
+                        dynamic img = Wpf.Xaml("<DrawingImage {NS}><DrawingImage.Drawing><DrawingGroup>" +
+                                               "<GeometryDrawing Brush='#FF00FED1'><GeometryDrawing.Geometry><RectangleGeometry Rect='0,0,120,120' RadiusX='26' RadiusY='26'/></GeometryDrawing.Geometry></GeometryDrawing>" +
+                                               "<DrawingGroup><DrawingGroup.Transform><TranslateTransform X='10' Y='34.85'/></DrawingGroup.Transform>" +
+                                               "<GeometryDrawing Brush='Black' Geometry='" + Logo.Geometry + "'/></DrawingGroup>" +
+                                               "</DrawingGroup></DrawingImage.Drawing></DrawingImage>");
                         img.Freeze();
                         icon = (ImageSource)(object)img;
                     }
