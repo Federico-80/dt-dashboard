@@ -1,7 +1,7 @@
-﻿DT DASHBOARD + FEDE PLUGIN  -  istruzioni
+﻿DT DASHBOARD + DT PLUGIN  -  istruzioni
 ============================================
 
-La dashboard non usa più il Lovely Plugin: tutti i dati arrivano dal DT Plugin
+Tutti i dati della dashboard arrivano dal DT Plugin
 (proprietà DTPlugin.*), che a sua volta li legge da SimHub.
 Quindi il plugin va installato, altrimenti la dashboard resta vuota.
 Le impostazioni del plugin sono salvate in PluginsData\Common\DTPlugin.json.
@@ -97,15 +97,15 @@ IMPORTANTE - CAMBIO NOME (da "Fede" a "DT")
   "Prova" lo mostra subito sulla dashboard.
 
  Scheda "Gomme e freni"
-  - Fonte della temperatura gomme (numero grande): per LMU letta dalla telemetria del gioco come
-    nella correzione fatta sulla Lovely. Scegli: Carcassa (predefinita), Strato interno, Superficie
+  - Fonte della temperatura gomme (numero grande): per LMU letta dalla telemetria del gioco.
+    Scegli: Carcassa (predefinita), Strato interno, Superficie
     (media o centro) oppure il valore standard di SimHub. Correzione in °C facoltativa.
   - Soglie dei colori per gomme, freni e pressioni: blu sotto "freddo", verde a "ottimale",
     rosso sopra "caldo" (sfumato in mezzo).
   - In basso vedi i valori attuali delle 4 gomme per controllare.
   Scheda da usare nella dashboard: "Gomme complete (temp. carcassa, pressione, freni)".
 
- Scheda "Tempi e posizioni"  (come le "Timing Options" della Lovely)
+ Scheda "Tempi e posizioni"
   - Giro stimato e delta: Gioco (delta calcolato da LMU), SimHub, oppure Post-It Note Racing.
   - Distacchi avanti/dietro: assoluti oppure solo nella tua classe.
   - Posizione: assoluta, nella classe (calcolata da SimHub) oppure Post-It Note Racing (classe).

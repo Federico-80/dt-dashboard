@@ -424,7 +424,7 @@ namespace FedeDashboard
         }
     }
 
-    /// <summary>Opzioni tempi e posizioni (come le "Timing options" della Lovely).</summary>
+    /// <summary>Opzioni tempi e posizioni.</summary>
     public class TimingSettings
     {
         public static readonly string[] DeltaSources = { "Gioco", "SimHub", "Post-It Note Racing" };

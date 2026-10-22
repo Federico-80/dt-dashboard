@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Catalogo unico condiviso fra la dashboard (djson) e il plugin (C#).
-Tutto cio' che la dash mostra passa da proprieta' DTPlugin.*  ->  nessun Lovely Plugin.
+Tutto cio' che la dash mostra passa da proprieta' DTPlugin.*  ->  nessun altro plugin necessario.
 """
 
 # ---------------------------------------------------------------- canali dati

@@ -1294,8 +1294,8 @@ namespace FedeDashboard
                 tyresPanel.Children.Add(Section("Gomme e freni"));
 
                 dynamic right, body;
-                dynamic c1 = Card("Temperatura gomme", "In LMU il valore standard di SimHub non coincide con il gioco: qui si legge la telemetria di LMU " +
-                                  "(come la correzione fatta sulla Lovely). \"Strato interno\" è quello che coincide con l'HUD del gioco.", out right, out body);
+                dynamic c1 = Card("Temperatura gomme", "In LMU il valore standard di SimHub non coincide con il gioco: qui si legge la telemetria di LMU. " +
+                                  "\"Strato interno\" è quello che coincide con l'HUD del gioco.", out right, out body);
                 dynamic r = LRow("Fonte del numero");
                 for (int i = 0; i < TyreSettings.Sources.Length; i++)
                 {

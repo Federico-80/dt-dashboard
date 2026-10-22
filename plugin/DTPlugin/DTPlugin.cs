@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.54";
+        public const string VersionText = "1.55";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -1445,7 +1445,7 @@ namespace FedeDashboard
             return (double.IsNaN(k) || k <= 0) ? double.NaN : k - 273.15;
         }
 
-        /// <summary>Temperatura gomma secondo la fonte scelta (come la correzione fatta sulla Lovely per LMU).</summary>
+        /// <summary>Temperatura gomma secondo la fonte scelta (correzione per LMU).</summary>
         object TyreTemp(string wheel)
         {
             int w = Array.IndexOf(Wheels, wheel);
