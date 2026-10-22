@@ -1,5 +1,5 @@
 {
-  "version": "1.38",
-  "notes": "TC/ABS e fuori giri lampeggiano veloce. Sotto la marcia si puo' scegliere barra dei giri oppure acceleratore e freno (Pagine e layout).",
+  "version": "1.39",
+  "notes": "Stato degli aggiornamenti sempre visibile in alto; 'Installa e riavvia SimHub' installa e riavvia SimHub da solo.",
   "date": "2026-10-22"
 }

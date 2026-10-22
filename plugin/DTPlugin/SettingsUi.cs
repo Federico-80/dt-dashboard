@@ -34,10 +34,11 @@ namespace FedeDashboard
         <StackPanel VerticalAlignment='Center'>
           <TextBlock Text='DT DASHBOARD' FontSize='22' FontWeight='Black' FontStyle='Italic' Foreground='White'/>
           <TextBlock x:Name='VersionText' Text='DT Plugin' FontSize='11.5' Foreground='#FF9A9A9A'/>
+          <TextBlock x:Name='UpdateStatus' Text='' FontSize='11.5' Foreground='#FF64B5F6' TextWrapping='Wrap' MaxWidth='520'/>
         </StackPanel>
       </StackPanel>
       <StackPanel Grid.Column='1' Orientation='Horizontal' HorizontalAlignment='Right' VerticalAlignment='Bottom'>
-        <Button x:Name='BtnCheckUpdate' Content='Controlla aggiornamenti' Style='{DynamicResource LinkButton}'/>
+        <Button x:Name='BtnCheckUpdate' Content='Controlla aggiornamenti' Padding='12,4' Margin='0,0,14,0'/>
         <Button x:Name='BtnExport' Content='Esporta impostazioni' Style='{DynamicResource LinkButton}'/>
         <Button x:Name='BtnImport' Content='Importa impostazioni' Style='{DynamicResource LinkButton}'/>
         <Button x:Name='BtnReset' Content='Ripristina tutto' Style='{DynamicResource LinkButton}'/>
@@ -47,7 +48,7 @@ namespace FedeDashboard
     <!-- aggiornamento da GitHub -->
     <Border x:Name='UpdateBar' DockPanel.Dock='Top' Margin='22,0,22,10' Padding='14,8' CornerRadius='6' Background='#FF15304A' BorderBrush='#FF2196F3' BorderThickness='1' Visibility='Collapsed'>
       <DockPanel>
-        <Button x:Name='BtnUpdate' DockPanel.Dock='Right' Content='Installa aggiornamento' Padding='14,4' Margin='12,0,0,0'/>
+        <Button x:Name='BtnUpdate' DockPanel.Dock='Right' Content='Installa e riavvia SimHub' Padding='14,4' Margin='12,0,0,0'/>
         <TextBlock x:Name='UpdateText' VerticalAlignment='Center' TextWrapping='Wrap' Foreground='White' FontSize='13'/>
       </DockPanel>
     </Border>
@@ -366,6 +367,7 @@ namespace FedeDashboard
                 bar.Visibility = Wpf.Visibility(show);
                 txt.Text = u.Available && !u.Busy ? "Nuova versione " + u.LatestVersion + " disponibile su GitHub (tu hai la " + DTPlugin.VersionText + ")." : u.Status;
                 btn.Visibility = Wpf.Visibility(u.Available && !u.Busy);
+                F("UpdateStatus").Text = u.Status.Length > 0 ? "Aggiornamenti: " + u.Status : "";
             }
             catch (Exception ex) { FedeLog.Error("barra aggiornamenti", ex); }
         }

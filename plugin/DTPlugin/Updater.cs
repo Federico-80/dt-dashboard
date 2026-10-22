@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
@@ -29,7 +30,7 @@ namespace FedeDashboard
         public volatile string LatestVersion = "";
         public volatile string Notes = "";
         public volatile bool Available, Busy, Installed;
-        string dllUrl, dashUrl;
+        string dllUrl, dashUrl, rawError;
         public event Action Changed;
 
         static string SimHubDir { get { return AppDomain.CurrentDomain.BaseDirectory; } }
@@ -49,10 +50,21 @@ namespace FedeDashboard
             catch { }
         }
 
+        /// <summary>WebClient con timeout (30 s) e TLS 1.2 (richiesto da GitHub).</summary>
+        class TimedWebClient : WebClient
+        {
+            protected override WebRequest GetWebRequest(Uri address)
+            {
+                var r = base.GetWebRequest(address);
+                if (r != null) r.Timeout = 30000;
+                return r;
+            }
+        }
+
         static WebClient Client()
         {
             try { ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12; } catch { }
-            var wc = new WebClient();
+            var wc = new TimedWebClient();
             wc.Headers[HttpRequestHeader.UserAgent] = "DTPlugin-Updater";
             wc.Encoding = Encoding.UTF8;
             return wc;
@@ -76,7 +88,8 @@ namespace FedeDashboard
         /// <summary>Controlla l'ultima release su GitHub (in background).</summary>
         public void CheckAsync(string currentVersion)
         {
-            if (Busy) return;
+            if (Busy) { Notify(); return; }
+            Status = "Controllo aggiornamenti…"; Notify();
             new Thread(() => Check(currentVersion)) { IsBackground = true, Name = "DTPlugin updater" }.Start();
         }
 
@@ -85,7 +98,7 @@ namespace FedeDashboard
             Busy = true; Status = "Controllo aggiornamenti…"; Notify();
             try
             {
-                string json = null;
+                string json = null; rawError = null;
                 // 1) file nel repository (aggiornato a ogni pubblicazione)
                 string raw = "https://raw.githubusercontent.com/" + Repo + "/main/release/";
                 try
@@ -96,7 +109,7 @@ namespace FedeDashboard
                     dllUrl = raw + DllAsset;
                     dashUrl = raw + DashAsset;
                 }
-                catch (WebException) { json = null; }
+                catch (WebException wex) { json = null; rawError = wex.Message; FedeLog.Write("Aggiornamenti (release/latest.json): " + wex.Message); }
                 // 2) in alternativa la "release" di GitHub
                 if (json == null)
                 {
@@ -109,12 +122,14 @@ namespace FedeDashboard
                 Available = IsNewer(LatestVersion, currentVersion) && dllUrl != null;
                 Status = Available ? "Disponibile la versione " + LatestVersion + " (tu hai la " + currentVersion + ")."
                                    : "Hai l'ultima versione (" + currentVersion + ").";
+                FedeLog.Write("Aggiornamenti: ultima " + LatestVersion + ", installata " + currentVersion + " -> " + (Available ? "da aggiornare" : "ok"));
             }
             catch (WebException ex)
             {
                 var r = ex.Response as HttpWebResponse;
-                Status = r != null && r.StatusCode == HttpStatusCode.NotFound ? "Nessuna versione pubblicata su GitHub per ora."
-                                                                              : "Impossibile controllare gli aggiornamenti (connessione?).";
+                Status = rawError != null ? "Impossibile leggere gli aggiornamenti da GitHub (" + rawError + ")."
+                       : r != null && r.StatusCode == HttpStatusCode.NotFound ? "Nessuna versione pubblicata su GitHub per ora."
+                       : "Impossibile controllare gli aggiornamenti (connessione?).";
                 FedeLog.Write("Aggiornamenti: " + ex.Message);
             }
             catch (Exception ex) { Status = "Errore nel controllo aggiornamenti."; FedeLog.Error("aggiornamenti", ex); }
@@ -155,8 +170,11 @@ namespace FedeDashboard
                 try { File.Copy(newDll, own, true); }
                 catch { File.Move(old, own); throw; }  // ripristina se la copia fallisce
                 Installed = true; Available = false;
-                Status = "Versione " + LatestVersion + " installata. Riavvia SimHub per usarla.";
-                FedeLog.Write("Aggiornato alla versione " + LatestVersion);
+                Status = "Versione " + LatestVersion + " installata. Riavvio SimHub…";
+                FedeLog.Write("Aggiornato alla versione " + LatestVersion + ": riavvio SimHub");
+                Busy = false; Notify();
+                Thread.Sleep(1500);
+                RestartSimHub();
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -165,6 +183,39 @@ namespace FedeDashboard
             }
             catch (Exception ex) { Status = "Installazione non riuscita: " + ex.Message; FedeLog.Error("installazione aggiornamento", ex); }
             finally { try { Directory.Delete(tmp, true); } catch { } Busy = false; Notify(); }
+        }
+
+        /// <summary>
+        /// Riavvia SimHub: un piccolo comando PowerShell aspetta che SimHub si chiuda e lo riapre,
+        /// poi SimHub viene chiuso normalmente (salva le sue impostazioni). Se non si chiude entro 20 s, viene terminato.
+        /// </summary>
+        public void RestartSimHub()
+        {
+            try
+            {
+                var me = Process.GetCurrentProcess();
+                string exe = me.MainModule.FileName;
+                string ps = "Wait-Process -Id " + me.Id + " -ErrorAction SilentlyContinue; Start-Sleep -Seconds 2; Start-Process -FilePath '" + exe.Replace("'", "''") + "'";
+                var psi = new ProcessStartInfo("powershell.exe", "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command \"" + ps + "\"")
+                { CreateNoWindow = true, UseShellExecute = false, WindowStyle = ProcessWindowStyle.Hidden };
+                Process.Start(psi);
+                // chiusura normale dell'applicazione WPF di SimHub
+                var appType = Wpf.T("System.Windows.Application");
+                object app = appType.GetProperty("Current").GetValue(null, null);
+                if (app != null)
+                {
+                    object disp = appType.GetProperty("Dispatcher").GetValue(app, null);
+                    Action shut = () => appType.GetMethod("Shutdown", Type.EmptyTypes).Invoke(app, null);
+                    disp.GetType().GetMethod("BeginInvoke", new[] { typeof(Delegate), typeof(object[]) }).Invoke(disp, new object[] { shut, new object[0] });
+                }
+                new Thread(() => { Thread.Sleep(20000); Environment.Exit(0); }) { IsBackground = true }.Start();
+            }
+            catch (Exception ex)
+            {
+                Status = "Aggiornamento installato: chiudi e riapri SimHub.";
+                FedeLog.Error("riavvio SimHub", ex);
+                Notify();
+            }
         }
 
         /// <summary>Estrae il .simhubdash (percorsi con "\") in SimHub\DashTemplates\DT Dashboard.</summary>
