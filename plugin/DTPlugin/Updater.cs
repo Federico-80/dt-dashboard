@@ -25,6 +25,7 @@ namespace FedeDashboard
         const string DllAsset = "DTPlugin.dll";
         const string DashAsset = "DT.Dashboard.simhubdash";   // GitHub sostituisce gli spazi con punti nei nomi degli allegati
         const string DashFolder = "DT Dashboard";
+        const string RallyAsset = "DT.Rally.simhubdash";
 
         public volatile string Status = "";
         public volatile string LatestVersion = "";
@@ -203,6 +204,19 @@ namespace FedeDashboard
                     Download(dashUrl, dashAlt, zip);
                     InstallDash(zip, tmp);
                 }
+                // dashboard rally (facoltativa: se non c'e' o non si scarica, si va avanti)
+                if (dashUrl != null)
+                {
+                    try
+                    {
+                        string rz = Path.Combine(tmp, "rally.simhubdash");
+                        string ru = dashUrl.Replace(DashAsset, RallyAsset);
+                        Download(ru, new System.Collections.Generic.List<string> { Raw + "main/release/" + RallyAsset }, rz);
+                        InstallDash(rz, tmp, "DT Rally");
+                        FedeLog.Write("Dashboard DT Rally installata");
+                    }
+                    catch (Exception ex) { FedeLog.Write("DT Rally non installata: " + ex.Message); }
+                }
                 // 2) plugin
                 Status = "Scarico il plugin…"; Notify();
                 string newDll = Path.Combine(tmp, DllAsset);
@@ -292,10 +306,12 @@ namespace FedeDashboard
         }
 
         /// <summary>Estrae il .simhubdash (percorsi con "\") in SimHub\DashTemplates\DT Dashboard.</summary>
-        static void InstallDash(string zipPath, string tmp)
+        static void InstallDash(string zipPath, string tmp) { InstallDash(zipPath, tmp, DashFolder); }
+
+        static void InstallDash(string zipPath, string tmp, string DashFolder)
         {
             string target = Path.Combine(SimHubDir, "DashTemplates", DashFolder);
-            string stage = Path.Combine(tmp, "dash");
+            string stage = Path.Combine(tmp, "dash_" + DashFolder.Replace(' ', '_'));
             using (var z = ZipFile.OpenRead(zipPath))
             {
                 foreach (var e in z.Entries)
