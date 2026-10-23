@@ -195,11 +195,15 @@ namespace FedeDashboard
         public bool ShowInputs { get; set; }
         /// <summary>Nasconde le barre verticali (giri o pedali) ai lati della marcia.</summary>
         public bool HideSideBars { get; set; }
+        /// <summary>Fila di LED dei giri in alto: tutta la pagina scende un po'.</summary>
+        public bool Leds { get; set; }
+        /// <summary>Cornice usata davvero nella dash (con i LED: la variante + Catalog.LedOffset).</summary>
+        public int EffectiveFrame { get { int f = Frame < 0 ? 0 : (Frame >= Catalog.LedOffset ? Catalog.LedOffset - 1 : Frame); return Leds ? f + Catalog.LedOffset : f; } }
 
         public void Normalize()
         {
             if (string.IsNullOrWhiteSpace(Name)) Name = "Pagina";
-            Frame = Clamp(Frame, Catalog.Frames.Length);
+            Frame = Clamp(Frame, Catalog.LedOffset);
             GridLeft = Clamp(GridLeft, Catalog.Grids.Length);
             GridRight = Clamp(GridRight, Catalog.Grids.Length);
             Toolbar = Clamp(Toolbar, Catalog.Toolbars.Length);
@@ -219,7 +223,7 @@ namespace FedeDashboard
                 SidebarLeft = SidebarLeft, SidebarRight = SidebarRight,
                 Left = new List<int>(Left), Right = new List<int>(Right),
                 Bottom = new List<int>(Bottom), Center = new List<int>(Center),
-                AutoPractice = AutoPractice, AutoQualify = AutoQualify, AutoRace = AutoRace, ShowInputs = ShowInputs, HideSideBars = HideSideBars
+                AutoPractice = AutoPractice, AutoQualify = AutoQualify, AutoRace = AutoRace, ShowInputs = ShowInputs, HideSideBars = HideSideBars, Leds = Leds
             };
         }
 

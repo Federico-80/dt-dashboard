@@ -146,6 +146,7 @@ namespace FedeDashboard
               <StackPanel Grid.Row='3' Grid.Column='1' Margin='0,8,0,0'>
                 <CheckBox x:Name='ChkInputs' Content='Ai lati della marcia: acceleratore e freno (invece della barra dei giri)'/>
                 <CheckBox x:Name='ChkNoBars' Content='Nascondi le barre ai lati della marcia' Margin='0,6,0,0'/>
+                <CheckBox x:Name='ChkLeds' Content='LED dei giri in alto (tutta la pagina scende un po&apos;)' Margin='0,6,0,0'/>
               </StackPanel>
             </Grid>
             <Grid Margin='0,18,0,0'><Grid.ColumnDefinitions><ColumnDefinition Width='Auto'/><ColumnDefinition Width='*'/></Grid.ColumnDefinitions><TextBlock Text='ANTEPRIMA E SCHEDE' FontWeight='Bold' FontSize='14' Foreground='White'/><Border Grid.Column='1' Height='1' Background='#FF4A4A4A' VerticalAlignment='Center' Margin='12,0,0,0'/></Grid>
@@ -275,7 +276,7 @@ namespace FedeDashboard
         readonly DTPlugin plugin;
         readonly ObservableCollection<ChannelRow> rows = new ObservableCollection<ChannelRow>();
         public readonly object Root;
-        readonly dynamic root, tabs, cbPage, tbName, chkP, chkQ, chkR, chkInputs, chkNoBars, frameButtons, toolbarButtons,
+        readonly dynamic root, tabs, cbPage, tbName, chkP, chkQ, chkR, chkInputs, chkNoBars, chkLeds, frameButtons, toolbarButtons,
                          gridLButtons, gridRButtons, preview, pickerPanel, grid, timer, alertsPanel, tyresPanel, idlePanel, idlePreview;
         dynamic tyreLive;
         bool updating;
@@ -371,6 +372,7 @@ namespace FedeDashboard
             chkR = F("ChkR");
             chkInputs = F("ChkInputs");
             chkNoBars = F("ChkNoBars");
+            chkLeds = F("ChkLeds");
             frameButtons = F("FrameButtons");
             toolbarButtons = F("ToolbarButtons");
             gridLButtons = F("GridLButtons");
@@ -405,6 +407,7 @@ namespace FedeDashboard
             OnCheck((object)chkR, v => Page.AutoRace = v);
             OnCheck((object)chkInputs, v => Page.ShowInputs = v);
             OnCheck((object)chkNoBars, v => Page.HideSideBars = v);
+            OnCheck((object)chkLeds, v => Page.Leds = v);
 
             Click("BtnNew", () => AddPage(false));
             Click("BtnDup", () => AddPage(true));
@@ -554,6 +557,7 @@ namespace FedeDashboard
                 chkR.IsChecked = p.AutoRace;
                 chkInputs.IsChecked = p.ShowInputs;
                 chkNoBars.IsChecked = p.HideSideBars;
+                chkLeds.IsChecked = p.Leds;
                 BuildLayoutButtons();
                 DrawPreview();
                 BuildPicker();
@@ -693,7 +697,8 @@ namespace FedeDashboard
         {
             preview.Children.Clear();
             var p = Page;
-            int f = p.Frame;
+            int f = p.EffectiveFrame;
+            if (p.Leds) FixedRect(new[] { 9, 5, 832, 16 }, "LED GIRI");
             var c = Catalog.CenterRects[f];
             FixedRect(c[0], "DELTA");
             FixedRect(c[1], "MARCIA");

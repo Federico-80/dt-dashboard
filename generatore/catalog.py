@@ -253,7 +253,15 @@ FRAMES = [
     ("Barra bassa", False, 3),
 ]
 # barra doppia "intelligente": quando non serve rifornire la pagina usa la cornice con la sola riga di riquadri
-SINGLE_OF = {4: 6, 5: 7}
+# stesse cornici con la fila di LED dei giri in alto (tutto il resto piu' in basso): indice + LED_OFFSET
+LED_OFFSET = len(FRAMES)
+LED_H = 16
+FRAMES += [(f[0] + " + LED", f[1], f[2], True) for f in FRAMES]
+SINGLE_OF = {4: 6, 5: 7, 4 + LED_OFFSET: 6 + LED_OFFSET, 5 + LED_OFFSET: 7 + LED_OFFSET}
+
+
+def frame_led(fi):
+    return len(FRAMES[fi]) > 3 and bool(FRAMES[fi][3])
 
 # griglie dei lati: unita' 2 colonne x 4 righe  (col, riga, larghezza, altezza)
 GRIDS = [
@@ -276,7 +284,7 @@ CENTER_ROWS = 3
 
 
 def frame_geom(fi):
-    _, sidebars, toolbar = FRAMES[fi]
+    _, sidebars, toolbar = FRAMES[fi][:3]
     bottom = DASH_H - M - (((TB2 + G + WB + G) if toolbar == 2 else ((TB2 + G) if toolbar == 3 else (TB + G))) if toolbar else 0)
     xl0 = M + (SB + G if sidebars else 0)
     xl1 = CX - G
@@ -284,7 +292,8 @@ def frame_geom(fi):
     xr1 = DASH_W - M - (SB + G if sidebars else 0)
     # altezza della riga in alto nella griglia "Riga + grande": come i riquadri della barra in basso
     row_h = TB2 if toolbar in (2, 3) else TB
-    return dict(sidebars=sidebars, toolbar=toolbar, top=M, bottom=bottom,
+    top = M + (LED_H + G if frame_led(fi) else 0)
+    return dict(sidebars=sidebars, toolbar=toolbar, top=top, bottom=bottom,
                 left=(xl0, xl1), right=(xr0, xr1), row_h=row_h)
 
 

@@ -38,7 +38,7 @@ namespace FedeDashboard
         {
             var sb = new StringBuilder();
             foreach (var p in s.Pages)
-                sb.Append(p.Frame).Append(',').Append(p.GridLeft).Append(',').Append(p.GridRight).Append(',').Append(p.Toolbar).Append(';');
+                sb.Append(p.EffectiveFrame).Append(',').Append(p.GridLeft).Append(',').Append(p.GridRight).Append(',').Append(p.Toolbar).Append(';');
             if (s.Font != null) sb.Append("F").Append(s.Font.Key);
             return sb.ToString();
         }
@@ -97,7 +97,7 @@ namespace FedeDashboard
             for (int i = 0; i < pages.Count; i++)
             {
                 var p = pages[i];
-                int f = Clamp(p.Frame, Catalog.Frames.Length), gl = Clamp(p.GridLeft, Catalog.Grids.Length),
+                int f = Clamp(p.EffectiveFrame, Catalog.Frames.Length), gl = Clamp(p.GridLeft, Catalog.Grids.Length),
                     gr = Clamp(p.GridRight, Catalog.Grids.Length), tb = Clamp(p.Toolbar, Catalog.Toolbars.Length);
                 var kids = new List<string>();
                 string single, stD, stS;

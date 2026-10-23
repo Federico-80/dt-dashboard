@@ -1315,10 +1315,31 @@ def bar_file(w, h):
 
 
 # ------------------------------------------------------------------ schermata principale
+LED_N = 16
+
+
+def led_strip(x, y, w, h):
+    """Fila di LED dei giri: verdi, gialli, rossi da meta' giri in su; al limitatore tutti blu lampeggianti."""
+    it = []
+    d = min(h, (w - (LED_N - 1) * 6) / LED_N)
+    gap = (w - LED_N * d) / (LED_N - 1)
+    for i in range(LED_N):
+        col = "#FF00E676" if i < 6 else ("#FFFFD600" if i < 11 else "#FFFF1744")
+        thr = 60 + i * (95 - 60) / (LED_N - 1)   # % giri a cui si accende
+        cj = ("var p = $prop('DTPlugin.RpmPct_Valore');\r\nif (p == null) { return '#FF1E1E1E'; }\r\n"
+              "if (p >= 97) { return %s ? '#FF2979FF' : '#FF1E1E1E'; }\r\n"
+              "return p >= %.1f ? '%s' : '#FF1E1E1E';" % (BLINK, thr, col))
+        it.append(rect("LED %d" % (i + 1), x + i * (d + gap), y + (h - d) / 2, d, d, bg=col if i < 10 else "#FF1E1E1E",
+                       radius=int(d // 2), bindings={"BackgroundColor": js(cj)}))
+    return it
+
+
 def center_items(fi):
     BLINK_ = BLINK
     cg = center_geom(fi)
     it = []
+    if frame_led(fi):
+        it.append(layer("LED giri", led_strip(M + 4, M, DASH_W - 2 * M - 8, LED_H)))
     x, y, w, h = cg["delta"]
     it.append(rect("Delta fondo", x, y, w, h, bg="#FF161616", radius=8))
     sbh = 5
