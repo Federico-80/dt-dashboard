@@ -386,9 +386,35 @@ FC_SAMPLE = [("INIZIO", 1, "24°", "10%"), ("25%", 2, "23°", "30%"), ("50%", 3,
 SES_GREY = "#FF8A8A8A"
 
 
+SES_W_JS = ("function W(s, f) { var n = 0; s = '' + s;\r\n"
+            "for (var i = 0; i < s.length; i++) { var c = s.charAt(i); n += (c == ':' || c == '.') ? 0.32 : (c == '/' ? 0.42 : 0.62); }\r\n"
+            "return n * f; }\r\n")
+
+
+def _ses_w(sv, f):
+    return sum(0.32 if c in ":." else (0.42 if c == "/" else 0.62) for c in sv) * f
+
+
+def centered_pair(prefix, bx, bw, y, h, a_js, b_js, a_sample, b_sample, fa, fb, col_b, gap=0, hb=None):
+    """Due testi affiancati (bianco + grigio) sempre centrati insieme nel blocco, qualunque sia la lunghezza.
+    a_js / b_js: istruzioni che assegnano le variabili a e b."""
+    hb = hb or h
+    c = bx + bw / 2.0
+    calc = SES_W_JS + a_js + "\r\n" + b_js + "\r\nvar s = %f - (W(a, %f) + %f + W(b, %f)) / 2;\r\n" % (c, fa, gap, fb)
+    wa, wb = _ses_w(a_sample, fa), _ses_w(b_sample, fb)
+    st = c - (wa + gap + wb) / 2
+    # il bianco parte sempre dall'inizio del blocco (allineato a destra): cambia solo la larghezza
+    A = text(prefix + " principale", bx, y, max(1, st + wa - bx), h, None, a_sample, fa, WHITE, weight="Black", ha=2, va=2,
+             bindings={"Text": js(a_js + "\r\n" + b_js + "\r\nreturn a;"),
+                       "Width": js(calc + "return Math.max(1, s + W(a, %f) - %f);" % (fa, bx))})
+    B = text(prefix + " secondo", st + wa + gap, y, bw, hb, None, b_sample, fb, col_b, weight="Bold", ha=0, va=2,
+             bindings={"Text": js(a_js + "\r\n" + b_js + "\r\nreturn b;"), "Left": js(calc + "return s + W(a, %f) + %f;" % (fa, gap))})
+    return [A, B]
+
+
 def session_items(w, h):
     """Sessione come le dash da gara: 18:39 (minuti bianchi, secondi grigi), 25/25 (posizione bianca, totale grigio), giri.
-    Sotto in piccolo le etichette; accanto a POS le posizioni guadagnate (verde) o perse (rossa)."""
+    Sotto in piccolo le etichette; accanto a POS le posizioni guadagnate (verde) o perse (rossa). Ogni blocco sempre centrato."""
     it = []
     ix, iw = 6, w - 12
     lh = clamp(round(h * 0.23), 10, 15)
@@ -400,26 +426,22 @@ def session_items(w, h):
     vfs = min(fit(ws[0] - 14, vh, 5, 0.8, 0.62), fit(ws[1] - 14, vh, 5, 0.8, 0.62), fit(ws[2] - 14, vh, 4.2, 0.8, 0.62))
     lfs = clamp(int(lh * 0.82), 7, 12)
     x = ix
-    # tempo: parte prima dei secondi bianca, ":ss" grigio
-    w0 = ws[0]; sp = x + w0 * 0.56
-    # con le ore (1:29:30) si mostrano solo ore e minuti, altrimenti non ci sta
-    t_js = ("var t = fd('TimeLeft');\r\nif (!t || t === '-') { return %s; }\r\n"
-            "var p = ('' + t).split(':');\r\nif (p.length >= 3 && p[0] != '0' && p[0] != '00') { var h = '' + parseInt(p[0], 10); return %s; }\r\n"
-            "var i = t.lastIndexOf(':');\r\nreturn i < 0 ? %s : %s;")
-    it.append(text("Tempo principale", x, vy, sp - x, vh, None, "18", vfs, WHITE, weight="Black", ha=2, va=2,
-                   bindings={"Text": js(t_js % ("'-'", "h + 'h' + p[1]", "t", "t.substring(0, i)"))}))
-    it.append(text("Tempo secondi", sp, vy, x + w0 - sp, vh, None, ":39", vfs, SES_GREY, weight="Bold", ha=0, va=2,
-                   bindings={"Text": js(t_js % ("''", "''", "''", "t.substring(i)"))}))
+    # tempo: parte prima dei secondi bianca, ":ss" grigio; con le ore (1:29:30) solo "1h29"
+    w0 = ws[0]
+    t_pre = ("var t = fd('TimeLeft'); var a = '-', b = '';\r\n"
+             "if (t && t !== '-') { var p = ('' + t).split(':');\r\n"
+             "  if (p.length >= 3 && p[0] != '0' && p[0] != '00') { a = parseInt(p[0], 10) + 'h' + p[1]; }\r\n"
+             "  else { var i = t.lastIndexOf(':'); if (i < 0) { a = t; } else { a = t.substring(0, i); b = t.substring(i); } } }")
+    it += centered_pair("Tempo", x, w0, vy, vh, t_pre, "", "18", ":39", vfs, vfs, SES_GREY)
     # sotto il tempo: il tipo di sessione (PROVE, QUALIFICA, GARA...)
     it.append(text("Tempo etichetta", x, ly, w0, lh, None, "GARA", lfs, WHITE, weight="Bold",
                    bindings={"Text": js("var t = $prop('DTPlugin.Sessione_Nome');\r\nreturn t ? t : 'TEMPO';")}))
     x += w0
     # posizione: "25" bianco, "/25" grigio; sotto freccia + numero posizioni e "POS"
     w1 = ws[1]; sp = x + w1 * 0.5
-    it.append(text("Pos principale", x, vy, sp - x, vh, None, "25", vfs, WHITE, weight="Black", ha=2, va=2,
-                   bindings={"Text": js("var p = fd('Pos');\r\nif (!p || p === '-') { return '-'; }\r\nvar i = ('' + p).indexOf('/');\r\nreturn i < 0 ? p : ('' + p).substring(0, i);")}))
-    it.append(text("Pos totale", sp, vy, x + w1 - sp, vh, None, "/25", vfs, SES_GREY, weight="Bold", ha=0, va=2,
-                   bindings={"Text": js("var n = fd('Cars');\r\nreturn (n && n !== '-' && n != '0') ? '/' + n : '';")}))
+    p_a = "var p = fd('Pos'); var a = '-';\r\nif (p && p !== '-') { var i = ('' + p).indexOf('/'); a = i < 0 ? p : ('' + p).substring(0, i); }"
+    p_b = "var n = fd('Cars'); var b = (n && n !== '-' && n != '0') ? '/' + n : '';"
+    it += centered_pair("Pos", x, w1, vy, vh, p_a, p_b, "25", "/25", vfs, vfs, SES_GREY)
     # sotto: "(freccia 3) POS"  /  "(0) POS"
     ad = lfs * 0.85
     pl = sp - 2                                   # le parentesi finiscono qui, poi "POS"
@@ -433,13 +455,12 @@ def session_items(w, h):
                    bindings={"Left": js("var d = $prop('DTPlugin.PosGain_Dir');\r\nreturn (d != null && d != 0) ? %d : %d;" % (round(ax - lfs * 0.45), round(ax + ad - lfs * 0.45)))}))
     it.append(text("Pos etichetta", sp + 3, ly, x + w1 - sp - 3, lh, None, "POS", lfs, GREY, weight="Medium", ha=0))
     x += w1
-    # giri
     # giro: numero bianco e, piu' piccoli in grigio, i giri totali stimati come LMU ("/~27.1")
-    w2 = ws[2]; sp = x + w2 * 0.4
-    it.append(text("Giro", x, vy, sp - x, vh, ch_val("Lap"), "4", vfs, WHITE, weight="Black", ha=2, va=2))
+    w2 = ws[2]
     tfs = max(8, int(vfs * 0.55))
-    it.append(text("Giri totali", sp + vfs * 0.12, vy, x + w2 - sp - 1, vh - vfs * 0.08, None, "/~27.1", tfs, SES_GREY, weight="Bold", ha=0, va=2,
-                   bindings={"Text": js("var t = $prop('DTPlugin.GiriTotali');\r\nreturn (t == null || t === '') ? '' : '/' + t;")}))
+    g_a = "var a = fd('Lap'); if (!a) { a = '-'; }"
+    g_b = "var t = $prop('DTPlugin.GiriTotali'); var b = (t == null || t === '') ? '' : '/' + t;"
+    it += centered_pair("Giro", x, w2, vy, vh, g_a, g_b, "4", "/~27.1", vfs, tfs, SES_GREY, gap=vfs * 0.12, hb=vh - vfs * 0.08)
     it.append(text("Giro etichetta", x, ly, w2, lh, None, "GIRO", lfs, GREY, weight="Medium"))
     # divisori tra tempo, posizione e giro
     dy0, dy1 = vy + vh * 0.12, ly + lh
@@ -855,21 +876,19 @@ def card_items(card, w, h):
             items += entry_items(c, col, ix + k * cw, iy + r * rh, cw, rh, "%s %d" % (c, i), chars=chars if one else None)
         # divisori leggeri tra le righe e tra le colonne
         for r in range(1, rows):
-            dy = iy + r * rh
-            if rh >= 40 and cw >= 40:
-                # a meta' tra la scritta sotto la riga di sopra e la cima dei numeri della riga sotto
-                def geo(c):
-                    vh = rh * 0.745
-                    vfs = fit(cw - 5, vh, CH[c][6], 0.97, 0.56)
-                    lfs = clamp(int(min((rh - vh) * 0.55, (cw - 4) / (len(CH[c][1]) * 0.6))), 7, 11)
-                    return vh, vfs, lfs
-                up, dn = ents[min(len(ents) - 1, (r - 1) * cols)][0], ents[min(len(ents) - 1, r * cols)][0]
-                vh1, _, lfs1 = geo(up)
-                vh2, vfs2, _ = geo(dn)
-                lab_bottom = iy + (r - 1) * rh + vh1 - 1 + lfs1 * 1.2
-                num_top = iy + r * rh + vh2 - vfs2 * 0.92
-                dy = (lab_bottom + num_top) / 2
-            items.append(hdiv("Divisore riga %d" % r, ix + iw * 0.06, dy, iw * 0.88))
+            if rh >= 40 and cw >= 40 and cols == 1:
+                # la linea passa a meta' della scritta sotto il numero (PREVISTO, ULTIMO), interrotta dalla scritta
+                c = ents[r - 1][0]
+                vh = rh * 0.745
+                lfs = clamp(int(min((rh - vh) * 0.55, (cw - 4) / (len(CH[c][1]) * 0.6))), 7, 11)
+                ly = iy + (r - 1) * rh + vh - 1 + lfs * 0.62
+                half = len(CH[c][1]) * lfs * 0.38 + 8
+                cxm = ix + iw / 2
+                x0, x1 = ix + iw * 0.06, ix + iw * 0.94
+                items.append(hdiv("Divisore riga %d sx" % r, x0, ly, cxm - half - x0))
+                items.append(hdiv("Divisore riga %d dx" % r, cxm + half, ly, x1 - cxm - half))
+            else:
+                items.append(hdiv("Divisore riga %d" % r, ix + iw * 0.06, iy + r * rh, iw * 0.88))
         for k in range(1, cols):
             m = min(rh * 0.15, 6)
             items.append(vdiv("Divisore colonna %d" % k, ix + k * cw, iy + m, ih - 2 * m))
@@ -1086,7 +1105,8 @@ def tyres3_items(ix, iy, iw, ih):
         nx = tx + tw + 4 if left else x0 + 4           # lato interno
         oha, nha = (2, 0) if left else (0, 2)          # tutto allineato verso la striscia
         items.append(text("Gomma %s pressione" % k, ox, dy, sw, dh / 2, ch_val("TyreP" + k), CH["TyreP" + k][7], sfs, WHITE, weight="Bold", ha=oha, va=2))
-        items.append(text("Gomma %s usura" % k, ox, dy + dh / 2, sw, dh / 2, ch_val("TyreW" + k), CH["TyreW" + k][7], sfs, WHITE, weight="Bold", ha=oha, va=0))
+        wfs = min(int(sfs * 1.18), int(fit(sw - 2, dh * 0.5, 4, 0.95, 0.58)))   # percentuale un po' piu' grande
+        items.append(text("Gomma %s usura" % k, ox, dy + dh / 2, sw, dh / 2, ch_val("TyreW" + k), CH["TyreW" + k][7], wfs, WHITE, weight="Bold", ha=oha, va=0))
         items.append(text("Gomma %s freno" % k, nx, dy, sw, dh, ch_val("BrakeT" + k), CH["BrakeT" + k][7], sfs, WHITE, weight="Bold", ha=nha))
     # mescola al centro della croce
     pw = clamp(iw * 0.36, 50, 150)
