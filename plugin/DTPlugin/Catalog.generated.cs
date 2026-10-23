@@ -77,6 +77,25 @@ namespace FedeDashboard
             new ChannelDef("TCSlip", "TC SLIP", "@raw:PlayerNativeTelemetry.mTCSlip", "num", 0, ""),
             new ChannelDef("TrackWet", "PISTA BAGN.", "@bagnato", "num", 0, "%"),
             new ChannelDef("Rain", "PIOGGIA", "@pioggia", "num", 0, "%"),
+            new ChannelDef("RepDamage", "RIPARAZIONE", "@rip_danni", "num", 1, "s"),
+            new ChannelDef("RepBrakes", "FRENI", "@rip_freni", "num", 1, "s"),
+            new ChannelDef("RepTyres", "GOMME", "@rip_gomme", "num", 1, "s"),
+            new ChannelDef("RepFuel", "RIFORNIMENTO", "@rip_carb", "num", 1, "s"),
+            new ChannelDef("RepTotal", "SOSTA", "@rip_totale", "num", 1, "s"),
+            new ChannelDef("SuspFL", "SOSP. AS", "@sosp_FL", "num", 0, "%"),
+            new ChannelDef("SuspFR", "SOSP. AD", "@sosp_FR", "num", 0, "%"),
+            new ChannelDef("SuspRL", "SOSP. PS", "@sosp_RL", "num", 0, "%"),
+            new ChannelDef("SuspRR", "SOSP. PD", "@sosp_RR", "num", 0, "%"),
+            new ChannelDef("BrakeWFL", "FRENO AS", "@usura_freno_FL", "num", 0, "%"),
+            new ChannelDef("BrakeWFR", "FRENO AD", "@usura_freno_FR", "num", 0, "%"),
+            new ChannelDef("BrakeWRL", "FRENO PS", "@usura_freno_RL", "num", 0, "%"),
+            new ChannelDef("BrakeWRR", "FRENO PD", "@usura_freno_RR", "num", 0, "%"),
+            new ChannelDef("AeroDmg", "AERO", "@danno_aero", "num", 0, "%"),
+            new ChannelDef("EngineDmg", "MOTORE", "@danno_motore", "num", 0, "%"),
+            new ChannelDef("NewTyres", "GOMME NUOVE", "@gomme_nuove", "num", 0, ""),
+            new ChannelDef("TrackLim", "TRACK LIMITS", "@track_limits", "text", 0, ""),
+            new ChannelDef("Battery", "BATTERIA", "@batteria", "num", 0, "%"),
+            new ChannelDef("Sky", "CIELO", "@cielo", "text", 0, ""),
             new ChannelDef("Custom1", "PERS. 1", "", "num", 1, ""),
             new ChannelDef("Custom2", "PERS. 2", "", "num", 1, ""),
             new ChannelDef("Custom3", "PERS. 3", "", "num", 1, ""),
@@ -85,15 +104,15 @@ namespace FedeDashboard
             new ChannelDef("Custom6", "PERS. 6", "", "num", 1, ""),
         };
 
-        public static readonly string[] Cards = new string[] { "Vuoto", "Gomme (pressione + temperatura)", "Gomme (temperature)", "Usura gomme", "Temperature freni", "Tempi giro", "Carburante", "Sessione", "Distacchi", "Pedali", "Meteo", "Motore (acqua/olio)", "Assetto (TC/ABS/BB/MAP)", "Delta", "TC", "TC Cut", "ABS", "Ripartizione freno (BB)", "Mappa motore", "Posizione", "Giro", "Tempo rimasto", "Ultimo giro", "Miglior giro", "Giro stimato", "Velocità", "Giri motore", "Carburante (litri)", "Carburante (giri)", "Consumo medio", "ERS / batteria", "Ora", "Distacco avanti", "Distacco dietro", "Temperatura aria", "Temperatura pista", "Personalizzato 1", "Personalizzato 2", "Personalizzato 3", "Personalizzato 4", "Personalizzato 5", "Personalizzato 6", "Gomme complete (temp. carcassa, pressione, freni)", "Energia virtuale (VE)", "Giri energia virtuale", "Consumo energia virtuale", "Energia virtuale (completa)", "TC Slip", "Danni (schema auto)", "Stato auto (luci, bandiera, tergi, motore)", "Carburante (barra + giri)", "Energia virtuale (barra + giri)", "Strategia gara (soste, finestra, rifornimento)", "Classifica generale", "Classifica di classe" };
+        public static readonly string[] Cards = new string[] { "Vuoto", "Gomme (pressione + temperatura)", "Gomme (temperature)", "Usura gomme", "Temperature freni", "Tempi giro", "Carburante", "Sessione", "Distacchi", "Pedali", "Meteo", "Motore (acqua/olio)", "Assetto (TC/ABS/BB/MAP)", "Delta", "TC", "TC Cut", "ABS", "Ripartizione freno (BB)", "Mappa motore", "Posizione", "Giro", "Tempo rimasto", "Ultimo giro", "Miglior giro", "Giro stimato", "Velocità", "Giri motore", "Carburante (litri)", "Carburante (giri)", "Consumo medio", "ERS / batteria", "Ora", "Distacco avanti", "Distacco dietro", "Temperatura aria", "Temperatura pista", "Personalizzato 1", "Personalizzato 2", "Personalizzato 3", "Personalizzato 4", "Personalizzato 5", "Personalizzato 6", "Gomme complete (temp. carcassa, pressione, freni)", "Energia virtuale (VE)", "Giri energia virtuale", "Consumo energia virtuale", "Energia virtuale (completa)", "TC Slip", "Danni (schema auto)", "Stato auto (luci, bandiera, tergi, motore)", "Carburante (barra + giri)", "Energia virtuale (barra + giri)", "Strategia gara (soste, finestra, rifornimento)", "Classifica generale", "Classifica di classe", "Sosta (tempi stimati da LMU)", "Tempo sosta totale", "Danni sospensioni", "Danni (aero e motore)", "Usura freni", "Gomme nuove rimaste", "Track limits", "Batteria", "Previsioni meteo" };
         public static readonly string[] Bars = new string[] { "Vuoto", "Giri motore", "Gas", "Freno", "Frizione", "Carburante", "ERS / batteria" };
         public static readonly string[] Frames = new string[] { "Completo (barre laterali + barra inferiore)", "Solo barra inferiore", "Solo barre laterali", "Pulito (solo riquadri)", "Completo con barra doppia", "Barra doppia senza barre laterali" };
         public static readonly bool[] FrameHasSidebars = new bool[] { true, false, true, false, true, false };
         public static readonly bool[] FrameHasToolbar = new bool[] { true, true, false, false, true, true };
         public static readonly string[] Grids = new string[] { "Riga + grande", "2 grandi", "Grande + 2 medi", "4 medi", "Grande + 4 piccoli", "4 righe", "8 piccoli", "2 righe + grande", "Grande + 2 righe", "Grande + riga", "Unico" };
-        public static readonly string[] Categories = new string[] { "Tempi", "Carburante ed energia", "Comandi auto", "Gomme e freni", "Sessione e gara", "Motore e pedali", "Meteo", "Personalizzati" };
+        public static readonly string[] Categories = new string[] { "Tempi", "Carburante ed energia", "Comandi auto", "Gomme e freni", "Sessione e gara", "Motore e pedali", "Meteo", "Sosta e danni (LMU)", "Personalizzati" };
         // CategoryCards[categoria] = indici delle schede
-        public static readonly int[][] CategoryCards = new int[][] { new[] { 5, 13, 22, 23, 24 }, new[] { 6, 27, 28, 29, 43, 46, 44, 45, 30, 50, 51, 52 }, new[] { 12, 14, 15, 47, 16, 17, 18 }, new[] { 42, 1, 2, 3, 4, 48 }, new[] { 7, 19, 20, 21, 31, 8, 32, 33, 53, 54, 49 }, new[] { 9, 25, 26, 11 }, new[] { 10, 34, 35 }, new[] { 36, 37, 38, 39, 40, 41 } };
+        public static readonly int[][] CategoryCards = new int[][] { new[] { 5, 13, 22, 23, 24 }, new[] { 6, 27, 28, 29, 43, 46, 44, 45, 30, 50, 51, 52 }, new[] { 12, 14, 15, 47, 16, 17, 18 }, new[] { 42, 1, 2, 3, 4, 48 }, new[] { 7, 19, 20, 21, 31, 8, 32, 33, 53, 54, 49 }, new[] { 9, 25, 26, 11 }, new[] { 10, 34, 35, 63 }, new[] { 55, 56, 57, 58, 59, 60, 61, 62 }, new[] { 36, 37, 38, 39, 40, 41 } };
         // GridUnits[griglia] = celle in unita' 2 colonne x 4 righe {col, riga, larghezza, altezza}
         public static readonly int[][][] GridUnits = new int[][][] { new int[][] { new[] { 0, 0, 2, 1 }, new[] { 0, 1, 2, 3 } }, new int[][] { new[] { 0, 0, 2, 2 }, new[] { 0, 2, 2, 2 } }, new int[][] { new[] { 0, 0, 2, 2 }, new[] { 0, 2, 1, 2 }, new[] { 1, 2, 1, 2 } }, new int[][] { new[] { 0, 0, 1, 2 }, new[] { 1, 0, 1, 2 }, new[] { 0, 2, 1, 2 }, new[] { 1, 2, 1, 2 } }, new int[][] { new[] { 0, 0, 2, 2 }, new[] { 0, 2, 1, 1 }, new[] { 1, 2, 1, 1 }, new[] { 0, 3, 1, 1 }, new[] { 1, 3, 1, 1 } }, new int[][] { new[] { 0, 0, 2, 1 }, new[] { 0, 1, 2, 1 }, new[] { 0, 2, 2, 1 }, new[] { 0, 3, 2, 1 } }, new int[][] { new[] { 0, 0, 1, 1 }, new[] { 1, 0, 1, 1 }, new[] { 0, 1, 1, 1 }, new[] { 1, 1, 1, 1 }, new[] { 0, 2, 1, 1 }, new[] { 1, 2, 1, 1 }, new[] { 0, 3, 1, 1 }, new[] { 1, 3, 1, 1 } }, new int[][] { new[] { 0, 0, 2, 1 }, new[] { 0, 1, 2, 1 }, new[] { 0, 2, 2, 2 } }, new int[][] { new[] { 0, 0, 2, 2 }, new[] { 0, 2, 2, 1 }, new[] { 0, 3, 2, 1 } }, new int[][] { new[] { 0, 0, 2, 3 }, new[] { 0, 3, 2, 1 } }, new int[][] { new[] { 0, 0, 2, 4 } } };
         public static readonly string[] Toolbars = new string[] { "5 riquadri", "6 riquadri", "4 riquadri", "3 riquadri", "1 riquadro largo" };

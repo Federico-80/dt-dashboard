@@ -1,5 +1,5 @@
 {
-  "version": "1.66",
-  "notes": "LMU: mescole, consumo previsto di energia e carburante letti dal gioco (come TK LMU Plugin). Bandiere gialle di settore dal dato corretto.",
+  "version": "1.67",
+  "notes": "Nuovi dati da LMU: tempi di sosta stimati, previsioni meteo, danni sospensioni/aero/motore, usura freni, gomme nuove, track limits, batteria.",
   "date": "2026-10-23"
 }

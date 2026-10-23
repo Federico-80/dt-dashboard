@@ -142,6 +142,49 @@ ON = {"luci": "#FF64B5F6", "tergi": "#FF26C6DA", "motore": "#FF00E676", "motore-
 _CACHE = {}
 
 
+# ---- cielo (previsioni meteo): 0 sereno, 1 poco nuvoloso, 2 nuvoloso, 3 pioggia, 4 temporale
+SUN, CLOUD, DROP, BOLT = "#FFFFC400", "#FFCFD8DC", "#FF42A5F5", "#FFFFEB3B"
+
+
+def _sun(d, u, cx, cy, r):
+    c = _rgba(SUN)
+    d.ellipse([(cx - r) * u, (cy - r) * u, (cx + r) * u, (cy + r) * u], fill=c)
+    import math
+    for k in range(8):
+        a = k * math.pi / 4
+        d.line([(cx + math.cos(a) * (r + 6)) * u, (cy + math.sin(a) * (r + 6)) * u,
+                (cx + math.cos(a) * (r + 16)) * u, (cy + math.sin(a) * (r + 16)) * u], fill=c, width=int(6 * u))
+
+
+def _cloud(d, u, ox, oy, col=CLOUD):
+    c = _rgba(col)
+    d.ellipse([(ox + 0) * u, (oy + 20) * u, (ox + 34) * u, (oy + 54) * u], fill=c)
+    d.ellipse([(ox + 18) * u, (oy + 4) * u, (ox + 60) * u, (oy + 46) * u], fill=c)
+    d.ellipse([(ox + 44) * u, (oy + 20) * u, (ox + 76) * u, (oy + 54) * u], fill=c)
+    d.rectangle([(ox + 16) * u, (oy + 34) * u, (ox + 60) * u, (oy + 54) * u], fill=c)
+
+
+def sky(kind):
+    im, d = _canvas(); u = S * K / 96.0
+    if kind == 0:
+        _sun(d, u, 48, 48, 20)
+    elif kind == 1:
+        _sun(d, u, 34, 32, 15)
+        _cloud(d, u, 16, 34)
+    elif kind == 2:
+        _cloud(d, u, 10, 14, "#FFB0BEC5")
+        _cloud(d, u, 18, 30)
+    else:
+        _cloud(d, u, 10, 6, "#FF90A4AE" if kind == 4 else CLOUD)
+        if kind == 3:
+            for x in (28, 46, 64):
+                d.line([x * u, 70 * u, (x - 7) * u, 90 * u], fill=_rgba(DROP), width=int(7 * u))
+        else:
+            d.polygon([(52 * u, 58 * u), (36 * u, 78 * u), (48 * u, 78 * u), (40 * u, 94 * u), (62 * u, 70 * u), (50 * u, 70 * u), (58 * u, 58 * u)],
+                      fill=_rgba(BOLT))
+    return _done(im)
+
+
 def all_icons():
     """nome -> PNG"""
     if not _CACHE:
@@ -158,6 +201,7 @@ def _build():
         "dt-ico-pista": _ico(ico_track), "dt-ico-aria": _ico(ico_air), "dt-ico-bagnato": _ico(ico_wet),
         "dt-ico-pioggia": _ico(ico_rain), "dt-ico-acqua": _ico(ico_water), "dt-ico-olio": _ico(ico_oil),
         "dt-bandiera-off": flag(GREY), "dt-bandiera-nera": flag("#FF000000"), "dt-bandiera-bianca": flag("#FFFFFFFF"),
+        "dt-cielo-0": sky(0), "dt-cielo-1": sky(1), "dt-cielo-2": sky(2), "dt-cielo-3": sky(3), "dt-cielo-4": sky(4),
     }
 
 

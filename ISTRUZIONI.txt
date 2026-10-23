@@ -153,6 +153,11 @@ DT Rally (dashboard semplificata per i rally):
 
 5) SCHEDE DISPONIBILI
 ---------------------
+ Dati letti direttamente da LMU (gli stessi dei menu del gioco), categoria "Sosta e danni (LMU)" e "Meteo":
+  Sosta (tempi stimati: riparazione, gomme, rifornimento, freni, totale), Tempo sosta totale,
+  Danni sospensioni, Danni (aero e motore), Usura freni, Gomme nuove rimaste, Track limits (punti/ammessi),
+  Batteria, Previsioni meteo (inizio, 25%, 50%, 75%, fine: cielo, temperatura, probabilità di pioggia).
+  Anche mescole, giri di carburante ed energia usano il consumo previsto da LMU.
  Classifica generale / Classifica di classe: le auto intorno a te con posizione, categoria, nome e
   distacco da te (verde chi è davanti, rosso chi è dietro, +1L doppiati). La tua riga è evidenziata.
   In gara distacchi presi da LMU, in prova e qualifica differenza tra i giri migliori.

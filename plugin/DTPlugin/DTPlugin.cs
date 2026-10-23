@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.66";
+        public const string VersionText = "1.67";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -32,6 +32,103 @@ namespace FedeDashboard
         public Access Access;
         LmuRest lmuRest;
         volatile bool lmuActive;
+        volatile string sessionTypeCache = "";
+
+        static readonly string[] SkyNames = { "Sereno", "Poco nuvoloso", "Nuvoloso", "Coperto", "Molto nuvoloso", "Pioviggine",
+                                              "Pioggia leggera", "Coperto, pioggia", "Pioggia", "Pioggia forte", "Temporale" };
+        static readonly string[] SkyShort = { "Sereno", "Poche nubi", "Nuvoloso", "Coperto", "Nuvoloso", "Pioviggine", "Pioggia", "Pioggia", "Pioggia", "Pioggia forte", "Temporale" };
+        static readonly string[] FcLabels = { "INIZIO", "25%", "50%", "75%", "FINE" };
+
+        static int SkyIcon(int id)
+        {
+            if (id < 0) return -1;
+            if (id == 0) return 0;
+            if (id <= 2) return 1;
+            if (id <= 4) return 2;
+            if (id >= 10) return 4;
+            return 3;
+        }
+
+        /// <summary>Danno sospensione (0-100%): dati condivisi di LMU, altrimenti server LMU.</summary>
+        double SuspDamage(int w)
+        {
+            double v = Num(Raw("mSuspensionDamage0" + (w + 1)));
+            if (double.IsNaN(v) && lmuRest != null && lmuRest.FreshWear) v = lmuRest.Susp[w];
+            if (double.IsNaN(v)) return double.NaN;
+            return Math.Max(0, Math.Min(100, v <= 1.0001 ? v * 100.0 : v));
+        }
+
+        object LmuSpecial(string src)
+        {
+            var r = lmuRest;
+            switch (src)
+            {
+                case "@rip_danni": return r != null && r.FreshRep && !double.IsNaN(r.RepDamage) ? (object)r.RepDamage : null;
+                case "@rip_freni": return r != null && r.FreshRep && !double.IsNaN(r.RepBrakes) ? (object)r.RepBrakes : null;
+                case "@rip_gomme": return r != null && r.FreshRep && !double.IsNaN(r.RepTyres) ? (object)r.RepTyres : null;
+                case "@rip_carb": return r != null && r.FreshRep && !double.IsNaN(r.RepFuel) ? (object)r.RepFuel : null;
+                case "@rip_totale": return r != null && r.FreshRep && !double.IsNaN(r.RepTotal) ? (object)r.RepTotal : null;
+                case "@danno_aero":
+                    {
+                        double v = Num(Raw("mAeroDamage"));
+                        if (double.IsNaN(v) && r != null && r.FreshWear) v = r.Aero;
+                        return double.IsNaN(v) ? null : (object)Math.Max(0, Math.Min(100, v <= 1.0001 ? v * 100 : v));
+                    }
+                case "@danno_motore":
+                    {
+                        double v = Num(Raw("mEngineDamage"));
+                        return double.IsNaN(v) ? null : (object)Math.Max(0, Math.Min(100, v <= 1.0001 ? v * 100 : v));
+                    }
+                case "@gomme_nuove": return r != null && r.FreshWear && !double.IsNaN(r.NewTyres) ? (object)r.NewTyres : null;
+                case "@batteria":
+                    {
+                        double b = r != null ? r.BatteryPct : double.NaN;
+                        if (double.IsNaN(b)) { double f = Num(Raw("CurrentPlayerTelemetry.mBatteryChargeFraction")); if (!double.IsNaN(f)) b = f * 100; }
+                        return double.IsNaN(b) ? null : (object)b;
+                    }
+                case "@track_limits":
+                    {
+                        double pts = Num(Raw("PlayerNativeTelemetry.mTrackLimitsSteps"));
+                        double allowed = r != null ? r.CutsAllowed : double.NaN;
+                        if (double.IsNaN(pts) && double.IsNaN(allowed)) return null;
+                        string a = double.IsNaN(pts) ? "-" : Math.Round(pts).ToString(CultureInfo.InvariantCulture);
+                        return double.IsNaN(allowed) || allowed <= 0 ? a : a + "/" + Math.Round(allowed).ToString(CultureInfo.InvariantCulture);
+                    }
+                case "@cielo":
+                    {
+                        if (r == null || !r.FreshForecast) return null;
+                        int i = ForecastNow();
+                        int id = r.FcSky[i];
+                        if (id >= 0 && id < SkyNames.Length) return SkyNames[id];
+                        return string.IsNullOrEmpty(r.FcSkyText[i]) ? null : r.FcSkyText[i];
+                    }
+            }
+            if (src.StartsWith("@sosp_"))
+            {
+                int w = Array.IndexOf(Wheels, src.Substring(6));
+                if (w < 0) return null;
+                double v = SuspDamage(w);
+                return double.IsNaN(v) ? null : (object)v;
+            }
+            if (src.StartsWith("@usura_freno_"))
+            {
+                int w = Array.IndexOf(Wheels, src.Substring(13));
+                if (w < 0 || r == null || !r.FreshCond || double.IsNaN(r.Brakes[w])) return null;
+                double v = r.Brakes[w];
+                return Math.Max(0, Math.Min(100, v <= 1.0001 ? v * 100 : v));
+            }
+            return null;
+        }
+
+        /// <summary>Punto delle previsioni piu' vicino all'avanzamento della sessione (0 = inizio ... 4 = fine).</summary>
+        int ForecastNow()
+        {
+            var r = lmuRest;
+            double c = r != null && r.FreshInfo ? (!double.IsNaN(r.TimeCompletion) && r.TimeCompletion > 0 ? r.TimeCompletion : r.RaceCompletion) : double.NaN;
+            if (double.IsNaN(c)) return 0;
+            if (c > 1.0001) c /= 100.0;
+            return Math.Max(0, Math.Min(4, (int)Math.Round(c * 4)));
+        }
         public PluginManager PluginManager { get; set; }
         public string LeftMenuTitle { get { return "DT Plugin"; } }
 
@@ -101,6 +198,7 @@ namespace FedeDashboard
                 Settings = SettingsStore.Load();
                 Access = new Access(Settings.Access, SaveSettings);
                 lmuRest = new LmuRest(() => lmuActive);
+                lmuRest.SessionType = () => sessionTypeCache;
                 lmuRest.Start();
                 Access.Start();
                 Updater.Changed += OnUpdaterChanged;
@@ -236,6 +334,17 @@ namespace FedeDashboard
                 bridge.Attach("Danno_" + kk + "_Colore", () => { string v; lock (colors) return colors.TryGetValue("DannoColore_" + kk, out v) ? v : "#FFFFFFFF"; });
             }
             bridge.Attach("Avviso_Box", () => alertBox);
+            // previsioni meteo (LMU): 5 punti della sessione
+            for (int fi = 0; fi < 5; fi++)
+            {
+                int q = fi;
+                string pre = "Prev_" + (fi + 1) + "_";
+                bridge.Attach(pre + "Ora", () => lmuRest != null && lmuRest.FreshForecast ? FcLabels[q] : "");
+                bridge.Attach(pre + "Icona", () => lmuRest != null && lmuRest.FreshForecast && lmuRest.FcSky[q] >= 0 ? SkyIcon(lmuRest.FcSky[q]).ToString(CultureInfo.InvariantCulture) : "");
+                bridge.Attach(pre + "Cielo", () => lmuRest != null && lmuRest.FreshForecast && lmuRest.FcSky[q] >= 0 && lmuRest.FcSky[q] < SkyShort.Length ? SkyShort[lmuRest.FcSky[q]] : "");
+                bridge.Attach(pre + "Temp", () => lmuRest != null && lmuRest.FreshForecast && !double.IsNaN(lmuRest.FcTemp[q]) ? Math.Round(lmuRest.FcTemp[q]).ToString(CultureInfo.InvariantCulture) + "°" : "");
+                bridge.Attach(pre + "Pioggia", () => lmuRest != null && lmuRest.FreshForecast && !double.IsNaN(lmuRest.FcRain[q]) ? Math.Round(lmuRest.FcRain[q]).ToString(CultureInfo.InvariantCulture) + "%" : "");
+            }
             // classifiche (generale = 0, di classe = 1)
             for (int sc = 0; sc < 2; sc++)
             {
@@ -564,6 +673,7 @@ namespace FedeDashboard
                 var now = DateTime.Now;
                 currentGame = Convert.ToString(bridge.GetPropertyValue("DataCorePlugin.CurrentGame") ?? "");
                 isIRacing = currentGame.Equals("IRacing", StringComparison.OrdinalIgnoreCase);
+                sessionTypeCache = Convert.ToString(bridge.GetPropertyValue("DataCorePlugin.GameData.SessionTypeName") ?? "");
                 lmuActive = AsBool(GetMember(data, "GameRunning")) && (currentGame.IndexOf("LMU", StringComparison.OrdinalIgnoreCase) >= 0 || Raw("Scoring.mVehicles") != null);
                 if (now >= nextGapUpdate)
                 {
@@ -1739,6 +1849,9 @@ namespace FedeDashboard
                 if (!double.IsNaN(rl)) return rl > 0 ? 1.0 : 0.0;
                 return bridge.GetPropertyValue("DataCorePlugin.GameData.PitLimiterOn");
             }
+            if (src.StartsWith("@rip_") || src.StartsWith("@sosp_") || src.StartsWith("@usura_freno_") || src == "@danno_aero" || src == "@danno_motore" ||
+                src == "@gomme_nuove" || src == "@batteria" || src == "@track_limits" || src == "@cielo")
+                return LmuSpecial(src);
             switch (src.ToLowerInvariant())
             {
                 case "@ora": return now;

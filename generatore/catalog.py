@@ -71,6 +71,28 @@ CHANNELS += [
     ("TrackWet",   "PISTA BAGN.", "@bagnato",         "num", 0, "%", 4, "0%"),
     ("Rain",       "PIOGGIA",     "@pioggia",         "num", 0, "%", 4, "0%"),
 ]
+# dati del server interno di LMU (sosta, danni, freni, gomme nuove, track limits, batteria, cielo)
+CHANNELS += [
+    ("RepDamage", "RIPARAZIONE",  "@rip_danni",   "num", 1, "s", 6, "12.5s"),
+    ("RepBrakes", "FRENI",        "@rip_freni",   "num", 1, "s", 6, "0.0s"),
+    ("RepTyres",  "GOMME",        "@rip_gomme",   "num", 1, "s", 6, "8.0s"),
+    ("RepFuel",   "RIFORNIMENTO", "@rip_carb",    "num", 1, "s", 6, "21.4s"),
+    ("RepTotal",  "SOSTA",        "@rip_totale",  "num", 1, "s", 6, "41.9s"),
+]
+_su = {"FL": "0%", "FR": "0%", "RL": "12%", "RR": "0%"}
+for k, prop, it in WHEELS:
+    CHANNELS.append(("Susp" + k, "SOSP. " + it, "@sosp_" + k, "num", 0, "%", 4, _su[k]))
+_bw = {"FL": "92%", "FR": "93%", "RL": "96%", "RR": "96%"}
+for k, prop, it in WHEELS:
+    CHANNELS.append(("BrakeW" + k, "FRENO " + it, "@usura_freno_" + k, "num", 0, "%", 4, _bw[k]))
+CHANNELS += [
+    ("AeroDmg",   "AERO",          "@danno_aero",   "num", 0, "%", 4, "0%"),
+    ("EngineDmg", "MOTORE",        "@danno_motore", "num", 0, "%", 4, "0%"),
+    ("NewTyres",  "GOMME NUOVE",   "@gomme_nuove",  "num", 0, "",  2, "8"),
+    ("TrackLim",  "TRACK LIMITS",  "@track_limits", "text", 0, "", 5, "1/4"),
+    ("Battery",   "BATTERIA",      "@batteria",     "num", 0, "%", 4, "78%"),
+    ("Sky",       "CIELO",         "@cielo",        "text", 0, "", 13, "Nuvoloso"),
+]
 for i in range(1, 7):
     CHANNELS.append(("Custom%d" % i, "PERS. %d" % i, "", "num", 1, "", 6, "-"))
 
@@ -156,6 +178,15 @@ CARDS.append(dict(name="Energia virtuale (barra + giri)", kind="gauge", title="E
 CARDS.append(dict(name="Strategia gara (soste, finestra, rifornimento)", kind="strategy", title="", color=FRAME))
 CARDS.append(dict(name="Classifica generale", kind="standings", scope="G", title="CLASSIFICA", color=FRAME))
 CARDS.append(dict(name="Classifica di classe", kind="standings", scope="C", title="CLASSIFICA CLASSE", color=FRAME))
+CARDS.append(group("Sosta (tempi stimati da LMU)", "SOSTA (S)", [("RepDamage", WHITE), ("RepTyres", WHITE), ("RepFuel", WHITE), ("RepBrakes", WHITE), ("RepTotal", YELLOW)]))
+CARDS.append(single("Tempo sosta totale", "RepTotal", YELLOW))
+CARDS.append(group("Danni sospensioni", "SOSPENSIONI", [("Susp" + k, WHITE) for k, _, _ in WHEELS]))
+CARDS.append(group("Danni (aero e motore)", "DANNI", [("AeroDmg", WHITE), ("EngineDmg", WHITE)]))
+CARDS.append(group("Usura freni", "USURA FRENI", [("BrakeW" + k, WHITE) for k, _, _ in WHEELS]))
+CARDS.append(single("Gomme nuove rimaste", "NewTyres", GREEN))
+CARDS.append(single("Track limits", "TrackLim", ORANGE))
+CARDS.append(single("Batteria", "Battery", CYAN))
+CARDS.append(dict(name="Previsioni meteo", kind="forecast", title="PREVISIONI", color=FRAME))
 STANDINGS_MAX = 60   # righe esportate dal plugin per ogni classifica
 CARD_INDEX = {c["name"]: i for i, c in enumerate(CARDS)}
 
@@ -174,7 +205,8 @@ CATEGORIES = [
     ("Gomme e freni", ["Gomme complete (temp. carcassa, pressione, freni)", "Gomme (pressione + temperatura)", "Gomme (temperature)", "Usura gomme", "Temperature freni", "Danni (schema auto)"]),
     ("Sessione e gara", ["Sessione", "Posizione", "Giro", "Tempo rimasto", "Ora", "Distacchi", "Distacco avanti", "Distacco dietro", "Classifica generale", "Classifica di classe", "Stato auto (luci, bandiera, tergi, motore)"]),
     ("Motore e pedali", ["Pedali", "Velocità", "Giri motore", "Motore (acqua/olio)"]),
-    ("Meteo", ["Meteo", "Temperatura aria", "Temperatura pista"]),
+    ("Meteo", ["Meteo", "Temperatura aria", "Temperatura pista", "Previsioni meteo"]),
+    ("Sosta e danni (LMU)", ["Sosta (tempi stimati da LMU)", "Tempo sosta totale", "Danni sospensioni", "Danni (aero e motore)", "Usura freni", "Gomme nuove rimaste", "Track limits", "Batteria"]),
     ("Personalizzati", ["Personalizzato %d" % i for i in range(1, 7)]),
 ]
 _cat_all = [n for _, ns in CATEGORIES for n in ns]

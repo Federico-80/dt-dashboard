@@ -345,6 +345,48 @@ STD_SAMPLE = [("5", "GT3", "S. Bovy", "-19.4", False), ("6", "GT3", "M. Berry", 
               ("11", "LMP2", "A. Rossi", "+1L", False), ("12", "GT3", "L. Verdi", "+1L", False)]
 
 
+FC_SAMPLE = [("INIZIO", 1, "24°", "10%"), ("25%", 2, "23°", "30%"), ("50%", 3, "21°", "70%"), ("75%", 3, "20°", "80%"), ("FINE", 1, "22°", "20%")]
+
+
+def forecast_items(card, w, h):
+    """Previsioni meteo di LMU per la sessione: inizio, 25%, 50%, 75%, fine (cielo, temperatura, probabilita' di pioggia)."""
+    show_title = h >= 110
+    th = clamp(round(h * 0.09), 12, 15) if show_title else 0
+    it = []
+    if show_title:
+        it.append(text("Titolo", 6, 3, w - 12, th, None, card["title"], int(th * 0.75), GREY, weight="Medium"))
+    idx = [1, 2, 3, 4, 5] if w >= 230 else [1, 3, 5]
+    n = len(idx)
+    iy, ih = th + 4, h - th - 8
+    cw = (w - 8) / n
+    lh = clamp(ih * 0.16, 9, 16)
+    rest = ih - lh
+    full = rest >= 70
+    ic = min(cw - 8, rest * (0.5 if full else 0.62))
+    for j, k in enumerate(idx):
+        x = 4 + j * cw
+        P_ = "DTPlugin.Prev_%d_" % k
+        lab, kind, t, r = FC_SAMPLE[k - 1]
+        it.append(text("Prev %d ora" % k, x, iy, cw, lh, None, lab, int(lh * 0.8), GREY, weight="Medium",
+                       bindings={"Text": js("var t = $prop('%sOra');\r\nreturn t ? t : '';" % P_)}))
+        img = image("Prev %d cielo" % k, x + (cw - ic) / 2, iy + lh + 1, ic, ic, "dt-cielo-%d" % kind,
+                    bind_js="var c = $prop('%sIcona');\r\nreturn 'dt-cielo-' + ((c == null || c === '') ? 2 : c);" % P_)
+        img["Bindings"]["Visible"] = js("var c = $prop('%sIcona');\r\nreturn c != null && c !== '';" % P_)
+        it.append(img)
+        ty = iy + lh + ic + 2
+        left = iy + ih - ty
+        if full:
+            th2 = left * 0.55
+            it.append(text("Prev %d temp" % k, x, ty, cw, th2, None, t, fit(cw - 4, th2, 4, 0.8), WHITE,
+                           bindings={"Text": js("var t = $prop('%sTemp');\r\nreturn t ? t : '-';" % P_)}))
+            it.append(text("Prev %d pioggia" % k, x, ty + th2, cw, left - th2, None, r, fit(cw - 4, left - th2, 4, 0.75), "#FF64B5F6",
+                           weight="Medium", bindings={"Text": js("var t = $prop('%sPioggia');\r\nreturn t ? t : '';" % P_)}))
+        else:
+            it.append(text("Prev %d temp" % k, x, ty, cw, left, None, t, fit(cw - 4, left, 4, 0.8), WHITE,
+                           bindings={"Text": js("var t = $prop('%sTemp');\r\nreturn t ? t : '-';" % P_)}))
+    return it
+
+
 def standings_items(card, w, h):
     """Classifica intorno a te (generale o di classe): posizione, categoria, nome, distacco da te. La tua riga e' evidenziata."""
     sc = card["scope"]
@@ -545,6 +587,9 @@ def card_items(card, w, h):
 
     if kind == "standings":
         return items + standings_items(card, w, h)
+
+    if kind == "forecast":
+        return items + forecast_items(card, w, h)
 
     if kind in ("single", "delta"):
         c = card["ch"]
@@ -1570,7 +1615,7 @@ def write_all():
     for fn, doc in files.items():
         body = json.dumps(strip(doc), ensure_ascii=False, separators=(",", ":"))
         used = [n for n in ICONS if ('"%s"' % n) in body or ("'%s'" % n) in body
-                 or (n.startswith("dt-dz") and "'dt-dz" in body)]      # zone danno scelte a runtime ('dt-dz3-' + livello)
+                 or (n.startswith("dt-dz") and "'dt-dz" in body) or (n.startswith("dt-cielo") and "'dt-cielo-'" in body)]      # zone danno scelte a runtime ('dt-dz3-' + livello)
         if used:
             import struct
             def png_size(b):

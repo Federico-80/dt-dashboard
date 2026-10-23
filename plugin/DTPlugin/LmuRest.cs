@@ -155,7 +155,35 @@ namespace FedeDashboard
         public double VeNow = double.NaN, VeMax = double.NaN, FuelNow = double.NaN;
         public DateTime UsageTime = DateTime.MinValue, TankTime = DateTime.MinValue, CompoundTime = DateTime.MinValue;
         public volatile string Status = "";
-        bool loggedCompounds;
+        bool loggedCompounds, loggedOnce;
+
+        // sosta stimata (secondi), danni, freni, gomme nuove, batteria, track limits, meteo
+        public double RepDamage = double.NaN, RepBrakes = double.NaN, RepTyres = double.NaN, RepFuel = double.NaN, RepTotal = double.NaN;
+        public DateTime RepTime = DateTime.MinValue;
+        public readonly double[] Susp = { double.NaN, double.NaN, double.NaN, double.NaN };
+        public readonly double[] Brakes = { double.NaN, double.NaN, double.NaN, double.NaN };
+        public double Aero = double.NaN, VehicleDmg = double.NaN, NewTyres = double.NaN;
+        public DateTime WearTime = DateTime.MinValue, CondTime = DateTime.MinValue;
+        public double BattNow = double.NaN, BattMax = double.NaN;
+        public double CutsAllowed = double.NaN;
+        public double AirC = double.NaN, TrackC = double.NaN, RainIntensity = double.NaN, Cloud = double.NaN, Wetness = double.NaN;
+        public double TimeCompletion = double.NaN, RaceCompletion = double.NaN;
+        public DateTime WeatherTime = DateTime.MinValue, InfoTime = DateTime.MinValue;
+        /// <summary>Previsioni: 5 punti (inizio, 25%, 50%, 75%, fine): id cielo 0..10, testo, temperatura, pioggia %.</summary>
+        public readonly int[] FcSky = { -1, -1, -1, -1, -1 };
+        public readonly string[] FcSkyText = { "", "", "", "", "" };
+        public readonly double[] FcTemp = { double.NaN, double.NaN, double.NaN, double.NaN, double.NaN };
+        public readonly double[] FcRain = { double.NaN, double.NaN, double.NaN, double.NaN, double.NaN };
+        public DateTime ForecastTime = DateTime.MinValue;
+        public Func<string> SessionType;   // dal plugin: "PRACTICE" / "QUALIFY" / "RACE"
+        bool cutsRead;
+
+        public bool FreshRep { get { return Fresh(RepTime, 20); } }
+        public bool FreshWear { get { return Fresh(WearTime, 30); } }
+        public bool FreshCond { get { return Fresh(CondTime, 30); } }
+        public bool FreshForecast { get { return Fresh(ForecastTime, 60); } }
+        public bool FreshInfo { get { return Fresh(InfoTime, 30); } }
+        public double BatteryPct { get { return Fresh(TankTime, 20) && BattMax > 0 && !double.IsNaN(BattNow) ? BattNow / BattMax * 100.0 : double.NaN; } }
 
         public LmuRest(Func<bool> active) { this.active = active; }
 
@@ -250,6 +278,36 @@ namespace FedeDashboard
             catch { return null; }
         }
 
+        static readonly string[] Nodes = { "START", "NODE_25", "NODE_50", "NODE_75", "FINISH" };
+
+        void PollWeather()
+        {
+            var wj = GetJson("/rest/sessions/weather") as Dictionary<string, object>;
+            if (wj == null) return;
+            string st = SessionType != null ? (SessionType() ?? "") : "";
+            st = st.ToUpperInvariant();
+            string key = st.Contains("PRACTICE") || st.Contains("TRAINING") ? "PRACTICE" : (st.Contains("QUALIFY") ? "QUALIFY" : "RACE");
+            object ses;
+            if (!wj.TryGetValue(key, out ses) || !(ses is Dictionary<string, object>))
+            {
+                ses = null;
+                foreach (var kv in wj) if (kv.Value is Dictionary<string, object>) { ses = kv.Value; break; }
+            }
+            if (ses == null) return;
+            for (int i = 0; i < 5; i++)
+            {
+                var node = MiniJson.Get(ses, Nodes[i]);
+                if (node == null) continue;
+                double sky = MiniJson.Num(node, "WNV_SKY.currentValue");
+                FcSky[i] = double.IsNaN(sky) ? -1 : (int)sky;
+                var stv = MiniJson.Get(node, "WNV_SKY.stringValue");
+                FcSkyText[i] = stv == null ? "" : Convert.ToString(stv, CultureInfo.InvariantCulture);
+                FcTemp[i] = MiniJson.Num(node, "WNV_TEMPERATURE.currentValue");
+                FcRain[i] = MiniJson.Num(node, "WNV_RAIN_CHANCE.currentValue");
+            }
+            ForecastTime = DateTime.Now;
+        }
+
         void PollAll()
         {
             var gs = GetJson("/rest/sessions/GetGameState");
@@ -280,6 +338,13 @@ namespace FedeDashboard
                         CompoundTime = DateTime.Now;
                         if (!loggedCompounds) { loggedCompounds = true; FedeLog.Write("LMU mescole: " + string.Join(", ", Compounds)); }
                     }
+                    double nt = MiniJson.Num(tm, "tireInventory.newTires");
+                    if (!double.IsNaN(nt)) NewTyres = nt;
+                    var sus = MiniJson.Get(tm, "wearables.suspension") as List<object>;
+                    if (sus != null && sus.Count >= 4) for (int w = 0; w < 4; w++) { var o = sus[w]; Susp[w] = o is double ? (double)o : double.NaN; }
+                    double ae = MiniJson.Num(tm, "wearables.body.aero");
+                    if (!double.IsNaN(ae)) Aero = ae;
+                    WearTime = DateTime.Now;
                     double ve = MiniJson.Num(tm, "expectedUsage.virtualEnergyFractionPerLap");
                     double fu = MiniJson.Num(tm, "expectedUsage.fuelConsumption");
                     if (ve > 0) VeFractionPerLap = ve;
@@ -296,7 +361,64 @@ namespace FedeDashboard
                 if (!double.IsNaN(cv)) VeNow = cv;
                 if (!double.IsNaN(mv)) VeMax = mv;
                 if (!double.IsNaN(cf)) FuelNow = cf;
+                double cb = MiniJson.Num(rr, "fuelInfo.currentBattery"), mb = MiniJson.Num(rr, "fuelInfo.maxBattery");
+                if (!double.IsNaN(cb)) BattNow = cb;
+                if (!double.IsNaN(mb)) BattMax = mb;
                 if (!double.IsNaN(cv) || !double.IsNaN(cf)) TankTime = DateTime.Now;
+                double ak = MiniJson.Num(rr, "currentWeather.ambientTempKelvin"), tk = MiniJson.Num(rr, "currentWeather.trackTempKelvin");
+                if (ak > 0) AirC = ak - 273.15;
+                if (tk > 0) TrackC = tk - 273.15;
+                RainIntensity = MiniJson.Num(rr, "currentWeather.rainIntensity");
+                Cloud = MiniJson.Num(rr, "currentWeather.cloudCoverage");
+                if (ak > 0) WeatherTime = DateTime.Now;
+            }
+
+            int t3 = (tick / 6) % 3;
+            if (t3 == 0)
+            {
+                var vc = GetJson("/rest/garage/getVehicleCondition");
+                if (vc != null)
+                {
+                    double vd = MiniJson.Num(vc, "vehicleDamage");
+                    if (!double.IsNaN(vd)) VehicleDmg = vd;
+                    var bc = MiniJson.Get(vc, "brakeCondition") as List<object>;
+                    if (bc != null && bc.Count >= 4) for (int w = 0; w < 4; w++) { var o = bc[w]; Brakes[w] = o is double ? (double)o : double.NaN; }
+                    CondTime = DateTime.Now;
+                }
+            }
+            else if (t3 == 1)
+            {
+                var pe = GetJson("/rest/strategy/pitstop-estimate");
+                if (pe != null)
+                {
+                    RepDamage = MiniJson.Num(pe, "damage"); RepBrakes = MiniJson.Num(pe, "brakes"); RepTyres = MiniJson.Num(pe, "tires");
+                    RepFuel = MiniJson.Num(pe, "fuel"); RepTotal = MiniJson.Num(pe, "total");
+                    RepTime = DateTime.Now;
+                }
+            }
+            else
+            {
+                PollWeather();
+            }
+
+            var si = GetJson("/rest/watch/sessionInfo");
+            if (si != null)
+            {
+                RaceCompletion = MiniJson.Num(si, "raceCompletion");
+                TimeCompletion = MiniJson.Num(si, "timeCompletion");
+                Wetness = MiniJson.Num(si, "averagePathWetness");
+                InfoTime = DateTime.Now;
+            }
+            if (!cutsRead)
+            {
+                var ss = GetJson("/rest/sessions/?");
+                if (ss != null) { CutsAllowed = MiniJson.Num(ss, "SESSSET_cuts_allowed.currentValue"); cutsRead = true; }
+            }
+            if (!loggedOnce && tick / 6 >= 8)   // dopo una ventina di secondi, quando tutti i dati sono arrivati
+            {
+                loggedOnce = true;
+                FedeLog.Write("LMU dati: sosta " + RepTotal + " s, gomme nuove " + NewTyres + ", batteria " + BatteryPct + "%, track limits ammessi " + CutsAllowed +
+                              ", sospensioni " + string.Join("/", Susp) + ", freni " + string.Join("/", Brakes));
             }
             Status = "ok";
         }
