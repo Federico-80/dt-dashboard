@@ -523,17 +523,18 @@ def pos_arrow(prefix, x, y, d):
     return img
 
 
-def entry_items(c, color, x, y, w, h, prefix, sub=None):
+def entry_items(c, color, x, y, w, h, prefix, sub=None, chars=None):
     """Una voce (etichetta + valore) dentro un riquadro di gruppo."""
-    chars = CH[c][6]
+    same = chars is not None          # riga unica: stessa grandezza per tutti i numeri
+    chars = chars or CH[c][6]
     sample = CH[c][7]
     items = []
     if c == "PosGain":
         # numero di posizioni con la freccia accanto
         if h >= 40 and w >= 40:
             vh = h * 0.72
-            vfs = fit(w * 0.5, vh, 2, 0.95, 0.56)
-            ad = min(vh * 0.6, w * 0.3)
+            vfs = fit(w - 6, vh, chars, 0.95, 0.56) if same else fit(w * 0.5, vh, 2, 0.95, 0.56)
+            ad = min(vh * 0.6, w * 0.3, vfs * 0.75)
             items.append(pos_arrow(prefix, x + w / 2 - ad - 2, y + vh - ad - vh * 0.08, ad))
             items.append(text(prefix + " valore", x + w / 2 + 2, y, w / 2 - 2, vh, ch_val(c), sample, vfs, color, ha=0, va=2))
             lfs = clamp(int(min((h - vh) * 0.5, (w - 4) / (len(CH[c][1]) * 0.6))), 7, 12)
@@ -672,10 +673,15 @@ def card_items(card, w, h):
         ents = card["entries"]
         chars = max(CH[c][6] for c, _ in ents)
         cols, rows = best_grid(len(ents), iw, ih, chars)
+        if card.get("one_row") and iw / len(ents) >= 36:
+            cols, rows = len(ents), 1          # tutto su una riga
         cw, rh = iw / cols, ih / rows
+        one = card.get("one_row") and rows == 1
+        if one:
+            chars = max(len(CH[c][7]) for c, _ in ents)   # stessa grandezza, sul valore piu' lungo
         for i, (c, col) in enumerate(ents):
             r, k = divmod(i, cols)
-            items += entry_items(c, col, ix + k * cw, iy + r * rh, cw, rh, "%s %d" % (c, i))
+            items += entry_items(c, col, ix + k * cw, iy + r * rh, cw, rh, "%s %d" % (c, i), chars=chars if one else None)
         return items
 
     if kind == "damage":

@@ -129,7 +129,7 @@ CARDS = [
     group("Temperature freni", "FRENI", [("BrakeT" + w[0], ORANGE) for w in WHEELS]),
     group("Tempi giro", "TEMPI GIRO", [("CurLap", BLUE), ("LastLap", GREEN), ("BestLap", PURPLE)]),
     group("Carburante", "CARBURANTE", [("Fuel", WHITE), ("FuelPerLap", WHITE), ("FuelLaps", WHITE)]),
-    group("Sessione", "SESSIONE", [("TimeLeft", WHITE), ("Pos", WHITE), ("Lap", WHITE), ("PosGain", WHITE)]),
+    dict(group("Sessione", "SESSIONE", [("TimeLeft", WHITE), ("Pos", WHITE), ("Lap", WHITE), ("PosGain", WHITE)]), one_row=True),
     dict(name="Distacchi", kind="gaps", title="DISTACCHI", sides=["Avanti", "Dietro"], color=FRAME),
     dict(name="Pedali", kind="bars", title="PEDALI",
          entries=[("Throttle", GREEN), ("Brake", RED), ("Clutch", CYAN)], color=FRAME),

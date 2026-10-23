@@ -431,7 +431,7 @@ namespace FedeDashboard
                 }
             }
             // strategia del menu di LMU: scrivo nel log com'e' fatta (alcune volte, per capirne i campi)
-            if (strategyLogs < 4 && (tick / 6) % 20 == 3)
+            if (strategyLogs < 0 && (tick / 6) % 20 == 3)   // disattivato: la strategia di LMU non ha i giri alla fine
             {
                 strategyLogs++;
                 GetJson("/rest/strategy/overall");

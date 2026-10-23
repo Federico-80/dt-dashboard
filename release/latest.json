@@ -1,5 +1,5 @@
 {
-  "version": "1.73",
-  "notes": "Strategia con il tempo sul giro stimato da LMU (come il menu). Sessione: al posto dell'ora le posizioni guadagnate/perse con freccia.",
+  "version": "1.74",
+  "notes": "Sessione su una riga (tempo, posizione, giro, posizioni guadagnate).",
   "date": "2026-10-23"
 }
