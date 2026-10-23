@@ -105,7 +105,7 @@ IMPORTANTE - CAMBIO NOME (da "Fede" a "DT")
   - In basso vedi i valori attuali delle 4 gomme per controllare.
   Scheda da usare nella dashboard: "Gomme complete (temp. carcassa, pressione, freni)".
 
- Scheda "Tempi e posizioni"
+ Scheda "Tempi e posizioni"  (di base: posizione e distacchi nella tua classe)
   - Giro stimato e delta: Gioco (delta calcolato da LMU), SimHub, oppure Post-It Note Racing.
   - Distacchi avanti/dietro: assoluti oppure solo nella tua classe.
   - Posizione: assoluta, nella classe (calcolata da SimHub) oppure Post-It Note Racing (classe).

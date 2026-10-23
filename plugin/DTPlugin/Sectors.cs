@@ -191,11 +191,19 @@ namespace FedeDashboard
         {
             if (v == null) return "";
             var b = v as byte[];
+            if (b == null)
+            {
+                var sb = v as sbyte[];
+                if (sb != null) { b = new byte[sb.Length]; Buffer.BlockCopy(sb, 0, b, 0, sb.Length); }
+            }
             if (b != null)
             {
                 int n = Array.IndexOf(b, (byte)0);
                 return Encoding.UTF8.GetString(b, 0, n < 0 ? b.Length : n).Trim();
             }
+            var ca = v as char[];
+            if (ca != null) { int n = Array.IndexOf(ca, '\0'); return new string(ca, 0, n < 0 ? ca.Length : n).Trim(); }
+            if (v is Array) return "";
             return v.ToString().Trim();
         }
     }

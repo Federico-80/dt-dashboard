@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.64";
+        public const string VersionText = "1.65";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -1576,8 +1576,7 @@ namespace FedeDashboard
             string name = "";
             try
             {
-                bool front = w < 2;
-                name = SectorTracker.Str(Raw("CurrentPlayerTelemetry." + (front ? "mFrontTireCompoundName" : "mRearTireCompoundName")));
+                name = RawCompoundName(w < 2);
                 if (string.IsNullOrWhiteSpace(name))
                 {
                     object ir = Raw("Telemetry.PlayerTireCompound");
@@ -1595,6 +1594,51 @@ namespace FedeDashboard
             if (n.Contains("HARD") || n == "H") { color = "#FFFFFFFF"; return "H"; }
             color = "#FF9E9E9E";
             return n.Substring(0, 1);
+        }
+
+        static readonly string[] CompoundRoots = { "CurrentPlayerTelemetry", "PlayerNativeTelemetry", "CurrentPlayer", "Telemetry", "PlayerTelemetry" };
+        readonly Dictionary<Type, List<MemberInfo>> compoundMembers = new Dictionary<Type, List<MemberInfo>>();
+        bool compoundLogged;
+
+        /// <summary>
+        /// Nome della mescola dai dati grezzi del gioco: cerca un campo con "Compound" (e Front/Rear) nei dati del giocatore.
+        /// La prima volta scrive nel log cosa ha trovato.
+        /// </summary>
+        string RawCompoundName(bool front)
+        {
+            var log = new List<string>();
+            string found = "";
+            foreach (var root in CompoundRoots)
+            {
+                object o = Raw(root);
+                if (o == null) continue;
+                List<MemberInfo> mem;
+                var t = o.GetType();
+                if (!compoundMembers.TryGetValue(t, out mem))
+                {
+                    mem = new List<MemberInfo>();
+                    foreach (var m in t.GetMembers(BindingFlags.Public | BindingFlags.Instance))
+                        if ((m is FieldInfo || m is PropertyInfo) && m.Name.IndexOf("Compound", StringComparison.OrdinalIgnoreCase) >= 0) mem.Add(m);
+                    compoundMembers[t] = mem;
+                }
+                foreach (var m in mem)
+                {
+                    object v = null;
+                    try { v = m is FieldInfo ? ((FieldInfo)m).GetValue(o) : ((PropertyInfo)m).GetValue(o, null); } catch { }
+                    string sv = SectorTracker.Str(v);
+                    if (!compoundLogged) log.Add(root + "." + m.Name + "='" + sv + "'");
+                    string nm = m.Name.ToLowerInvariant();
+                    bool side = front ? (nm.Contains("front") || nm.Contains("fl") || nm.Contains("fr")) : (nm.Contains("rear") || nm.Contains("rl") || nm.Contains("rr"));
+                    if (found.Length == 0 && side && sv.Length > 0 && !(v is IConvertible && !(v is string)))
+                        found = sv;
+                }
+            }
+            if (!compoundLogged && Raw("CurrentPlayerTelemetry") != null)
+            {
+                compoundLogged = true;
+                FedeLog.Write("Mescole: " + (log.Count == 0 ? "nessun campo 'Compound' nei dati del gioco" : string.Join(" | ", log)));
+            }
+            return found;
         }
 
         void UpdateTyreColors()
@@ -1857,7 +1901,19 @@ namespace FedeDashboard
             }
         }
 
-        class LmuCar { public int Place; public double Tbl, Tbn, Lbn, Best, Last, Progress, LapsBehindLeader; public string Cls = "", Name = ""; public bool Player; }
+        class LmuCar { public int Place; public double Tbl, Tbn, Lbn, Best, Last, Progress, LapsBehindLeader, Speed; public string Cls = "", Name = ""; public bool Player; }
+        double lmuTrackLen = double.NaN;
+
+        static double VecLen(object vec)
+        {
+            if (vec == null) return double.NaN;
+            try
+            {
+                double x = Convert.ToDouble(SectorTracker.Get(vec, "x") ?? 0.0), y = Convert.ToDouble(SectorTracker.Get(vec, "y") ?? 0.0), z = Convert.ToDouble(SectorTracker.Get(vec, "z") ?? 0.0);
+                return Math.Sqrt(x * x + y * y + z * z);
+            }
+            catch { return double.NaN; }
+        }
         readonly int[] boxLaps = { 0, 0 };
 
         /// <summary>Distacchi, nomi e categorie dal punteggio di LMU (sempre presenti, anche quando SimHub non ha il distacco).</summary>
@@ -1869,6 +1925,7 @@ namespace FedeDashboard
             var cars = new List<LmuCar>();
             LmuCar me = null;
             double trackLen = Num(Raw("Scoring.mScoringInfo.mLapDist"));
+            lmuTrackLen = trackLen;
             int i = 0;
             foreach (var v in arr)
             {
@@ -1885,7 +1942,8 @@ namespace FedeDashboard
                     Last = Num(SectorTracker.Get(v, "mLastLapTime")),
                     LapsBehindLeader = Num(SectorTracker.Get(v, "mLapsBehindLeader")),
                     Tbn = Num(SectorTracker.Get(v, "mTimeBehindNext")),
-                    Lbn = Num(SectorTracker.Get(v, "mLapsBehindNext"))
+                    Lbn = Num(SectorTracker.Get(v, "mLapsBehindNext")),
+                    Speed = VecLen(SectorTracker.Get(v, "mLocalVel"))
                 };
                 double laps = Num(SectorTracker.Get(v, "mTotalLaps")), dist = Num(SectorTracker.Get(v, "mLapDist"));
                 c.Progress = (double.IsNaN(laps) ? 0 : laps) + (trackLen > 0 && !double.IsNaN(dist) ? Math.Max(0, Math.Min(1, dist / trackLen)) : 0);
@@ -1978,9 +2036,13 @@ namespace FedeDashboard
             }
             if (!double.IsNaN(a.Tbl) && !double.IsNaN(b.Tbl) && b.Tbl - a.Tbl > 0.001) return b.Tbl - a.Tbl;
             double laps = a.Progress - b.Progress;
+            if (laps <= 0) return double.NaN;
             double refLap = b.Last > 0 ? b.Last : (b.Best > 0 ? b.Best : (a.Best > 0 ? a.Best : double.NaN));
-            if (double.IsNaN(refLap) || laps <= 0) return double.NaN;
-            return laps * refLap;
+            if (!double.IsNaN(refLap)) return laps * refLap;
+            // inizio gara, nessun giro ancora: distanza in pista diviso la velocita' di chi sta dietro
+            double sp = !double.IsNaN(b.Speed) && b.Speed > 5 ? b.Speed : (!double.IsNaN(a.Speed) && a.Speed > 5 ? a.Speed : double.NaN);
+            if (lmuTrackLen > 0 && !double.IsNaN(sp)) return laps * lmuTrackLen / sp;
+            return double.NaN;
         }
 
         void SetBoxLmu(int k, LmuCar c, double gap, Dictionary<string, object> extra)

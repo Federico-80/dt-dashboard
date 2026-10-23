@@ -146,6 +146,13 @@ namespace FedeDashboard
                     if (c.Id == "FuelLaps" && (c.Source ?? "").Trim().Trim('[', ']') == "DataCorePlugin.Computed.Fuel_RemainingLaps") c.Source = "@giri_carb";
                 Version = 8;
             }
+            if (Version < 9)
+            {
+                // posizione nella propria classe (es. 3/12 GT3) invece che assoluta
+                if (Timing != null && Timing.PositionMode == 0) Timing.PositionMode = 1;
+                if (Timing != null) Timing.GapMode = 1;   // davanti/dietro: auto della propria classe, come la tabella di LMU
+                Version = 9;
+            }
 
         }
 
@@ -432,13 +439,13 @@ namespace FedeDashboard
         public static readonly string[] GapModes = { "Assoluti", "Nella classe" };
 
         public int DeltaSource { get; set; } = 1;
-        public int PositionMode { get; set; }
+        public int PositionMode { get; set; } = 1;
         public int GapMode { get; set; }
         public bool Initialized { get; set; }
 
         public void Normalize()
         {
-            if (!Initialized) { DeltaSource = 1; PositionMode = 0; GapMode = 0; Initialized = true; }
+            if (!Initialized) { DeltaSource = 1; PositionMode = 1; GapMode = 0; Initialized = true; }
             if (DeltaSource < 0 || DeltaSource >= DeltaSources.Length) DeltaSource = 1;
             if (PositionMode < 0 || PositionMode >= PositionModes.Length) PositionMode = 0;
             if (GapMode < 0 || GapMode >= GapModes.Length) GapMode = 0;
