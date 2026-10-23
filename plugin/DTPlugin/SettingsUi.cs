@@ -92,6 +92,7 @@ namespace FedeDashboard
       </TabItem>
 
       <TabItem Header='Pagine e layout'>
+        <ScrollViewer VerticalScrollBarVisibility='Auto'>
         <DockPanel Margin='22,18,22,16'>
           <StackPanel DockPanel.Dock='Top'>
             <Grid Margin='0,4,0,12'><Grid.ColumnDefinitions><ColumnDefinition Width='Auto'/><ColumnDefinition Width='*'/></Grid.ColumnDefinitions><TextBlock Text='PAGINA' FontWeight='Bold' FontSize='14' Foreground='White'/><Border Grid.Column='1' Height='1' Background='#FF4A4A4A' VerticalAlignment='Center' Margin='12,0,0,0'/></Grid>
@@ -163,13 +164,14 @@ namespace FedeDashboard
               <TextBlock TextWrapping='Wrap' Foreground='#FF9A9A9A' FontSize='11.5' Margin='0,8,0,0'
                          Text=""Clic su un riquadro per sceglierne la scheda a destra  ·  trascina un riquadro su un altro per scambiarli  ·  tasto destro per svuotarlo. Le modifiche si vedono subito sulla dashboard.""/>
             </StackPanel>
-            <Border Grid.Column='1' Background='#FF262626' CornerRadius='10' Padding='14'>
+            <Border Grid.Column='1' Background='#FF262626' CornerRadius='10' Padding='14' VerticalAlignment='Top' MaxHeight='560'>
               <ScrollViewer VerticalScrollBarVisibility='Auto'>
                 <StackPanel x:Name='PickerPanel'/>
               </ScrollViewer>
             </Border>
           </Grid>
         </DockPanel>
+        </ScrollViewer>
       </TabItem>
 
       <TabItem Header='Avvisi'>
