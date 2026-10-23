@@ -289,6 +289,52 @@ namespace FedeDashboard
         FedeSettings S { get { return plugin.Settings; } }
         PageSettings Page { get { return plugin.Page; } }
 
+        /// <summary>
+        /// SimHub senza licenza mette il pannello in uno spazio senza limite di altezza: le barre di scorrimento
+        /// interne non servono e non si scorre. Limito l'altezza del pannello a quella della finestra di SimHub.
+        /// </summary>
+        void FitToWindow()
+        {
+            try
+            {
+                dynamic r = Root;
+                Action fit = () =>
+                {
+                    try
+                    {
+                        var wt = Wpf.T("System.Windows.Window");
+                        dynamic win = wt.GetMethod("GetWindow").Invoke(null, new object[] { Root });
+                        if (win == null) return;
+                        double top = 150;
+                        try
+                        {
+                            var pt = Wpf.T("System.Windows.Point");
+                            object zero = Activator.CreateInstance(pt, 0.0, 0.0);
+                            dynamic p = Root.GetType().GetMethod("TranslatePoint").Invoke(Root, new object[] { zero, (object)win.Content });
+                            double y = (double)p.Y;
+                            if (y >= 0 && y < (double)win.ActualHeight) top = y;
+                        }
+                        catch { }
+                        double h = (double)win.ActualHeight - top - 48;
+                        if (h > 300 && !double.IsNaN(h)) r.MaxHeight = h;
+                    }
+                    catch { }
+                };
+                Wpf.On(Root, "Loaded", (s, e) =>
+                {
+                    fit();
+                    try
+                    {
+                        var wt = Wpf.T("System.Windows.Window");
+                        object win = wt.GetMethod("GetWindow").Invoke(null, new object[] { Root });
+                        if (win != null) Wpf.On(win, "SizeChanged", (s2, e2) => fit());
+                    }
+                    catch { }
+                });
+            }
+            catch (Exception ex) { FedeLog.Error("altezza pannello", ex); }
+        }
+
         public SettingsUi(DTPlugin plugin)
         {
             this.plugin = plugin;
@@ -305,6 +351,7 @@ namespace FedeDashboard
                 Root = (object)Wpf.Xaml(mainXaml);
             }
             root = Root;
+            FitToWindow();
             F("VersionText").Text = "DT Plugin  v" + DTPlugin.VersionText;
             Click("BtnExport", ExportSettings);
             Click("BtnCheckUpdate", () => { plugin.Updater.CheckAsync(DTPlugin.VersionText, true); ShowUpdate(true); });
