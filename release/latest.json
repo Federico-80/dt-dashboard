@@ -1,5 +1,5 @@
 {
-  "version": "1.74",
-  "notes": "Sessione su una riga (tempo, posizione, giro, posizioni guadagnate).",
+  "version": "1.75",
+  "notes": "Sessione in 3 blocchi: tempo, posizione con (posizioni guadagnate/perse), giro.",
   "date": "2026-10-23"
 }

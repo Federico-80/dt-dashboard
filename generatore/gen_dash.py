@@ -523,8 +523,35 @@ def pos_arrow(prefix, x, y, d):
     return img
 
 
-def entry_items(c, color, x, y, w, h, prefix, sub=None, chars=None):
+def pos_with_gain(color, x, y, w, h, prefix, chars=None, vfs=None):
+    """Posizione (11/25) con accanto, tra parentesi, le posizioni guadagnate/perse: (freccia 3)."""
+    items = []
+    tall = h >= 40 and w >= 40
+    vh = h * 0.72 if tall else h
+    pw = w * 0.64                                     # posizione a destra fino qui, parentesi subito dopo
+    vfs = vfs or fit(pw - 4, vh, max(5, chars or 5), 0.95 if tall else 0.72, 0.56)
+    items.append(text(prefix + " valore", x, y, pw, vh, ch_val("Pos"), CH["Pos"][7], vfs, color, ha=2, va=2 if tall else 1))
+    gfs = max(8, int(vfs * 0.5))
+    gx = x + pw + 3
+    gy = y + (vh - gfs * 1.25) if tall else y + (h - gfs * 1.25) / 2
+    gh = gfs * 1.25
+    ad = gfs * 0.85
+    items.append(text(prefix + " par1", gx, gy, gfs * 0.4, gh, None, "(", gfs, GREY, weight="Medium", ha=0))
+    items.append(pos_arrow(prefix, gx + gfs * 0.38, gy + (gh - ad) / 2, ad))
+    nx_arrow, nx_none = gx + gfs * 0.38 + ad + 1, gx + gfs * 0.4
+    items.append(text(prefix + " guadagno", nx_arrow, gy, x + w - nx_none, gh, None, "3)", gfs, WHITE, ha=0,
+                      bindings={"Text": js("var g = fd('PosGain');\r\nreturn (g && g !== '-') ? g + ')' : '-)';"),
+                                "TextColor": js("var c = $prop('DTPlugin.PosGain_Colore');\r\nreturn c ? c : '#FF9E9E9E';"),
+                                "Left": js("var d = $prop('DTPlugin.PosGain_Dir');\r\nreturn (d != null && d != 0) ? %d : %d;" % (round(nx_arrow), round(nx_none)))}))
+    if tall:
+        lfs = clamp(int(min((h - vh) * 0.5, (w - 4) / (len(CH["Pos"][1]) * 0.6))), 7, 12)
+        items.append(text(prefix + " nome", x, y + vh, w, h - vh, ch_name("Pos"), CH["Pos"][1], lfs, GREY, weight="Normal", va=0))
+    return items
+
+
+def entry_items(c, color, x, y, w, h, prefix, sub=None, chars=None, vfs=None):
     """Una voce (etichetta + valore) dentro un riquadro di gruppo."""
+    forced = vfs
     same = chars is not None          # riga unica: stessa grandezza per tutti i numeri
     chars = chars or CH[c][6]
     sample = CH[c][7]
@@ -553,7 +580,7 @@ def entry_items(c, color, x, y, w, h, prefix, sub=None, chars=None):
     if h >= 40 and w >= 40:
         # numeri grandi, scritta sotto piccola e sottile
         vh = h * (0.72 if sub is None else 0.6)
-        vfs = fit(w - 6, vh, chars, 0.95, 0.56) if sub is None else fit(w - 6, vh, chars, 0.85)
+        vfs = forced or (fit(w - 6, vh, chars, 0.95, 0.56) if sub is None else fit(w - 6, vh, chars, 0.85))
         items.append(text(prefix + " valore", x, y, w, vh, ch_val(c), sample, vfs, color, va=2))
         lh = h - vh
         if sub is None:
@@ -567,7 +594,7 @@ def entry_items(c, color, x, y, w, h, prefix, sub=None, chars=None):
         lfs = clamp(int(min(h * 0.42, lw / (max(len(CH[c][1]), 3) * 0.62))), 7, 13)
         if w >= 60:
             items.append(text(prefix + " nome", x + 4, y, lw, h, ch_name(c), CH[c][1], lfs, GREY, weight="Medium", ha=0))
-            vfs = fit(w - lw - 6, h, chars, 0.72)
+            vfs = forced or fit(w - lw - 6, h, chars, 0.72)
             items.append(text(prefix + " valore", x + lw, y, w - lw - 4, h, ch_val(c), sample, vfs, color, ha=2))
         else:
             vfs = fit(w - 4, h, chars, 0.72)
@@ -679,6 +706,21 @@ def card_items(card, w, h):
         one = card.get("one_row") and rows == 1
         if one:
             chars = max(len(CH[c][7]) for c, _ in ents)   # stessa grandezza, sul valore piu' lungo
+        if one and card.get("pos_gain"):
+            # colonne su misura (la posizione ha accanto le posizioni guadagnate) e numeri tutti della stessa grandezza
+            wts = [1.6 if c == "Pos" else (0.75 if c == "Lap" else 1.0) for c, _ in ents]
+            ws = [iw * t / sum(wts) for t in wts]
+            vh = rh * 0.72 if rh >= 40 else rh
+            hf = 0.95 if rh >= 40 else 0.72
+            same = min(fit((wd * 0.64 if c == "Pos" else wd) - 6, vh, len(CH[c][7]), hf, 0.56) for (c, _), wd in zip(ents, ws))
+            xx = ix
+            for i, ((c, col), wd) in enumerate(zip(ents, ws)):
+                if c == "Pos":
+                    items += pos_with_gain(col, xx, iy, wd, rh, "%s %d" % (c, i), vfs=same)
+                else:
+                    items += entry_items(c, col, xx, iy, wd, rh, "%s %d" % (c, i), vfs=same)
+                xx += wd
+            return items
         for i, (c, col) in enumerate(ents):
             r, k = divmod(i, cols)
             items += entry_items(c, col, ix + k * cw, iy + r * rh, cw, rh, "%s %d" % (c, i), chars=chars if one else None)
