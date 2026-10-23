@@ -993,8 +993,8 @@ def tyre_state_overlay(k, x, y, w, h):
 
 
 def tyres3_items(ix, iy, iw, ih):
-    """Gomme "tutto in uno" (2x2 separati da una croce): pressione grande, accanto al disegno del battistrada
-    (3 strisce colorate) temperatura e usura verso l'esterno, temperatura freno verso l'interno; mescola al centro."""
+    """Gomme "tutto in uno" (2x2 separati da una croce): temperatura grande, accanto al disegno del battistrada
+    (3 strisce colorate) pressione e usura verso l'esterno, temperatura freno verso l'interno; mescola al centro."""
     if iw / max(ih, 1) > 2.8 or ih / max(iw, 1) > 2.8:
         return tyres2_items(ix, iy, iw, ih)
     items = []
@@ -1019,8 +1019,8 @@ def tyres3_items(ix, iy, iw, ih):
         else:
             dy = cy + gap
             py, pH = dy + dh, y0 + rh - (dy + dh) - 2
-        pfs = fit(cw - 24, pH, 5, 0.86, 0.58)
-        items.append(text("Gomma %s pressione" % k, x0 + 4, py, cw - 8, pH, ch_val("TyreP" + k), CH["TyreP" + k][7], pfs, WHITE, weight="Black"))
+        pfs = fit(cw - 24, pH, 4, 0.86, 0.58)
+        items.append(text("Gomma %s temp" % k, x0 + 4, py, cw - 8, pH, ch_val("TyreT" + k), CH["TyreT" + k][7], pfs, WHITE, weight="Black"))
         # battistrada: 3 strisce
         tw = clamp(cw * 0.17, 10, 30)
         th = dh * 0.92
@@ -1032,11 +1032,11 @@ def tyres3_items(ix, iy, iw, ih):
                               bindings={"BackgroundColor": js("var c = $prop('DTPlugin.Strisce_%s_%d');\r\nreturn c ? c : '#FF3A3A3A';" % (k, j + 1))}))
             items[-1]["_pv"]["bg"] = TYRE_SAMPLE_COL[k]
         sw = (cw - tw) / 2 - 8                         # spazio ai lati della striscia
-        sfs = int(fit(sw - 2, dh * 0.5, 4.2, 0.9, 0.58) * 0.92)
+        sfs = int(fit(sw - 2, dh * 0.5, 5, 0.9, 0.58) * 0.95)
         ox = x0 + 4 if left else tx + tw + 4           # lato esterno della macchina
         nx = tx + tw + 4 if left else x0 + 4           # lato interno
         oha, nha = (2, 0) if left else (0, 2)          # tutto allineato verso la striscia
-        items.append(text("Gomma %s temp" % k, ox, dy, sw, dh / 2, ch_val("TyreT" + k), CH["TyreT" + k][7], sfs, WHITE, weight="Bold", ha=oha, va=2))
+        items.append(text("Gomma %s pressione" % k, ox, dy, sw, dh / 2, ch_val("TyreP" + k), CH["TyreP" + k][7], sfs, WHITE, weight="Bold", ha=oha, va=2))
         items.append(text("Gomma %s usura" % k, ox, dy + dh / 2, sw, dh / 2, ch_val("TyreW" + k), CH["TyreW" + k][7], sfs, WHITE, weight="Bold", ha=oha, va=0))
         items.append(text("Gomma %s freno" % k, nx, dy, sw, dh, ch_val("BrakeT" + k), CH["BrakeT" + k][7], sfs, WHITE, weight="Bold", ha=nha))
     # mescola al centro della croce

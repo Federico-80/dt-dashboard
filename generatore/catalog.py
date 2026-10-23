@@ -190,7 +190,7 @@ CARDS.append(single("Gomme nuove rimaste", "NewTyres", GREEN))
 CARDS.append(single("Track limits", "TrackLim", ORANGE))
 CARDS.append(single("Batteria", "Battery", CYAN))
 CARDS.append(dict(name="Previsioni meteo", kind="forecast", title="PREVISIONI", color=FRAME))
-CARDS.append(dict(name="Gomme (tutto in uno: pressione, temp., usura, freni)", kind="tyres3", title="GOMME", color=FRAME))
+CARDS.append(dict(name="Gomme (tutto in uno: temperatura, pressione, usura, freni)", kind="tyres3", title="GOMME", color=FRAME))
 STANDINGS_MAX = 60   # righe esportate dal plugin per ogni classifica
 CARD_INDEX = {c["name"]: i for i, c in enumerate(CARDS)}
 
@@ -206,7 +206,7 @@ CATEGORIES = [
     ("Tempi", ["Tempi giro", "Delta", "Ultimo giro", "Miglior giro", "Giro stimato"]),
     ("Carburante ed energia", ["Carburante", "Carburante (litri)", "Carburante (giri)", "Consumo medio", "Energia virtuale (VE)", "Energia virtuale (completa)", "Giri energia virtuale", "Consumo energia virtuale", "ERS / batteria", "Carburante (barra + giri)", "Energia virtuale (barra + giri)", "Strategia gara (soste, finestra, rifornimento)"]),
     ("Comandi auto", ["Assetto (TC/ABS/BB/MAP)", "TC", "TC Cut", "TC Slip", "ABS", "Ripartizione freno (BB)", "Mappa motore"]),
-    ("Gomme e freni", ["Gomme (tutto in uno: pressione, temp., usura, freni)", "Gomme complete (temp. carcassa, pressione, freni)", "Gomme (pressione + temperatura)", "Gomme (temperature)", "Usura gomme", "Temperature freni", "Danni (schema auto)"]),
+    ("Gomme e freni", ["Gomme (tutto in uno: temperatura, pressione, usura, freni)", "Gomme complete (temp. carcassa, pressione, freni)", "Gomme (pressione + temperatura)", "Gomme (temperature)", "Usura gomme", "Temperature freni", "Danni (schema auto)"]),
     ("Sessione e gara", ["Sessione", "Posizione", "Giro", "Tempo rimasto", "Ora", "Distacchi", "Distacco avanti", "Distacco dietro", "Classifica generale", "Classifica di classe", "Stato auto (luci, bandiera, tergi, motore)"]),
     ("Motore e pedali", ["Pedali", "Velocità", "Giri motore", "Motore (acqua/olio)"]),
     ("Meteo", ["Meteo", "Temperatura aria", "Temperatura pista", "Previsioni meteo"]),
