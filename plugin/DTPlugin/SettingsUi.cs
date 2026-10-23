@@ -1232,7 +1232,8 @@ namespace FedeDashboard
                 fontPanel.Children.Add(Help("Cambia tipo, spessore e grandezza di tutti i testi della dashboard. Il plugin riscrive i file della dash: " +
                     "se SimHub non la aggiorna subito, riapri la dashboard (o riavvia SimHub).", "0,-4,0,14"));
                 string[] famSub = { "Quello di sempre.", "Più stretto: i numeri occupano meno spazio.",
-                                    "Font da strumentazione, già presente in Windows 10/11.", "Il font di Windows, più morbido.", "Classico, molto leggibile." };
+                                    "Font da strumentazione, già presente in Windows 10/11.", "Il font di Windows, più morbido.", "Classico, molto leggibile.",
+                                    "Largo e marcato, numeri a larghezza fissa (non ballano). Incluso nel plugin. La prima volta può servire riavviare SimHub." };
                 fontPanel.Children.Add(Tiles("Tipo di carattere", FontSettings.FamilyNames, famSub, f.Family, -1, v => f.Family = v, FontChanged, FontSettings.Families));
                 string[] wSub = { "Spessori come sono stati disegnati.", "Ogni testo di uno spessore più sottile (grassetto → medio).",
                                   "Due spessori più sottile (grassetto → normale).", "Ogni testo un po' più spesso." };

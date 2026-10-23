@@ -10,12 +10,18 @@ FONTS = {w: os.path.join(HERE, "fonts", "Roboto-%s.ttf" % w) for w in ("Regular"
 FONTS["Normal"] = FONTS["Regular"]
 FONTS["Light"] = os.path.join(HERE, "fonts", "Roboto-Light.ttf")
 _fc = {}
+_SCALE = 1.0
+if os.environ.get("DT_FONT") == "mont":      # anteprima con DT Montserrat (come lo applica il plugin)
+    _M = os.path.join(HERE, "fonts", "montserrat", "sub", "DTMontserrat-%s.ttf")
+    FONTS.update({"Light": _M % "Regular", "Normal": _M % "Medium", "Regular": _M % "Medium", "Medium": _M % "SemiBold",
+                  "Bold": _M % "Bold", "Black": _M % "ExtraBold"})
+    _SCALE = 0.88
 
 
 def font(weight, size):
     key = (weight, size)
     if key not in _fc:
-        _fc[key] = ImageFont.truetype(FONTS.get(weight, FONTS["Bold"]), size)
+        _fc[key] = ImageFont.truetype(FONTS.get(weight, FONTS["Bold"]), max(6, int(round(size * _SCALE))))
     return _fc[key]
 
 

@@ -135,6 +135,9 @@ namespace FedeDashboard
 
         // ------------------------------------------------------------------ carattere
         static readonly string[] WeightLadder = { "Light", "Normal", "Medium", "Bold", "Black" };
+        // DT Montserrat: Black diventa ExtraBold (il Black e' troppo pesante), il resto un gradino piu' marcato
+        static readonly string[] MontserratWeights = { "Normal", "Medium", "SemiBold", "Bold", "ExtraBold" };
+        const double MontserratScale = 0.88;
         static readonly Regex FontRx = new Regex("\"Font\":\"Roboto\"", RegexOptions.Compiled);
         static readonly Regex WeightRx = new Regex("\"FontWeight\":\"(Light|Normal|Medium|Bold|Black)\"", RegexOptions.Compiled);
         static readonly Regex SizeRx = new Regex("\"FontSize\":(\\d+(?:\\.\\d+)?)", RegexOptions.Compiled);
@@ -179,13 +182,19 @@ namespace FedeDashboard
             string fam = FontSettings.Families[f.Family < 0 || f.Family >= FontSettings.Families.Length ? 0 : f.Family];
             int step = FontSettings.WeightSteps[f.Weight < 0 || f.Weight >= FontSettings.WeightSteps.Length ? 0 : f.Weight];
             double k = f.SizePct / 100.0;
-            if (fam != "Roboto") json = FontRx.Replace(json, "\"Font\":\"" + fam + "\"");
-            if (step != 0)
+            bool mont = fam == FontInstaller.Family;
+            if (mont)
+            {
+                json = FontRx.Replace(json, "\"Font\":\"" + FontInstaller.FontValue() + "\"");
+                k *= MontserratScale;   // lettere piu' larghe di Roboto
+            }
+            else if (fam != "Roboto") json = FontRx.Replace(json, "\"Font\":\"" + fam + "\"");
+            if (step != 0 || mont)
                 json = WeightRx.Replace(json, m =>
                 {
                     int i = Array.IndexOf(WeightLadder, m.Groups[1].Value) + step;
                     if (i < 0) i = 0; if (i >= WeightLadder.Length) i = WeightLadder.Length - 1;
-                    return "\"FontWeight\":\"" + WeightLadder[i] + "\"";
+                    return "\"FontWeight\":\"" + (mont ? MontserratWeights[i] : WeightLadder[i]) + "\"";
                 });
             if (Math.Abs(k - 1) > 0.001)
                 json = SizeRx.Replace(json, m =>

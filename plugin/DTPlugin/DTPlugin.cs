@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.92";
+        public const string VersionText = "1.93";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -410,6 +410,8 @@ namespace FedeDashboard
             }
             bridge.Attach("PosGain_Colore", () => posGainColor);
             bridge.Attach("GiriTotali", () => TotalLapsText());
+            bridge.Attach("Sessione_Nome", () => SessionLabel(sessionTypeCache));
+            bridge.Attach("Gomme_MescolaNome", () => CompoundNames());
             // barra doppia (strategia) solo in gara e quando serve almeno una sosta per rifornire
             bridge.Attach("BarraDoppia", () =>
             {
@@ -1803,6 +1805,41 @@ namespace FedeDashboard
         /// Mescola della gomma: lettera e colore (S rossa, M gialla, H bianca, W blu).
         /// LMU: nome della mescola anteriore / posteriore dalla telemetria; iRacing: asciutto/bagnato; altrimenti SimHub.
         /// </summary>
+        /// <summary>Tipo di sessione in italiano, per la scheda Sessione (sotto il tempo).</summary>
+        public static string SessionLabel(string st)
+        {
+            st = (st ?? "").Trim().ToUpperInvariant();
+            if (st.Length == 0) return "";
+            if (st.Contains("WARM")) return "WARMUP";
+            if (st.Contains("QUAL")) return "QUALIFICA";
+            if (st.Contains("RACE") || st.Contains("GARA")) return "GARA";
+            if (st.Contains("PRACT") || st.Contains("PROVE") || st.Contains("TEST")) return "PROVE";
+            if (st.Contains("HOT")) return "HOTLAP";
+            return st.Length > 10 ? st.Substring(0, 10) : st;
+        }
+
+        static string CompoundWord(string l)
+        {
+            switch ((l ?? "").Trim().ToUpperInvariant())
+            {
+                case "S": return "SOFT";
+                case "M": return "MEDIUM";
+                case "H": return "HARD";
+                case "W": return "WET";
+                case "": return "";
+                default: return l.ToUpperInvariant();
+            }
+        }
+
+        /// <summary>Nome della mescola per la scheda gomme: "SOFT", oppure "SOFT / MEDIUM" se davanti e dietro sono diverse.</summary>
+        string CompoundNames()
+        {
+            string f = CompoundWord(ColorOf("Gomma_FL_Mescola")), r = CompoundWord(ColorOf("Gomma_RL_Mescola"));
+            if (f.Length == 0) return r;
+            if (r.Length == 0 || r == f) return f;
+            return f.Substring(0, 1) + " / " + r.Substring(0, 1);
+        }
+
         string Compound(int w, out string color)
         {
             color = "#FFFFFFFF";

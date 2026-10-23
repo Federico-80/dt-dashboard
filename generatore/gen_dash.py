@@ -390,7 +390,9 @@ def session_items(w, h):
                    bindings={"Text": js(t_js % ("'-'", "t", "t.substring(0, i)"))}))
     it.append(text("Tempo secondi", sp, vy, x + w0 - sp, vh, None, ":39", vfs, SES_GREY, weight="Bold", ha=0, va=2,
                    bindings={"Text": js(t_js % ("''", "''", "t.substring(i)"))}))
-    it.append(text("Tempo etichetta", x, ly, w0, lh, None, "TEMPO", lfs, GREY, weight="Medium"))
+    # sotto il tempo: il tipo di sessione (PROVE, QUALIFICA, GARA...)
+    it.append(text("Tempo etichetta", x, ly, w0, lh, None, "GARA", lfs, WHITE, weight="Bold",
+                   bindings={"Text": js("var t = $prop('DTPlugin.Sessione_Nome');\r\nreturn t ? t : 'TEMPO';")}))
     x += w0
     # posizione: "25" bianco, "/25" grigio; sotto freccia + numero posizioni e "POS"
     w1 = ws[1]; sp = x + w1 * 0.5
@@ -833,6 +835,9 @@ def card_items(card, w, h):
     if kind == "tyres2":
         return items + tyres2_items(ix, iy, iw, ih)
 
+    if kind == "tyres3":
+        return items + tyres3_items(ix, iy, iw, ih)
+
     if kind == "tyres":
         main, sub = card["main"], card["sub"]
         if iw / max(ih, 1) > 2.8:
@@ -985,6 +990,67 @@ def tyre_state_overlay(k, x, y, w, h):
         text("Gomma %s stato testo" % k, x, y, w, h, "[DTPlugin.Gomma_%s_Stato]" % k, "PERSA", fs, WHITE, weight="Black"),
     ], None, ("Gomma_%s_Stato" % k, 1),
         vis_js="var s = $prop('DTPlugin.Gomma_%s_Stato');\r\nreturn s != null && s != '';" % k)
+
+
+def tyres3_items(ix, iy, iw, ih):
+    """Gomme "tutto in uno" (2x2 separati da una croce): pressione grande, accanto al disegno del battistrada
+    (3 strisce colorate) temperatura e usura verso l'esterno, temperatura freno verso l'interno; mescola al centro."""
+    if iw / max(ih, 1) > 2.8 or ih / max(iw, 1) > 2.8:
+        return tyres2_items(ix, iy, iw, ih)
+    items = []
+    cw, rh = iw / 2.0, ih / 2.0
+    cx, cy = ix + cw, iy + rh
+    line = "#FF4A4A4A"
+    items.append(rect("Croce verticale", cx - 1, iy + 2, 2, ih - 4, bg=line))
+    items.append(rect("Croce orizzontale", ix + 2, cy - 1, iw - 4, 2, bg=line))
+    ph = clamp(rh * 0.17, 12, 24)                      # pastiglia della mescola al centro
+    gap = ph / 2 + 3
+    pfs_all, sfs_all = [], []
+    for i, (k, prop, it) in enumerate(WHEELS):
+        r, c = divmod(i, 2)
+        x0, y0 = ix + c * cw, iy + r * rh
+        left = k in ("FL", "RL")
+        front = r == 0
+        # zona dettagli (striscia + numeri piccoli) vicino alla croce, pressione verso il bordo
+        dh = rh * 0.40
+        if front:
+            dy = cy - gap - dh
+            py, pH = y0 + 2, dy - y0 - 2
+        else:
+            dy = cy + gap
+            py, pH = dy + dh, y0 + rh - (dy + dh) - 2
+        pfs = fit(cw - 24, pH, 5, 0.86, 0.58)
+        items.append(text("Gomma %s pressione" % k, x0 + 4, py, cw - 8, pH, ch_val("TyreP" + k), CH["TyreP" + k][7], pfs, WHITE, weight="Black"))
+        # battistrada: 3 strisce
+        tw = clamp(cw * 0.17, 10, 30)
+        th = dh * 0.92
+        tx = x0 + (cw - tw) / 2
+        ty = dy + (dh - th) / 2
+        stw = (tw - 4) / 3.0
+        for j in range(3):
+            items.append(rect("Gomma %s striscia %d" % (k, j + 1), tx + j * (stw + 2), ty, stw, th, bg=GREEN, radius=2,
+                              bindings={"BackgroundColor": js("var c = $prop('DTPlugin.Strisce_%s_%d');\r\nreturn c ? c : '#FF3A3A3A';" % (k, j + 1))}))
+            items[-1]["_pv"]["bg"] = TYRE_SAMPLE_COL[k]
+        sw = (cw - tw) / 2 - 8                         # spazio ai lati della striscia
+        sfs = int(fit(sw - 2, dh * 0.5, 4.2, 0.9, 0.58) * 0.92)
+        ox = x0 + 4 if left else tx + tw + 4           # lato esterno della macchina
+        nx = tx + tw + 4 if left else x0 + 4           # lato interno
+        oha, nha = (2, 0) if left else (0, 2)          # tutto allineato verso la striscia
+        items.append(text("Gomma %s temp" % k, ox, dy, sw, dh / 2, ch_val("TyreT" + k), CH["TyreT" + k][7], sfs, WHITE, weight="Bold", ha=oha, va=2))
+        items.append(text("Gomma %s usura" % k, ox, dy + dh / 2, sw, dh / 2, ch_val("TyreW" + k), CH["TyreW" + k][7], sfs, WHITE, weight="Bold", ha=oha, va=0))
+        items.append(text("Gomma %s freno" % k, nx, dy, sw, dh, ch_val("BrakeT" + k), CH["BrakeT" + k][7], sfs, WHITE, weight="Bold", ha=nha))
+    # mescola al centro della croce
+    pw = clamp(iw * 0.36, 50, 150)
+    pfs = clamp(int(ph * 0.66), 8, 16)
+    pill = [rect("Mescola nome fondo", cx - pw / 2, cy - ph / 2, pw, ph, bg="#FF5A5A5A", radius=int(ph // 2)),
+            text("Mescola nome", cx - pw / 2, cy - ph / 2, pw, ph, "[DTPlugin.Gomme_MescolaNome]", "SOFT", pfs, WHITE, weight="Black")]
+    lay = layer("Mescola nome", pill)
+    lay["Bindings"] = {"Visible": js("var m = $prop('DTPlugin.Gomme_MescolaNome');\r\nreturn m != null && m !== '';")}
+    items.append(lay)
+    for i, (k, prop, it) in enumerate(WHEELS):
+        r, c = divmod(i, 2)
+        items.append(tyre_state_overlay(k, ix + c * cw + 2, iy + r * rh + 2, cw - 4, rh - 4))
+    return items
 
 
 def tyres2_items(ix, iy, iw, ih):

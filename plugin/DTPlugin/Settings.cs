@@ -455,8 +455,8 @@ namespace FedeDashboard
     /// <summary>Carattere dei testi della dashboard (applicato riscrivendo i file della dash).</summary>
     public class FontSettings
     {
-        public static readonly string[] Families = { "Roboto", "Roboto Condensed", "Bahnschrift", "Segoe UI", "Arial" };
-        public static readonly string[] FamilyNames = { "Roboto (originale)", "Roboto Condensed (stretto)", "Bahnschrift (Windows)", "Segoe UI (Windows)", "Arial" };
+        public static readonly string[] Families = { "Roboto", "Roboto Condensed", "Bahnschrift", "Segoe UI", "Arial", "DT Montserrat" };
+        public static readonly string[] FamilyNames = { "Roboto (originale)", "Roboto Condensed (stretto)", "Bahnschrift (Windows)", "Segoe UI (Windows)", "Arial", "DT Montserrat (marcato, nitido)" };
         public static readonly string[] Weights = { "Come in origine", "Un po' più leggero", "Leggero", "Più marcato" };
         public static readonly int[] WeightSteps = { 0, -1, -2, 1 };
         public static readonly int[] Sizes = { 100, 95, 90, 85, 80, 110 };
