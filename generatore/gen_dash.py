@@ -521,13 +521,14 @@ def entry_items(c, color, x, y, w, h, prefix, sub=None):
     sample = CH[c][7]
     items = []
     if h >= 40 and w >= 40:
-        vh = h * (0.62 if sub is None else 0.6)
-        vfs = fit(w - 6, vh, chars, 0.85)
+        # numeri grandi, scritta sotto piccola e sottile
+        vh = h * (0.72 if sub is None else 0.6)
+        vfs = fit(w - 6, vh, chars, 0.95, 0.56) if sub is None else fit(w - 6, vh, chars, 0.85)
         items.append(text(prefix + " valore", x, y, w, vh, ch_val(c), sample, vfs, color, va=2))
         lh = h - vh
         if sub is None:
-            lfs = clamp(int(min(lh * 0.55, (w - 4) / (len(CH[c][1]) * 0.62))), 7, 13)
-            items.append(text(prefix + " nome", x, y + vh, w, lh, ch_name(c), CH[c][1], lfs, GREY, weight="Medium", va=0))
+            lfs = clamp(int(min(lh * 0.5, (w - 4) / (len(CH[c][1]) * 0.6))), 7, 12)
+            items.append(text(prefix + " nome", x, y + vh, w, lh, ch_name(c), CH[c][1], lfs, GREY, weight="Normal", va=0))
         else:
             sfs = clamp(int(min(lh * 0.6, (w - 4) / (CH[sub][6] * 0.6))), 8, 22)
             items.append(text(prefix + " sotto", x, y + vh, w, lh, ch_val(sub), CH[sub][7], sfs, ORANGE, weight="Medium", va=0))

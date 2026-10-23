@@ -7,6 +7,8 @@ from catalog import *
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FONTS = {w: os.path.join(HERE, "fonts", "Roboto-%s.ttf" % w) for w in ("Regular", "Medium", "Bold", "Black")}
+FONTS["Normal"] = FONTS["Regular"]
+FONTS["Light"] = os.path.join(HERE, "fonts", "Roboto-Light.ttf")
 _fc = {}
 
 
