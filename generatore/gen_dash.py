@@ -524,22 +524,25 @@ def pos_arrow(prefix, x, y, d):
 
 
 def pos_with_gain(color, x, y, w, h, prefix, chars=None, vfs=None):
-    """Posizione (11/25) con accanto, tra parentesi, le posizioni guadagnate/perse: (freccia 3)."""
+    """Posizione (11/25) con accanto, tra parentesi e della stessa grandezza, le posizioni guadagnate/perse: (freccia 3)."""
     items = []
     tall = h >= 40 and w >= 40
     vh = h * 0.72 if tall else h
-    pw = w * 0.64                                     # posizione a destra fino qui, parentesi subito dopo
-    vfs = vfs or fit(pw - 4, vh, max(5, chars or 5), 0.95 if tall else 0.72, 0.56)
-    items.append(text(prefix + " valore", x, y, pw, vh, ch_val("Pos"), CH["Pos"][7], vfs, color, ha=2, va=2 if tall else 1))
-    gfs = max(8, int(vfs * 0.5))
-    gx = x + pw + 3
-    gy = y + (vh - gfs * 1.25) if tall else y + (h - gfs * 1.25) / 2
-    gh = gfs * 1.25
-    ad = gfs * 0.85
-    items.append(text(prefix + " par1", gx, gy, gfs * 0.4, gh, None, "(", gfs, GREY, weight="Medium", ha=0))
-    items.append(pos_arrow(prefix, gx + gfs * 0.38, gy + (gh - ad) / 2, ad))
-    nx_arrow, nx_none = gx + gfs * 0.38 + ad + 1, gx + gfs * 0.4
-    items.append(text(prefix + " guadagno", nx_arrow, gy, x + w - nx_none, gh, None, "3)", gfs, WHITE, ha=0,
+    vfs = vfs or fit(w - 6, vh, 10, 0.95 if tall else 0.72, 0.56)
+    valw = 5 * 0.56 * vfs                               # "11/25"
+    gainw = (0.4 + 0.8 + 1.25) * vfs                    # "(" freccia "3)"
+    gap = vfs * 0.25
+    start = x + max(2, (w - valw - gap - gainw) / 2)
+    items.append(text(prefix + " valore", start - vfs, y, valw + vfs, vh, ch_val("Pos"), CH["Pos"][7], vfs, color, ha=2, va=2 if tall else 1))
+    gx = start + valw + gap
+    gh = vh
+    ad = vfs * 0.72
+    ay = y + (vh - ad * 1.22) if tall else y + (h - ad) / 2 - vfs * 0.05
+    vva = 2 if tall else 1
+    items.append(text(prefix + " par1", gx, y, vfs * 0.45, gh, None, "(", vfs, GREY, weight="Medium", ha=0, va=vva))
+    items.append(pos_arrow(prefix, gx + vfs * 0.38, ay, ad))
+    nx_arrow, nx_none = gx + vfs * 0.38 + ad + 2, gx + vfs * 0.4
+    items.append(text(prefix + " guadagno", nx_arrow, y, max(10, x + w - nx_none), gh, None, "3)", vfs, WHITE, ha=0, va=vva,
                       bindings={"Text": js("var g = fd('PosGain');\r\nreturn (g && g !== '-') ? g + ')' : '-)';"),
                                 "TextColor": js("var c = $prop('DTPlugin.PosGain_Colore');\r\nreturn c ? c : '#FF9E9E9E';"),
                                 "Left": js("var d = $prop('DTPlugin.PosGain_Dir');\r\nreturn (d != null && d != 0) ? %d : %d;" % (round(nx_arrow), round(nx_none)))}))
@@ -708,11 +711,12 @@ def card_items(card, w, h):
             chars = max(len(CH[c][7]) for c, _ in ents)   # stessa grandezza, sul valore piu' lungo
         if one and card.get("pos_gain"):
             # colonne su misura (la posizione ha accanto le posizioni guadagnate) e numeri tutti della stessa grandezza
-            wts = [1.6 if c == "Pos" else (0.75 if c == "Lap" else 1.0) for c, _ in ents]
+            wts = [2.1 if c == "Pos" else (0.7 if c == "Lap" else 1.0) for c, _ in ents]
             ws = [iw * t / sum(wts) for t in wts]
             vh = rh * 0.72 if rh >= 40 else rh
             hf = 0.95 if rh >= 40 else 0.72
-            same = min(fit((wd * 0.64 if c == "Pos" else wd) - 6, vh, len(CH[c][7]), hf, 0.56) for (c, _), wd in zip(ents, ws))
+            same = min(fit(wd - 6, vh, 10 if c == "Pos" else len(CH[c][7]), hf, 0.56) for (c, _), wd in zip(ents, ws))
+            same = max(8, int(same * 0.88))                # un po' piu' piccoli
             xx = ix
             for i, ((c, col), wd) in enumerate(zip(ents, ws)):
                 if c == "Pos":
