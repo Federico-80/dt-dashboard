@@ -425,6 +425,11 @@ def session_items(w, h):
     ws = [iw * t / sum(wts) for t in wts]
     vfs = min(fit(ws[0] - 14, vh, 5, 0.8, 0.62), fit(ws[1] - 14, vh, 5, 0.8, 0.62), fit(ws[2] - 14, vh, 4.2, 0.8, 0.62))
     lfs = clamp(int(lh * 0.82), 7, 12)
+    # numeri + scritte centrati in altezza sulla parte visibile (cifre alte ~0.72 del carattere)
+    gh = vfs * 0.72
+    top_vis = (h - (gh + 6 + lfs)) / 2.0
+    vy = top_vis + gh + vfs * 0.21 - vh
+    ly = top_vis + gh + 6 - lfs * 0.12
     x = ix
     # tempo: parte prima dei secondi bianca, ":ss" grigio; con le ore (1:29:30) solo "1h29"
     w0 = ws[0]
@@ -463,7 +468,7 @@ def session_items(w, h):
     it += centered_pair("Giro", x, w2, vy, vh, g_a, g_b, "4", "/~27.1", vfs, tfs, SES_GREY, gap=vfs * 0.12, hb=vh - vfs * 0.08)
     it.append(text("Giro etichetta", x, ly, w2, lh, None, "GIRO", lfs, GREY, weight="Medium"))
     # divisori tra tempo, posizione e giro
-    dy0, dy1 = vy + vh * 0.12, ly + lh
+    dy0, dy1 = top_vis - 5, top_vis + gh + 6 + lfs + 5
     it.append(vdiv("Divisore 1", ix + ws[0], dy0, dy1 - dy0))
     it.append(vdiv("Divisore 2", ix + ws[0] + ws[1], dy0, dy1 - dy0))
     return it
