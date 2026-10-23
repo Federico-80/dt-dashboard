@@ -176,7 +176,7 @@ namespace FedeDashboard
         public readonly double[] FcRain = { double.NaN, double.NaN, double.NaN, double.NaN, double.NaN };
         public DateTime ForecastTime = DateTime.MinValue;
         public Func<string> SessionType;   // dal plugin: "PRACTICE" / "QUALIFY" / "RACE"
-        bool cutsRead;
+        bool cutsRead, probed;
 
         public bool FreshRep { get { return Fresh(RepTime, 20); } }
         public bool FreshWear { get { return Fresh(WearTime, 30); } }
@@ -408,6 +408,28 @@ namespace FedeDashboard
                 TimeCompletion = MiniJson.Num(si, "timeCompletion");
                 Wetness = MiniJson.Num(si, "averagePathWetness");
                 InfoTime = DateTime.Now;
+            }
+            if (!probed)
+            {
+                probed = true;
+                // elenco dei servizi di LMU (per trovare la strategia del menu): scritto una volta nel log
+                foreach (var doc in new[] { "/swagger/v1/swagger.json", "/swagger.json", "/openapi.json", "/rest/swagger.json" })
+                {
+                    var sw = GetJson(doc) as Dictionary<string, object>;
+                    var paths = sw == null ? null : MiniJson.Get(sw, "paths") as Dictionary<string, object>;
+                    if (paths == null) continue;
+                    var keep = new List<string>();
+                    foreach (var k in paths.Keys)
+                        if (k.IndexOf("strateg", StringComparison.OrdinalIgnoreCase) >= 0 || k.IndexOf("fuel", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                            k.IndexOf("pit", StringComparison.OrdinalIgnoreCase) >= 0 || k.IndexOf("energy", StringComparison.OrdinalIgnoreCase) >= 0) keep.Add(k);
+                    FedeLog.Write("LMU servizi (" + paths.Count + "): " + string.Join(" ", keep));
+                    break;
+                }
+                foreach (var ep in new[] { "/rest/strategy/overall", "/rest/strategy/usage", "/rest/strategy/fuel", "/rest/garage/UIScreen/Strategy" })
+                {
+                    var o = GetJson(ep);
+                    if (o != null) { var d = o as Dictionary<string, object>; FedeLog.Write("LMU " + ep + ": " + (d != null ? string.Join(",", d.Keys) : o.GetType().Name)); }
+                }
             }
             if (!cutsRead)
             {

@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.70";
+        public const string VersionText = "1.71";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -1212,6 +1212,14 @@ namespace FedeDashboard
             double fuelPer = FuelPerLap();
             string vsrc;
             double ve = VePercent(), vePer = VePerLap(out vsrc);
+            // come il menu di LMU: consumo previsto e quantita' a bordo letti dal gioco, se disponibili
+            if (lmuRest != null)
+            {
+                double rp = lmuRest.VePerLapPct;
+                if (!double.IsNaN(rp) && rp > 0.01) vePer = rp;
+                double rf = lmuRest.FuelPerLapFresh;
+                if (!double.IsNaN(rf) && rf > 0) fuelPer = rf;
+            }
             bool nrg = !double.IsNaN(ve) && ve > 0 && !double.IsNaN(vePer) && vePer > 0.01;
 
             if (!running || !race) { d["Attiva"] = "0"; SetStrat(d); return; }
@@ -1238,7 +1246,11 @@ namespace FedeDashboard
             }
             else lapsToEnd = Math.Max(0, remLaps - 1);
             // giri alla fine con i decimali, come LMU ("36.3 giri alla fine")
-            double lapsFrac = (!double.IsNaN(timeLeft) && timeLeft > 0 && timeLeft < 360000) ? timeLeft / avgLap : Math.Max(0, remLaps - pos);
+            // come LMU: giri dopo quello in corso (il giro corrente non e' contato)
+            double lapsFrac = (!double.IsNaN(timeLeft) && timeLeft > 0 && timeLeft < 360000)
+                ? Math.Max(0, (timeLeft - (1 - pos) * avgLap) / avgLap) : Math.Max(0, remLaps - 1);
+            // giri da guidare davvero: resto del giro corrente + giri interi dopo (allo scadere del tempo il giro va finito)
+            double lapsDrive = (1 - pos) + Math.Ceiling(lapsFrac - 1e-6);
             int fillLaps = lapsToEnd == 0 ? 0 : lapsToEnd + 1;
 
             // risorsa: energia (auto con VE) o carburante
@@ -1298,18 +1310,18 @@ namespace FedeDashboard
             d["Stint"] = stTs.TotalHours >= 1 ? ((int)stTs.TotalHours + ":" + stTs.Minutes.ToString("00") + ":" + stTs.Seconds.ToString("00")) : (stTs.Minutes + ":" + stTs.Seconds.ToString("00"));
             d["Giri"] = lapsFrac.ToString("0.0", CultureInfo.InvariantCulture);
             // quanto serve ancora per arrivare alla fine (come "61% VE necessaria" di LMU)
-            double needTot = per * lapsFrac - (useVe ? ve : fuel);
+            double needTot = per * lapsDrive - (useVe ? ve : fuel);
             d["Necessaria"] = needTot > 0 ? Math.Ceiling(needTot).ToString("0", CultureInfo.InvariantCulture) + (useVe ? " %" : " l") : "0";
             // litri ed energia che servono ancora per arrivare alla fine (0 = bastano quelli a bordo)
             if (!double.IsNaN(fuel) && fuelPer > 0)
             {
-                double nl = fuelPer * lapsFrac - fuel;
+                double nl = fuelPer * lapsDrive - fuel;
                 d["Litri"] = nl > 0 ? Math.Ceiling(nl).ToString("0", CultureInfo.InvariantCulture) + " l" : "0 l";
             }
             else d["Litri"] = "-";
             if (nrg)
             {
-                double ne = vePer * lapsFrac - ve;
+                double ne = vePer * lapsDrive - ve;
                 d["EnergiaNec"] = ne > 0 ? Math.Ceiling(ne).ToString("0", CultureInfo.InvariantCulture) + " %" : "0 %";
             }
             else d["EnergiaNec"] = "-";

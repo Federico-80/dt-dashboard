@@ -1,5 +1,5 @@
 {
-  "version": "1.70",
-  "notes": "Schede a gruppi (Tempi giro, Sessione...): numeri più grandi e scritte sotto più sottili.",
+  "version": "1.71",
+  "notes": "Strategia come il menu di LMU: giri alla fine senza il giro in corso, consumi previsti dal gioco per litri ed energia necessari.",
   "date": "2026-10-23"
 }
