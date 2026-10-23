@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "2.06";
+        public const string VersionText = "2.07";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -101,9 +101,46 @@ namespace FedeDashboard
             return Math.Max(0, Math.Min(100, v <= 1.0001 ? v * 100.0 : v));
         }
 
+        /// <summary>iRacing: i dati delle schede "Sosta e danni" che iRacing ha (riparazioni, set di gomme, batteria, incidenti).</summary>
+        object IRacingSpecial(string src)
+        {
+            switch (src)
+            {
+                case "@rip_danni":
+                case "@rip_totale":
+                    {
+                        double a = Num(Raw("Telemetry.PitRepairLeft")), b = Num(Raw("Telemetry.PitOptRepairLeft"));
+                        if (double.IsNaN(a) && double.IsNaN(b)) return null;
+                        return (double.IsNaN(a) ? 0 : a) + (double.IsNaN(b) ? 0 : b);
+                    }
+                case "@gomme_nuove":
+                    {
+                        double v = Num(Raw("Telemetry.TireSetsAvailable"));
+                        return double.IsNaN(v) || v >= 255 ? null : (object)v;
+                    }
+                case "@batteria":
+                    {
+                        double v = Num(Raw("Telemetry.EnergyERSBatteryPct"));
+                        return double.IsNaN(v) ? null : (object)(v <= 1.0001 ? v * 100 : v);
+                    }
+                case "@track_limits":
+                    {
+                        // iRacing non ha i track limits: mostro gli incidenti (es. 4x/17x)
+                        double inc = Num(Raw("Telemetry.PlayerCarMyIncidentCount"));
+                        if (double.IsNaN(inc)) return null;
+                        string lim = Convert.ToString(Raw("SessionData.WeekendInfo.WeekendOptions.IncidentLimit") ?? "");
+                        int l;
+                        string a = Math.Round(inc).ToString(CultureInfo.InvariantCulture) + "x";
+                        return int.TryParse(lim, out l) && l > 0 ? a + "/" + l + "x" : a;
+                    }
+            }
+            return null;
+        }
+
         object LmuSpecial(string src)
         {
             var r = lmuRest;
+            if (isIRacing) return IRacingSpecial(src);
             switch (src)
             {
                 case "@rip_danni": return r != null && r.FreshRep && !double.IsNaN(r.RepDamage) ? (object)r.RepDamage : null;
@@ -812,7 +849,8 @@ namespace FedeDashboard
                 // posizione di partenza: aggiornata fino al via (giro di formazione), poi bloccata per tutta la gara
                 int lapNow = AsInt(bridge.GetPropertyValue("DataCorePlugin.GameData.CurrentLap"));
                 object ph = Raw("Scoring.mScoringInfo.mGamePhase");
-                bool green = ph != null ? Num(ph) >= 5 : lapNow >= 1;
+                object irs = isIRacing ? Raw("Telemetry.SessionState") : null;   // iRacing: 4 = gara in corso
+                bool green = ph != null ? Num(ph) >= 5 : (irs != null ? Num(irs) >= 4 : lapNow >= 1);
                 int all = lmuPlace > 0 ? lmuPlace : AsInt(bridge.GetPropertyValue("DataCorePlugin.GameData.Position"));
                 if (all > 0) startPosAll = all;
                 if (playerClassPos > 0) startPosClass = playerClassPos;
@@ -871,6 +909,15 @@ namespace FedeDashboard
             return Seconds(bridge.GetPropertyValue("DataCorePlugin.GameData.BestLapTime"));
         }
 
+        /// <summary>iRacing: delta sul miglior giro calcolato dal gioco (solo quando e' valido).</summary>
+        double IRacingDelta()
+        {
+            if (!isIRacing) return double.NaN;
+            object ok = Raw("Telemetry.LapDeltaToBestLap_OK");
+            if (ok != null && !AsBool(ok)) return double.NaN;
+            return Num(Raw("Telemetry.LapDeltaToBestLap"));
+        }
+
         object TimingDelta()
         {
             switch (Settings.Timing.DeltaSource)
@@ -879,6 +926,8 @@ namespace FedeDashboard
                     {
                         double d = Num(Raw("CurrentPlayerTelemetry.mDeltaBest"));
                         if (!double.IsNaN(d)) return d;
+                        double ird = IRacingDelta();
+                        if (!double.IsNaN(ird)) return ird;
                         break;
                     }
                 case 2:
@@ -888,7 +937,9 @@ namespace FedeDashboard
                         break;
                     }
             }
-            return bridge.GetPropertyValue("PersistantTrackerPlugin.SessionBestLiveDeltaSeconds");
+            var sd = bridge.GetPropertyValue("PersistantTrackerPlugin.SessionBestLiveDeltaSeconds");
+            if (sd == null) { double ird = IRacingDelta(); if (!double.IsNaN(ird)) return ird; }
+            return sd;
         }
 
         object TimingEstimated()
@@ -898,6 +949,7 @@ namespace FedeDashboard
                 case 0:
                     {
                         double d = Num(Raw("CurrentPlayerTelemetry.mDeltaBest")), best = BestLapSeconds();
+                        if (double.IsNaN(d)) d = IRacingDelta();
                         if (!double.IsNaN(d) && best > 0) return best + d;
                         break;
                     }
@@ -1921,13 +1973,9 @@ namespace FedeDashboard
             string name = "";
             try
             {
-                if (lmuRest != null) name = lmuRest.Compound(w);   // LMU: menu gomme del gioco (come TK)
-                if (string.IsNullOrWhiteSpace(name)) name = RawCompoundName(w < 2);
-                if (string.IsNullOrWhiteSpace(name))
-                {
-                    object ir = Raw("Telemetry.PlayerTireCompound");
-                    if (ir != null && isIRacing) name = AsInt(ir) >= 1 ? "Wet" : "";
-                }
+                if (lmuRest != null && !isIRacing) name = lmuRest.Compound(w);   // LMU: menu gomme del gioco (come TK)
+                if (isIRacing) name = IRacingCompound();
+                else if (string.IsNullOrWhiteSpace(name)) name = RawCompoundName(w < 2);
                 if (string.IsNullOrWhiteSpace(name))
                     name = Convert.ToString(bridge.GetPropertyValue("DataCorePlugin.GameData.TyreCompound") ?? "");
             }
@@ -1940,6 +1988,31 @@ namespace FedeDashboard
             if (n.Contains("HARD") || n == "H") { color = "#FFFFFFFF"; return "H"; }
             color = "#FF9E9E9E";
             return n.Substring(0, 1);
+        }
+
+        bool irCompoundLogged;
+
+        /// <summary>iRacing: mescola montata (PlayerTireCompound) cercata nell'elenco gomme dell'auto (DriverInfo.DriverTires).</summary>
+        string IRacingCompound()
+        {
+            object ir = Raw("Telemetry.PlayerTireCompound");
+            if (ir == null) return "";
+            int idx = AsInt(ir);
+            string type = "";
+            try
+            {
+                var list = Raw("SessionData.DriverInfo.DriverTires") as System.Collections.IEnumerable;
+                if (list != null)
+                    foreach (var t in list)
+                    {
+                        if (t == null) continue;
+                        if (AsInt(GetMember(t, "TireIndex")) == idx) { type = Convert.ToString(GetMember(t, "TireCompoundType") ?? ""); break; }
+                    }
+            }
+            catch { }
+            if (!irCompoundLogged) { irCompoundLogged = true; FedeLog.Write("iRacing mescola: indice " + idx + " tipo '" + type + "'"); }
+            if (type.Length > 0) return type;
+            return idx >= 1 ? "Wet" : "";
         }
 
         static readonly string[] CompoundRoots = { "CurrentPlayerTelemetry", "PlayerNativeTelemetry", "CurrentPlayer", "Telemetry", "PlayerTelemetry" };
@@ -2054,7 +2127,8 @@ namespace FedeDashboard
                         if (!double.IsNaN(v)) return v * 100;
                         // iRacing: TrackWetness 1 = asciutta ... 7 = allagata (0 = sconosciuto)
                         double w = Num(Raw("Telemetry.TrackWetness"));
-                        return double.IsNaN(w) || w < 1 ? null : (object)Math.Round((w - 1) / 6.0 * 100);
+                        // 1-2 asciutta/quasi asciutta, 3 appena umida, 4-7 bagnata (scala per ASC/UMI/BAG)
+                        return double.IsNaN(w) || w < 1 ? null : (object)(w <= 1 ? 0 : Math.Round((w - 2) / 5.0 * 100 + 5));
                     }
                 case "@pioggia":
                     {
@@ -2072,7 +2146,9 @@ namespace FedeDashboard
                     {
                         double b = Num(Raw("CurrentPlayerTelemetry.mBatteryChargeFraction"));
                         if (!double.IsNaN(b)) return b * 100.0;
-                        return bridge.GetPropertyValue("DataCorePlugin.GameData.ERSPercent");
+                        var ers = bridge.GetPropertyValue("DataCorePlugin.GameData.ERSPercent");
+                        if (ers == null && isIRacing) { double e = Num(Raw("Telemetry.EnergyERSBatteryPct")); if (!double.IsNaN(e)) return e <= 1.0001 ? e * 100 : e; }
+                        return ers;
                     }
             }
             if (src.Equals("@limitatore", StringComparison.OrdinalIgnoreCase))

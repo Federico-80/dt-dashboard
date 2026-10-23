@@ -1,5 +1,5 @@
 {
-  "version": "2.06",
-  "notes": "2.06: bandiera sopra velocita' e giri con il settore, icona freni, mescola colorata, stato auto senza spazi, nuovo schema danni stile LMU, avvisi danni e giro di lato a meta' schermo",
+  "version": "2.07",
+  "notes": "2.07: tempi giro piu' piccoli e centrati, freni e usura gomme piu' grandi, supporto iRacing (riparazioni, set gomme, batteria, incidenti, mescola, delta, bagnato, partenza)",
   "date": "2026-10-23"
 }

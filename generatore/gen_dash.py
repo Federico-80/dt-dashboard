@@ -698,6 +698,34 @@ def pos_with_gain(color, x, y, w, h, prefix, chars=None, vfs=None):
     return items
 
 
+def lap_times_items(ents, ix, iy, iw, ih):
+    """Tempi giro uno sotto l'altro: ogni tempo con la scritta sotto, i tre blocchi distribuiti in modo uguale
+    (stesso spazio sopra, in mezzo e sotto). Le linee passano a meta' delle scritte PREVISTO e ULTIMO."""
+    n = len(ents)
+    rh = ih / n
+    chars = max(CH[c][6] for c, _ in ents)
+    vfs = int(fit(iw - 5, rh * 0.745, chars, 0.97, 0.56) * 0.86)
+    lfs = clamp(int(min(rh * 0.255 * 0.55, (iw - 4) / (8 * 0.6))), 7, 11)
+    gh = vfs * 0.72                     # altezza delle cifre
+    blk = gh + 8 + lfs
+    space = max(0, (ih - n * blk) / (n + 1))
+    it = []
+    for i, (c, col) in enumerate(ents):
+        top = iy + space * (i + 1) + blk * i
+        vh = vfs * 1.25
+        it.append(text("%s %d valore" % (c, i), ix, top + gh + vfs * 0.21 - vh, iw, vh, ch_val(c), CH[c][7], vfs, col, va=2))
+        ly = top + gh + 8 - lfs * 0.15
+        it.append(text("%s %d nome" % (c, i), ix, ly, iw, lfs * 1.4, ch_name(c), CH[c][1], lfs, GREY, weight="Normal", va=0))
+        if i < n - 1:
+            cyl = ly + lfs * 0.62
+            half = len(CH[c][1]) * lfs * 0.38 + 8
+            cxm = ix + iw / 2
+            x0, x1 = ix + iw * 0.06, ix + iw * 0.94
+            it.append(hdiv("Divisore riga %d sx" % (i + 1), x0, cyl, cxm - half - x0))
+            it.append(hdiv("Divisore riga %d dx" % (i + 1), cxm + half, cyl, x1 - cxm - half))
+    return it
+
+
 def entry_items(c, color, x, y, w, h, prefix, sub=None, chars=None, vfs=None):
     """Una voce (etichetta + valore) dentro un riquadro di gruppo."""
     forced = vfs
@@ -876,6 +904,8 @@ def card_items(card, w, h):
                     items += entry_items(c, col, xx, iy, wd, rh, "%s %d" % (c, i), vfs=same)
                 xx += wd
             return items
+        if card["name"] == "Tempi giro" and cols == 1 and rh >= 40 and cw >= 40:
+            return items + lap_times_items(ents, ix, iy, iw, ih)
         for i, (c, col) in enumerate(ents):
             r, k = divmod(i, cols)
             items += entry_items(c, col, ix + k * cw, iy + r * rh, cw, rh, "%s %d" % (c, i), chars=chars if one else None)
@@ -1159,13 +1189,14 @@ def tyres3_items(ix, iy, iw, ih):
         nx = tx + tw + 4 if left else x0 + 4           # lato interno
         oha, nha = (2, 0) if left else (0, 2)          # tutto allineato verso la striscia
         items.append(text("Gomma %s pressione" % k, ox, dy, sw, dh / 2, ch_val("TyreP" + k), CH["TyreP" + k][7], sfs, WHITE, weight="Bold", ha=oha, va=2))
-        wfs = min(int(sfs * 1.18), int(fit(sw - 2, dh * 0.5, 4, 0.95, 0.58)))   # percentuale un po' piu' grande
+        wfs = min(int(sfs * 1.35), int(fit(sw - 2, dh * 0.52, 3.6, 1.0, 0.58)))   # percentuale piu' grande
         items.append(text("Gomma %s usura" % k, ox, dy + dh / 2, sw, dh / 2, ch_val("TyreW" + k), CH["TyreW" + k][7], wfs, WHITE, weight="Bold", ha=oha, va=0))
         # temperatura freno: icona del freno sopra, numero sotto (come pressione/usura dall'altra parte)
-        isz = min(dh * 0.42, sfs * 1.25)
+        bfs = min(int(sfs * 1.35), int(fit(sw - 2, dh * 0.55, 4, 1.0, 0.58)))   # temperatura freno piu' grande
+        isz = min(dh * 0.4, sfs * 1.15)
         ix_ = nx + 2 if left else nx + sw - isz - 2
         items.append(image("Gomma %s icona freno" % k, ix_, dy + dh / 2 - isz - 2, isz, isz, "dt-ico-freno"))
-        items.append(text("Gomma %s freno" % k, nx, dy + dh / 2, sw, dh / 2, ch_val("BrakeT" + k), CH["BrakeT" + k][7], sfs, WHITE, weight="Bold", ha=nha, va=0))
+        items.append(text("Gomma %s freno" % k, nx, dy + dh / 2 - 2, sw, dh / 2 + 4, ch_val("BrakeT" + k), CH["BrakeT" + k][7], bfs, WHITE, weight="Bold", ha=nha, va=0))
     # mescola al centro della croce
     pw = clamp(iw * 0.36, 50, 150)
     pfs = clamp(int(ph * 0.66), 8, 16)
