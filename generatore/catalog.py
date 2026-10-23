@@ -154,6 +154,9 @@ CARDS.append(dict(name="Carburante (barra + giri)", kind="gauge", title="CARBURA
 CARDS.append(dict(name="Energia virtuale (barra + giri)", kind="gauge", title="ENERGIA (GIRI)", ch="VE", laps="VELaps", pct="VE",
                   suffix="", fill="#FF1E3BE0", color=FRAME))
 CARDS.append(dict(name="Strategia gara (soste, finestra, rifornimento)", kind="strategy", title="", color=FRAME))
+CARDS.append(dict(name="Classifica generale", kind="standings", scope="G", title="CLASSIFICA", color=FRAME))
+CARDS.append(dict(name="Classifica di classe", kind="standings", scope="C", title="CLASSIFICA CLASSE", color=FRAME))
+STANDINGS_MAX = 60   # righe esportate dal plugin per ogni classifica
 CARD_INDEX = {c["name"]: i for i, c in enumerate(CARDS)}
 
 # zone danno LMU (mDentSeverity01..08), macchina vista dall'alto con il muso in alto:
@@ -169,7 +172,7 @@ CATEGORIES = [
     ("Carburante ed energia", ["Carburante", "Carburante (litri)", "Carburante (giri)", "Consumo medio", "Energia virtuale (VE)", "Energia virtuale (completa)", "Giri energia virtuale", "Consumo energia virtuale", "ERS / batteria", "Carburante (barra + giri)", "Energia virtuale (barra + giri)", "Strategia gara (soste, finestra, rifornimento)"]),
     ("Comandi auto", ["Assetto (TC/ABS/BB/MAP)", "TC", "TC Cut", "TC Slip", "ABS", "Ripartizione freno (BB)", "Mappa motore"]),
     ("Gomme e freni", ["Gomme complete (temp. carcassa, pressione, freni)", "Gomme (pressione + temperatura)", "Gomme (temperature)", "Usura gomme", "Temperature freni", "Danni (schema auto)"]),
-    ("Sessione e gara", ["Sessione", "Posizione", "Giro", "Tempo rimasto", "Ora", "Distacchi", "Distacco avanti", "Distacco dietro", "Stato auto (luci, bandiera, tergi, motore)"]),
+    ("Sessione e gara", ["Sessione", "Posizione", "Giro", "Tempo rimasto", "Ora", "Distacchi", "Distacco avanti", "Distacco dietro", "Classifica generale", "Classifica di classe", "Stato auto (luci, bandiera, tergi, motore)"]),
     ("Motore e pedali", ["Pedali", "Velocità", "Giri motore", "Motore (acqua/olio)"]),
     ("Meteo", ["Meteo", "Temperatura aria", "Temperatura pista"]),
     ("Personalizzati", ["Personalizzato %d" % i for i in range(1, 7)]),

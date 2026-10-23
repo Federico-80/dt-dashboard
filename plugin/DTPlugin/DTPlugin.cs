@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.62";
+        public const string VersionText = "1.63";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -232,6 +232,25 @@ namespace FedeDashboard
                 bridge.Attach("Danno_" + kk + "_Colore", () => { string v; lock (colors) return colors.TryGetValue("DannoColore_" + kk, out v) ? v : "#FFFFFFFF"; });
             }
             bridge.Attach("Avviso_Box", () => alertBox);
+            // classifiche (generale = 0, di classe = 1)
+            for (int sc = 0; sc < 2; sc++)
+            {
+                int q = sc;
+                string pre = "Std_" + (sc == 0 ? "G" : "C") + "_";
+                bridge.Attach(pre + "N", () => stdN[q]);
+                bridge.Attach(pre + "Io", () => stdIo[q]);
+                for (int r = 0; r < Catalog.StandingsMax; r++)
+                {
+                    int rr = r;
+                    string rp = pre + (r + 1) + "_";
+                    bridge.Attach(rp + "Pos", () => stdRows[q][rr].Pos);
+                    bridge.Attach(rp + "Nome", () => stdRows[q][rr].Name);
+                    bridge.Attach(rp + "Classe", () => stdRows[q][rr].Cls);
+                    bridge.Attach(rp + "ClasseColore", () => stdRows[q][rr].ClsColor);
+                    bridge.Attach(rp + "Distacco", () => stdRows[q][rr].Gap);
+                    bridge.Attach(rp + "Io", () => stdRows[q][rr].Me);
+                }
+            }
             bridge.Attach("Box_TempoCorsia", () => pitLaneSince == DateTime.MaxValue ? "" : ValueFormatter.LapTime(Math.Max(0, (DateTime.Now - pitLaneSince).TotalSeconds)));
             string[] sides = { "Avanti", "Dietro" };
             for (int i = 0; i < 2; i++)
@@ -1712,6 +1731,7 @@ namespace FedeDashboard
                 if (!double.IsNaN(gapBehind)) gapBehind = Math.Abs(gapBehind);
                 SetBoxCar(0, oa, gapAhead, lapsA);
                 SetBoxCar(1, ob, gapBehind, lapsB);
+                try { StandingsSimHub(all, player, raceS); } catch { ClearStandings(); }
                 // migliori giri della classe (per la strategia prima del primo giro)
                 var cb = new List<double>();
                 foreach (var o in sameClass) { double b = Seconds(GetMember(o, "BestLapTime")); if (b > 0) cb.Add(b); }
@@ -1726,6 +1746,113 @@ namespace FedeDashboard
         }
 
         volatile int lmuPlace, lmuCars;
+
+        // ---- classifiche
+        class StdRow { public string Pos = "", Name = "", Cls = "", ClsColor = "#FFC62828", Gap = ""; public bool Me; }
+        StdRow[][] stdRows = NewStd();
+        readonly int[] stdN = { 0, 0 }, stdIo = { 0, 0 };
+
+        static StdRow[][] NewStd()
+        {
+            var a = new StdRow[2][];
+            for (int i = 0; i < 2; i++) { a[i] = new StdRow[Catalog.StandingsMax]; for (int r = 0; r < a[i].Length; r++) a[i][r] = new StdRow(); }
+            return a;
+        }
+
+        static string FmtRel(double g, int laps)
+        {
+            if (laps != 0) return (laps > 0 ? "+" : "-") + Math.Abs(laps) + "L";
+            if (double.IsNaN(g)) return "-";
+            double a = Math.Abs(g);
+            return (g < 0 ? "-" : "+") + a.ToString(a < 100 ? "0.0" : "0", CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>Riempie una classifica: rows gia' in ordine, me = indice del giocatore, gap/laps rispetto a me, pos = testo posizione.</summary>
+        void FillStandings(int sc, int count, int me, Func<int, StdRow> make)
+        {
+            var rows = new StdRow[Catalog.StandingsMax];
+            int n = Math.Min(count, rows.Length);
+            for (int r = 0; r < rows.Length; r++) rows[r] = r < n ? (make(r) ?? new StdRow()) : new StdRow();
+            stdRows[sc] = rows;
+            stdN[sc] = n;
+            stdIo[sc] = Math.Max(0, Math.Min(me, n - 1));
+        }
+
+        void ClearStandings() { for (int sc = 0; sc < 2; sc++) { stdN[sc] = 0; stdIo[sc] = 0; } }
+
+        void StandingsLmu(List<LmuCar> cars, LmuCar me, bool race, Dictionary<string, object> extra)
+        {
+            for (int sc = 0; sc < 2; sc++)
+            {
+                var list = sc == 0 ? cars : cars.FindAll(c => c.Cls == me.Cls);
+                int mi = list.IndexOf(me);
+                FillStandings(sc, list.Count, mi, r =>
+                {
+                    var c = list[r];
+                    var row = new StdRow { Pos = (sc == 0 ? c.Place : r + 1).ToString(CultureInfo.InvariantCulture), Name = ShortName(c.Name), Cls = c.Cls, Me = c == me };
+                    object o;
+                    if (extra.TryGetValue(c.Name, out o)) row.ClsColor = NormalizeColor(Convert.ToString(GetMember(o, "CarClassColor") ?? ""), "#FFC62828");
+                    if (c == me) { row.Gap = ""; return row; }
+                    bool ahead = c.Place < me.Place;
+                    double g; int laps = 0;
+                    if (race)
+                    {
+                        g = ahead ? ChainGap(cars, c, me, out laps) : ChainGap(cars, me, c, out laps);
+                        if (double.IsNaN(g)) { g = ahead ? GapBetween(c, me, true) : GapBetween(me, c, true); laps = ahead ? LapsBetween(c, me) : LapsBetween(me, c); }
+                        g = ahead ? -Math.Abs(g) : Math.Abs(g);
+                        if (ahead) laps = -laps;
+                    }
+                    else g = (c.Best > 0 && me.Best > 0) ? c.Best - me.Best : double.NaN;
+                    row.Gap = FmtRel(g, laps);
+                    return row;
+                });
+            }
+        }
+
+        void StandingsSimHub(List<object> all, object player, bool race)
+        {
+            all = new List<object>(all);
+            all.RemoveAll(o => AsInt(GetMember(o, "Position")) <= 0);
+            all.Sort((a, b) => AsInt(GetMember(a, "Position")).CompareTo(AsInt(GetMember(b, "Position"))));
+            string pc = (GetMember(player, "CarClass") ?? "").ToString();
+            double myBest = Seconds(GetMember(player, "BestLapTime"));
+            double myProg = AsDouble(GetMember(player, "CurrentLapHighPrecision"));
+            for (int sc = 0; sc < 2; sc++)
+            {
+                var list = sc == 0 ? all : all.FindAll(o => (GetMember(o, "CarClass") ?? "").ToString() == pc);
+                int mi = list.IndexOf(player);
+                FillStandings(sc, list.Count, mi, r =>
+                {
+                    var o = list[r];
+                    bool me = ReferenceEquals(o, player);
+                    var row = new StdRow
+                    {
+                        Pos = (sc == 0 ? AsInt(GetMember(o, "Position")) : r + 1).ToString(CultureInfo.InvariantCulture),
+                        Name = ShortName(Convert.ToString(GetMember(o, "Name") ?? "")),
+                        Cls = Convert.ToString(GetMember(o, "CarClass") ?? ""),
+                        ClsColor = NormalizeColor(Convert.ToString(GetMember(o, "CarClassColor") ?? ""), "#FFC62828"),
+                        Me = me
+                    };
+                    if (me) return row;
+                    bool ahead = r < mi;
+                    double g; int laps = 0;
+                    if (race)
+                    {
+                        g = AsDouble(GetMember(o, "GaptoPlayer"));
+                        double pr = AsDouble(GetMember(o, "CurrentLapHighPrecision"));
+                        if (!double.IsNaN(pr) && !double.IsNaN(myProg) && Math.Abs(pr - myProg) >= 1) laps = (int)Math.Floor(Math.Abs(pr - myProg)) * (ahead ? -1 : 1);
+                        if (!double.IsNaN(g)) g = ahead ? -Math.Abs(g) : Math.Abs(g);
+                    }
+                    else
+                    {
+                        double b = Seconds(GetMember(o, "BestLapTime"));
+                        g = (b > 0 && myBest > 0) ? b - myBest : double.NaN;
+                    }
+                    row.Gap = FmtRel(g, laps);
+                    return row;
+                });
+            }
+        }
 
         class LmuCar { public int Place; public double Tbl, Tbn, Lbn, Best, Last, Progress, LapsBehindLeader; public string Cls = "", Name = ""; public bool Player; }
         readonly int[] boxLaps = { 0, 0 };
@@ -1799,6 +1926,7 @@ namespace FedeDashboard
                     if (o != null) { string n = Convert.ToString(GetMember(o, "Name") ?? ""); if (n.Length > 0) extra[n] = o; }
             SetBoxLmu(0, ahead, gapAhead, extra);
             SetBoxLmu(1, behind, gapBehind, extra);
+            try { StandingsLmu(cars, me, race, extra); } catch (Exception ex) { FedeLog.Error("classifica LMU", ex); }
             return true;
         }
 

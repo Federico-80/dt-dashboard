@@ -331,6 +331,61 @@ def gap_side_items(side, x, y, w, h):
     return it
 
 
+STD_SAMPLE = [("5", "GT3", "S. Bovy", "-19.4", False), ("6", "GT3", "M. Berry", "-13.9", False), ("7", "GT3", "F. Pegoraro", "", True),
+              ("8", "GT3", "M. Birch", "+1.4", False), ("9", "GT3", "R. Agostini", "+13.6", False), ("10", "GT3", "M. Cressoni", "+45.2", False),
+              ("11", "LMP2", "A. Rossi", "+1L", False), ("12", "GT3", "L. Verdi", "+1L", False)]
+
+
+def standings_items(card, w, h):
+    """Classifica intorno a te (generale o di classe): posizione, categoria, nome, distacco da te. La tua riga e' evidenziata."""
+    sc = card["scope"]
+    P_ = "DTPlugin.Std_%s_" % sc
+    show_title = h >= 120
+    th = clamp(round(h * 0.07), 12, 15) if show_title else 0
+    it = []
+    if show_title:
+        it.append(text("Titolo", 6, 3, w - 12, th, None, card["title"], int(th * 0.75), GREY, weight="Medium"))
+    iy, ih = th + 4, h - th - 8
+    k = int(clamp(ih // 22, 1, 15))
+    rh = ih / k
+    fs = clamp(int(rh * 0.62), 8, 18)
+    pw = clamp(w * 0.12, 18, 34)
+    show_cls = sc == "G" and w >= 200
+    cw_ = clamp(w * 0.15, 26, 46) if show_cls else 0
+    gw = clamp(w * 0.24, 36, 80)
+    nx = 6 + pw + (cw_ + 4 if show_cls else 2)
+    nw = w - nx - gw - 8
+    for r in range(k):
+        y = iy + r * rh
+        pre = ("var n = $prop('%sN'); if (!n) { n = 0; }\r\nvar io = $prop('%sIo'); if (!io) { io = 0; }\r\n"
+               "var s = Math.max(0, Math.min(io - %d, n - %d));\r\nvar a = s + %d + 1;\r\n" % (P_, P_, k // 2, k, r))
+        fld = lambda f: pre + "if (a > n) { return ''; }\r\nvar v = $prop('%s' + a + '_%s');\r\nreturn v == null ? '' : v;" % (P_, f)
+        sp = STD_SAMPLE[r] if r < len(STD_SAMPLE) else (str(5 + r), "GT3", "Pilota %d" % (r + 1), "+1L", False)
+        me_js = pre + "return a <= n && $prop('%s' + a + '_Io') === true;" % P_
+        hl = rect("Riga %d evidenza" % (r + 1), 3, y + 1, w - 6, rh - 2, bg="#FF2E3B3A", radius=4)
+        hl["Bindings"] = {"Visible": js(me_js)}
+        hl["Visible"] = sp[4]
+        it.append(hl)
+        it.append(text("Riga %d posizione" % (r + 1), 6, y, pw, rh, None, sp[0], fs, WHITE, weight="Black", ha=0,
+                       bindings={"Text": js(fld("Pos"))}))
+        if show_cls:
+            bh = min(rh - 6, 18)
+            g = [rect("Riga %d classe fondo" % (r + 1), 6 + pw, y + (rh - bh) / 2, cw_, bh, bg="#FFC62828", radius=3,
+                      bindings={"BackgroundColor": js(pre + "var c = (a <= n) ? $prop('%s' + a + '_ClasseColore') : null;\r\nreturn c ? c : '#FFC62828';" % P_)}),
+                 text("Riga %d classe" % (r + 1), 6 + pw, y + (rh - bh) / 2, cw_, bh, None, sp[1], clamp(int(bh * 0.62), 7, 12), WHITE,
+                      weight="Black", bindings={"Text": js(fld("Classe"))})]
+            cl = layer("Riga %d categoria" % (r + 1), g)
+            cl["Bindings"] = {"Visible": js(pre + "return a <= n && ('' + $prop('%s' + a + '_Classe')) !== '';" % P_)}
+            it.append(cl)
+        it.append(text("Riga %d nome" % (r + 1), nx, y, nw, rh, None, sp[2], fs, WHITE, weight="Medium", ha=0,
+                       bindings={"Text": js(fld("Nome"))}))
+        it.append(text("Riga %d distacco" % (r + 1), w - gw - 6, y, gw, rh, None, sp[3], fs, WHITE, ha=2,
+                       bindings={"Text": js(fld("Distacco")),
+                                 "TextColor": js(pre + "var g = (a <= n) ? ('' + $prop('%s' + a + '_Distacco')) : '';\r\n"
+                                                 "return g.charAt(0) == '-' ? '#FF00E676' : (g.charAt(0) == '+' ? '#FFFF5252' : '#FFFFFFFF');" % P_)}))
+    return it
+
+
 def gaps_items(card, w, h):
     sides = card["sides"]
     show_title = bool(card.get("title")) and h >= 110
@@ -478,6 +533,9 @@ def card_items(card, w, h):
 
     if kind == "gaps":
         return items + gaps_items(card, w, h)
+
+    if kind == "standings":
+        return items + standings_items(card, w, h)
 
     if kind in ("single", "delta"):
         c = card["ch"]

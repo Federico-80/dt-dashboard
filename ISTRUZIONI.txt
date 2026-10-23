@@ -153,6 +153,10 @@ DT Rally (dashboard semplificata per i rally):
 
 5) SCHEDE DISPONIBILI
 ---------------------
+ Classifica generale / Classifica di classe: le auto intorno a te con posizione, categoria, nome e
+  distacco da te (verde chi è davanti, rosso chi è dietro, +1L doppiati). La tua riga è evidenziata.
+  In gara distacchi presi da LMU, in prova e qualifica differenza tra i giri migliori.
+  Più è alto il riquadro, più righe si vedono.
  Gomme (pressione+temperatura), Gomme (temperature), Usura gomme, Temperature freni,
  Tempi giro, Carburante, Sessione, Distacchi, Pedali, Meteo, Motore (acqua/olio),
  Assetto (TC/ABS/BB/MAP), Delta, e schede singole: TC, TC Cut, ABS, BB, Mappa, Posizione,
