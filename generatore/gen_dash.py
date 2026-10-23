@@ -89,11 +89,11 @@ DIV_COL = "#FF4A4A4A"     # divisori leggeri dentro le schede
 
 
 def vdiv(name, x, y, h):
-    return rect(name, round(x) - 1, y, 2, h, bg=DIV_COL)
+    return rect(name, round(x) - 1, y, 2, h, bg=DIV_COL, radius=0)
 
 
 def hdiv(name, x, y, w):
-    return rect(name, x, round(y) - 1, w, 2, bg=DIV_COL)
+    return rect(name, x, round(y) - 1, w, 2, bg=DIV_COL, radius=0)
 
 
 def sector_bars(x, y, w, h, gap=4):
@@ -1246,34 +1246,36 @@ def center_items(fi):
     sx, sy, sw, sh = cg["speed"]
     gfs = int(min((sy - y) * 1.12, 200))       # marcia grande: usa quasi tutta l'altezza sopra la velocita'
     it.append(text("Marcia", x, y - 16, w, sy - y + 30, ch_val("Gear"), CH["Gear"][7], gfs, WHITE, weight="Black"))
-    it.append(hdiv("Divisore marcia velocità", x + w * 0.12, sy - 1, w * 0.76))
-    it.append(text("Velocità", sx, sy, sw, sh, ch_val("Speed"), CH["Speed"][7], 32, WHITE, weight="Bold"))
-    rty = sy + sh
+    it.append(rect("Divisore marcia velocità", x + w * 0.14, round(sy) - 1, w * 0.72, 1, bg=DIV_COL, radius=0))   # linea sottile
+    sh2 = sh + 12                              # velocita' piu' grande
+    it.append(text("Velocità", sx, sy, sw, sh2, ch_val("Speed"), CH["Speed"][7], int(sh2 * 0.88), WHITE, weight="Bold"))
+    rty = sy + sh2
     rth = max(14, (y + h - 6) - rty)
     # giri motore piu' grandi: in basso non ci sono piu' le barre
     it.append(text("Giri", x, rty, w, rth, ch_val("Rpm"), CH["Rpm"][7], clamp(int(rth * 0.62), 12, 28), GREY, weight="Medium", va=0))
     # barre verticali ai lati della marcia: giri (tutte e due) oppure acceleratore (sinistra) e freno (destra)
-    BWD = 8
+    BWD = 5
     bt, bb = y + 12, y + h - 12
     BH = bb - bt
-    lx, rx = x + 7, x + w - 7 - BWD
+    lx, rx = x + 8, x + w - 8 - BWD
 
     def vbar(name, bx, val, col, frac, col_js=None):
         b = {"Height": js("return %s * %d / 100;" % (val, BH)), "Top": js("return %d - %s * %d / 100;" % (bb, val, BH))}
         if col_js:
             b["BackgroundColor"] = js(col_js)
-        return [rect(name + " fondo", bx, bt, BWD, BH, bg=TRACK, radius=3),
-                rect(name, bx, bt, BWD, BH, bg=col, radius=3, bindings=b, pv=dict(vfrac=frac))]
+        return [rect(name + " fondo", bx, bt, BWD, BH, bg=TRACK, radius=2),
+                rect(name, bx, bt, BWD, BH, bg=col, radius=2, bindings=b, pv=dict(vfrac=frac))]
     v = "Math.max(0, Math.min(100, $prop('DTPlugin.RpmPct_Valore')))"
     rcol = "var p = $prop('DTPlugin.RpmPct_Valore');\r\nreturn p >= 97 ? '#FFFF1744' : (p >= 85 ? '#FFFFD600' : '#FF00E676');"
     rpm_bar = vbar("Giri barra sinistra", lx, v, GREEN, 0.78, rcol) + vbar("Giri barra destra", rx, v, GREEN, 0.78, rcol)
-    it.append(layer("Barra giri", rpm_bar, None, ("BarrePedali", 0), vis_js="return $prop('DTPlugin.BarrePedali') !== true;"))
+    it.append(layer("Barra giri", rpm_bar, None, ("BarrePedali", 0), vis_js="return $prop('DTPlugin.BarrePedali') !== true && $prop('DTPlugin.BarreMarcia') !== false;"))
     # in alternativa (opzione della pagina): acceleratore (verde) a sinistra e freno (rosso) a destra
     ped = []
     for (c, col, bx, fr) in (("Throttle", GREEN, lx, 0.85), ("Brake", RED, rx, 0.15)):
         vv = "Math.max(0, Math.min(100, $prop('DTPlugin.%s_Valore')))" % c
         ped += vbar("%s barra" % c, bx, vv, col, fr)
-    it.append(layer("Barre acceleratore e freno", ped, None, ("BarrePedali", 1), vis_js="return $prop('DTPlugin.BarrePedali') === true;"))
+    it.append(layer("Barre acceleratore e freno", ped, None, ("BarrePedali", 1),
+                    vis_js="return $prop('DTPlugin.BarrePedali') === true && $prop('DTPlugin.BarreMarcia') !== false;"))
     # motore spento: riquadro giallo con "MOTORE SPENTO" e la marcia (stile 0)
     x, y, w, h = cg["gear"]
     eo_fs = fit(w - 16, h * 0.24, 7, 0.95)

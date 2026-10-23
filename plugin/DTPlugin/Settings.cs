@@ -187,6 +187,8 @@ namespace FedeDashboard
         public bool AutoQualify { get; set; }
         public bool AutoRace { get; set; }
         public bool ShowInputs { get; set; }
+        /// <summary>Nasconde le barre verticali (giri o pedali) ai lati della marcia.</summary>
+        public bool HideSideBars { get; set; }
 
         public void Normalize()
         {
@@ -211,7 +213,7 @@ namespace FedeDashboard
                 SidebarLeft = SidebarLeft, SidebarRight = SidebarRight,
                 Left = new List<int>(Left), Right = new List<int>(Right),
                 Bottom = new List<int>(Bottom), Center = new List<int>(Center),
-                AutoPractice = AutoPractice, AutoQualify = AutoQualify, AutoRace = AutoRace, ShowInputs = ShowInputs
+                AutoPractice = AutoPractice, AutoQualify = AutoQualify, AutoRace = AutoRace, ShowInputs = ShowInputs, HideSideBars = HideSideBars
             };
         }
 

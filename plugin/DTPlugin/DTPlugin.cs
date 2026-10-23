@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "2.03";
+        public const string VersionText = "2.04";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -296,6 +296,7 @@ namespace FedeDashboard
             bridge.Attach("Slot_SL", () => Page.SidebarLeft);
             bridge.Attach("Slot_SR", () => Page.SidebarRight);
             bridge.Attach("BarrePedali", () => Page.ShowInputs);
+            bridge.Attach("BarreMarcia", () => !Page.HideSideBars);
             bridge.Attach("Sessione", () => sessionKind);
             foreach (var w in Wheels)
             {

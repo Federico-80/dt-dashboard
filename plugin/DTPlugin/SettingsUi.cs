@@ -142,7 +142,10 @@ namespace FedeDashboard
                   <WrapPanel x:Name='GridRButtons' MaxWidth='560'/>
                 </StackPanel>
               </Grid>
-              <CheckBox Grid.Row='3' Grid.Column='1' x:Name='ChkInputs' Content='Sotto la marcia: acceleratore e freno (invece della barra dei giri)' Margin='0,8,0,0'/>
+              <StackPanel Grid.Row='3' Grid.Column='1' Margin='0,8,0,0'>
+                <CheckBox x:Name='ChkInputs' Content='Ai lati della marcia: acceleratore e freno (invece della barra dei giri)'/>
+                <CheckBox x:Name='ChkNoBars' Content='Nascondi le barre ai lati della marcia' Margin='0,6,0,0'/>
+              </StackPanel>
             </Grid>
             <Grid Margin='0,18,0,0'><Grid.ColumnDefinitions><ColumnDefinition Width='Auto'/><ColumnDefinition Width='*'/></Grid.ColumnDefinitions><TextBlock Text='ANTEPRIMA E SCHEDE' FontWeight='Bold' FontSize='14' Foreground='White'/><Border Grid.Column='1' Height='1' Background='#FF4A4A4A' VerticalAlignment='Center' Margin='12,0,0,0'/></Grid>
           </StackPanel>
@@ -270,7 +273,7 @@ namespace FedeDashboard
         readonly DTPlugin plugin;
         readonly ObservableCollection<ChannelRow> rows = new ObservableCollection<ChannelRow>();
         public readonly object Root;
-        readonly dynamic root, tabs, cbPage, tbName, chkP, chkQ, chkR, chkInputs, frameButtons, toolbarButtons,
+        readonly dynamic root, tabs, cbPage, tbName, chkP, chkQ, chkR, chkInputs, chkNoBars, frameButtons, toolbarButtons,
                          gridLButtons, gridRButtons, preview, pickerPanel, grid, timer, alertsPanel, tyresPanel, idlePanel, idlePreview;
         dynamic tyreLive;
         bool updating;
@@ -318,6 +321,7 @@ namespace FedeDashboard
             chkQ = F("ChkQ");
             chkR = F("ChkR");
             chkInputs = F("ChkInputs");
+            chkNoBars = F("ChkNoBars");
             frameButtons = F("FrameButtons");
             toolbarButtons = F("ToolbarButtons");
             gridLButtons = F("GridLButtons");
@@ -351,6 +355,7 @@ namespace FedeDashboard
             OnCheck((object)chkQ, v => Page.AutoQualify = v);
             OnCheck((object)chkR, v => Page.AutoRace = v);
             OnCheck((object)chkInputs, v => Page.ShowInputs = v);
+            OnCheck((object)chkNoBars, v => Page.HideSideBars = v);
 
             Click("BtnNew", () => AddPage(false));
             Click("BtnDup", () => AddPage(true));
@@ -499,6 +504,7 @@ namespace FedeDashboard
                 chkQ.IsChecked = p.AutoQualify;
                 chkR.IsChecked = p.AutoRace;
                 chkInputs.IsChecked = p.ShowInputs;
+                chkNoBars.IsChecked = p.HideSideBars;
                 BuildLayoutButtons();
                 DrawPreview();
                 BuildPicker();
