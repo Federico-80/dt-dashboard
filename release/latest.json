@@ -1,5 +1,5 @@
 {
-  "version": "1.96",
-  "notes": "1.96: divisori leggeri nelle schede, tempo con le ore in formato 1h29",
+  "version": "1.97",
+  "notes": "1.97: divisori tempi giro centrati, gomme con temperatura piu' piccola e altri valori piu' grandi",
   "date": "2026-10-23"
 }

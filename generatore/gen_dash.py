@@ -855,7 +855,21 @@ def card_items(card, w, h):
             items += entry_items(c, col, ix + k * cw, iy + r * rh, cw, rh, "%s %d" % (c, i), chars=chars if one else None)
         # divisori leggeri tra le righe e tra le colonne
         for r in range(1, rows):
-            items.append(hdiv("Divisore riga %d" % r, ix + iw * 0.06, iy + r * rh, iw * 0.88))
+            dy = iy + r * rh
+            if rh >= 40 and cw >= 40:
+                # a meta' tra la scritta sotto la riga di sopra e la cima dei numeri della riga sotto
+                def geo(c):
+                    vh = rh * 0.745
+                    vfs = fit(cw - 5, vh, CH[c][6], 0.97, 0.56)
+                    lfs = clamp(int(min((rh - vh) * 0.55, (cw - 4) / (len(CH[c][1]) * 0.6))), 7, 11)
+                    return vh, vfs, lfs
+                up, dn = ents[min(len(ents) - 1, (r - 1) * cols)][0], ents[min(len(ents) - 1, r * cols)][0]
+                vh1, _, lfs1 = geo(up)
+                vh2, vfs2, _ = geo(dn)
+                lab_bottom = iy + (r - 1) * rh + vh1 - 1 + lfs1 * 1.2
+                num_top = iy + r * rh + vh2 - vfs2 * 0.92
+                dy = (lab_bottom + num_top) / 2
+            items.append(hdiv("Divisore riga %d" % r, ix + iw * 0.06, dy, iw * 0.88))
         for k in range(1, cols):
             m = min(rh * 0.15, 6)
             items.append(vdiv("Divisore colonna %d" % k, ix + k * cw, iy + m, ih - 2 * m))
@@ -1047,17 +1061,17 @@ def tyres3_items(ix, iy, iw, ih):
         left = k in ("FL", "RL")
         front = r == 0
         # zona dettagli (striscia + numeri piccoli) vicino alla croce, pressione verso il bordo
-        dh = rh * 0.40
+        dh = rh * 0.50
         if front:
             dy = cy - gap - dh
             py, pH = y0 + 2, dy - y0 - 2
         else:
             dy = cy + gap
             py, pH = dy + dh, y0 + rh - (dy + dh) - 2
-        pfs = fit(cw - 24, pH, 4, 0.86, 0.58)
+        pfs = fit(cw - 30, pH, 4, 0.8, 0.58)
         items.append(text("Gomma %s temp" % k, x0 + 4, py, cw - 8, pH, ch_val("TyreT" + k), CH["TyreT" + k][7], pfs, WHITE, weight="Black"))
         # battistrada: 3 strisce
-        tw = clamp(cw * 0.17, 10, 30)
+        tw = clamp(cw * 0.13, 9, 24)
         th = dh * 0.92
         tx = x0 + (cw - tw) / 2
         ty = dy + (dh - th) / 2
