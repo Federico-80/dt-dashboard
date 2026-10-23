@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.84";
+        public const string VersionText = "1.85";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -1321,7 +1321,7 @@ namespace FedeDashboard
             bool inLane = Num(bridge.GetPropertyValue("DataCorePlugin.GameData.IsInPitLane")) > 0;
 
             string win, wcol;
-            if (stops == 0 || closeLap > endLap) { win = "NIENTE RIFORNIMENTO"; wcol = "#FF404040"; }
+            if (stops == 0 || closeLap > endLap) { win = "NO RIFORNIMENTO"; wcol = "#FF404040"; }
             else if (closeLap == endLap) { win = "RISPARMIA"; wcol = "#FFB8860B"; }
             else if (lap == closeLap - 1) { win = "BOX PROSSIMO GIRO"; wcol = "#FF2E7D32"; }
             else if (closeLap <= lap) { win = "BOX ORA!"; wcol = "#FFD50000"; }
@@ -1348,13 +1348,13 @@ namespace FedeDashboard
             {
                 // come LMU ("VE necessaria"): quanto serve per i giri alla fine, senza togliere quello a bordo
                 double nl = fuelPer * lapsFrac;
-                d["Litri"] = Math.Ceiling(nl).ToString("0", CultureInfo.InvariantCulture) + " l";
+                d["Litri"] = stops == 0 ? "-" : Math.Ceiling(nl).ToString("0", CultureInfo.InvariantCulture) + " l";   // niente sosta: niente da mettere
             }
             else d["Litri"] = "-";
             if (nrg)
             {
                 double ne = vePer * lapsFrac;
-                d["EnergiaNec"] = Math.Ceiling(ne).ToString("0", CultureInfo.InvariantCulture) + " %";
+                d["EnergiaNec"] = stops == 0 ? "-" : Math.Ceiling(ne).ToString("0", CultureInfo.InvariantCulture) + " %";
             }
             else d["EnergiaNec"] = "-";
 

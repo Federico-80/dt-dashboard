@@ -1,5 +1,5 @@
 {
-  "version": "1.84",
-  "notes": "Nome delle schede sul bordo superiore (più spazio ai valori).",
+  "version": "1.85",
+  "notes": "Strategia: NO RIFORNIMENTO e trattini su litri/energia necessari quando non serve fermarsi.",
   "date": "2026-10-23"
 }
