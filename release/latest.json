@@ -1,5 +1,5 @@
 {
-  "version": "1.91",
-  "notes": "1.91: velocità dentro il riquadro della marcia",
+  "version": "1.92",
+  "notes": "1.92: righe centrali senza bordo anche con bordi personalizzati",
   "date": "2026-10-23"
 }

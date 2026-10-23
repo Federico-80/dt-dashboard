@@ -141,7 +141,16 @@ namespace FedeDashboard
 
         static readonly Regex BorderRx = new Regex("\"BorderStyle\":\\{\"BorderTop\":\\d+,\"BorderBottom\":\\d+,\"BorderLeft\":\\d+,\"BorderRight\":\\d+", RegexOptions.Compiled);
 
-        /// <summary>Carattere + bordi. centerFile = scheda delle righe centrali (Schede_172x36).</summary>
+        /// <summary>Schede delle righe centrali: la misura viene dal catalogo (Schede_LxA.djson).</summary>
+        public static bool IsCenterCardFile(string name)
+        {
+            foreach (var fr in Catalog.CenterRects)
+                for (int i = 3; i < fr.Length; i++)
+                    if (name.StartsWith("Schede_" + fr[i][2] + "x" + fr[i][3] + ".", StringComparison.OrdinalIgnoreCase)) return true;
+            return false;
+        }
+
+        /// <summary>Carattere + bordi. centerFile = scheda delle righe centrali.</summary>
         public static string ApplyStyle(string json, FontSettings f, bool mainFile, bool centerFile)
         {
             if (f == null) return json;
@@ -216,8 +225,9 @@ namespace FedeDashboard
                 string cur = File.ReadAllText(file, Encoding.UTF8);
                 string origPath = file + ".orig";
                 string orig = File.Exists(origPath) ? File.ReadAllText(origPath, Encoding.UTF8) : null;
-                bool centerFile = Path.GetFileName(file).StartsWith("Schede_172x36", StringComparison.OrdinalIgnoreCase);
-                if (orig == null || ApplyStyle(orig, last, false, centerFile) != cur)
+                bool centerFile = IsCenterCardFile(Path.GetFileName(file));
+                // (anche col bordo opposto: le versioni prima della 1.92 riconoscevano le righe centrali dalla vecchia misura)
+                if (orig == null || (ApplyStyle(orig, last, false, centerFile) != cur && ApplyStyle(orig, last, false, !centerFile) != cur))
                 {
                     orig = cur;   // file nuovo o reimportato: questo e' l'originale
                     File.WriteAllText(origPath, orig, new UTF8Encoding(false));
