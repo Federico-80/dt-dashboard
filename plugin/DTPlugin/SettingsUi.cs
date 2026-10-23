@@ -1030,13 +1030,13 @@ namespace FedeDashboard
             right.Children.Add(Seg("Prova", false, true, () => plugin.TestAlert(a.Id)));
 
             dynamic r = LRow("Dimensione");
-            string[] sizes = { "Pieno schermo", "Metà", "Piccolo" };
-            for (int i = 0; i < 3; i++) { int v = i; r.Children.Add(Seg(sizes[i], a.Size == i, true, () => { a.Size = v; AlertChanged(); })); }
+            string[] sizes = { "Pieno schermo", "Metà", "Piccolo", "Metà di lato" };
+            for (int i = 0; i < 4; i++) { int v = i; r.Children.Add(Seg(sizes[i], a.Size == i, true, () => { a.Size = v; if (v == 3 && a.Position > 1) a.Position = 1; AlertChanged(); })); }
             body.Children.Add(r);
 
             r = LRow("Posizione");
-            string[] pos = { "Centro", "Alto", "Basso" };
-            for (int i = 0; i < 3; i++) { int v = i; r.Children.Add(Seg(pos[i], a.Position == i && a.Size != 0, a.Size != 0, () => { a.Position = v; AlertChanged(); })); }
+            string[] pos = a.Size == 3 ? new[] { "Da sinistra", "Da destra" } : new[] { "Centro", "Alto", "Basso" };
+            for (int i = 0; i < pos.Length; i++) { int v = i; r.Children.Add(Seg(pos[i], a.Position == i && a.Size != 0, a.Size != 0, () => { a.Position = v; AlertChanged(); })); }
             if (a.Size == 0) r.Children.Add(Small("(a pieno schermo non serve)"));
             body.Children.Add(r);
 

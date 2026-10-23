@@ -159,6 +159,12 @@ namespace FedeDashboard
                 foreach (var a in Alerts) if (a != null && a.Id == "Change") { a.Size = 0; a.Background = "#FF000000"; a.Opacity = 100; a.TextColor = "#FFFFFFFF"; }
                 Version = 10;
             }
+            if (Version < 11)
+            {
+                // danni e fine giro: entrano di lato e coprono mezzo schermo
+                foreach (var a in Alerts) if (a != null && (a.Id == "Damage" || a.Id == "Lap")) { a.Size = 3; a.Position = 1; }
+                Version = 11;
+            }
 
         }
 
@@ -277,7 +283,7 @@ namespace FedeDashboard
                     return new AlertSettings { Id = id, Enabled = true, Size = 0, Position = 0, Background = "#FF0000FF", Opacity = 100,
                         TextColor = "#FFFFFFFF", Seconds = 0, PitLaneToo = false, Title = "PIT LIMITER", Channels = new List<string> { "Speed" } };
                 case "Damage":
-                    return new AlertSettings { Id = id, Enabled = true, Size = 1, Position = 0, Background = "#FF000000", Opacity = 90,
+                    return new AlertSettings { Id = id, Enabled = true, Size = 3, Position = 1, Background = "#FF000000", Opacity = 95,
                         TextColor = "#FFFFFFFF", Seconds = 4, Title = "DANNI", Channels = new List<string>() };
                 case "Flag":
                     return new AlertSettings { Id = id, Enabled = true, Size = 2, Position = 1, Background = "#FF000000", Opacity = 100,
@@ -287,7 +293,7 @@ namespace FedeDashboard
                         TextColor = "#FFFFFFFF", Seconds = 1.5, Title = "",
                         Channels = new List<string> { "TC", "TCCut", "ABS", "BB", "Map" } };
                 default:
-                    return new AlertSettings { Id = "Lap", Enabled = true, Size = 1, Position = 0, Background = "#FF000000", Opacity = 90,
+                    return new AlertSettings { Id = "Lap", Enabled = true, Size = 3, Position = 1, Background = "#FF000000", Opacity = 95,
                         TextColor = "#FFFFFFFF", Seconds = 4, Title = "GIRO",
                         Channels = new List<string> { "LastLap", "LastLapDiff", "FuelLastLap", "FuelLaps" } };
             }
@@ -296,7 +302,7 @@ namespace FedeDashboard
         public void Normalize()
         {
             var d = Default(Id);
-            if (Size < 0 || Size > 2) Size = d.Size;
+            if (Size < 0 || Size > 3) Size = d.Size;
             if (Position < 0 || Position > 2) Position = d.Position;
             if (string.IsNullOrWhiteSpace(Background)) Background = d.Background;
             if (string.IsNullOrWhiteSpace(TextColor)) TextColor = d.TextColor;
@@ -311,7 +317,7 @@ namespace FedeDashboard
         /// <summary>Indice della variante grafica nella dashboard (0 pieno, 1-3 meta', 4-6 piccolo).</summary>
         public int Variant
         {
-            get { return Size == 0 ? 0 : (Size == 1 ? 1 + Position : 4 + Position); }
+            get { return Size == 0 ? 0 : (Size == 1 ? 1 + Position : (Size == 2 ? 4 + Position : (Position == 0 ? 7 : 8))); }
         }
     }
 

@@ -116,7 +116,7 @@ def status_items(ix, iy, iw, ih):
     """Blocco stato: luci, bandiera, tergicristalli, motore."""
     row = iw >= ih * 2.2
     cols, rows = (4, 1) if row else (2, 2)
-    g = max(3, min(8, iw * 0.02))
+    g = 0                                   # riquadri attaccati, senza spazi
     tw, th = (iw - (cols - 1) * g) / cols, (ih - (rows - 1) * g) / rows
     tiles = [
         ("Luci", "return $prop('DTPlugin.Stato_Luci') > 0 ? '#FF0D3A5A' : '#FF242424';",
@@ -135,7 +135,7 @@ def status_items(ix, iy, iw, ih):
     for i, (nm, bgjs, imgjs, sample_img, sample_bg) in enumerate(tiles):
         r, k = divmod(i, cols)
         x, y = ix + k * (tw + g), iy + r * (th + g)
-        it.append(rect("Stato %s fondo" % nm, x, y, tw, th, bg=sample_bg, radius=min(8, th * 0.15), bindings={"BackgroundColor": js(bgjs)}))
+        it.append(rect("Stato %s fondo" % nm, x, y, tw, th, bg=sample_bg, radius=0, bindings={"BackgroundColor": js(bgjs)}))
         sz = min(tw, th) * 0.7
         it.append(image("Stato %s icona" % nm, x + (tw - sz) / 2, y + (th - sz) / 2, sz, sz, sample_img, imgjs))
         if nm == "Tergi":
@@ -990,26 +990,77 @@ CORNER_ZONE = {"FL": 2, "FR": 8, "RL": 4, "RR": 6}
 CORNER_NAME = {"FL": "ANT. SX", "FR": "ANT. DX", "RL": "POST. SX", "RR": "POST. DX"}
 
 
+DMG_OK = "#FF6E6E6E"
+DMG_LV_JS = "var C = ['%s', '#FFFFD600', '#FFFF8C00', '#FFFF1744'];\r\n" % DMG_OK
+
+
+def _zone_js(*zones):
+    """Colore della parte di carrozzeria: il danno piu' grave tra le zone LMU indicate."""
+    parts = " , ".join("($prop('DTPlugin.Danno_Z%d_Livello') || 0)" % z for z in zones)
+    return DMG_LV_JS + "var l = Math.max(%s);\r\nl = Math.max(0, Math.min(3, Math.round(l)));\r\nreturn C[l];" % parts
+
+
 def damage_items(bx, by, bw, bh):
-    """Auto vista dall'alto: profilo diviso in 8 zone colorate (danni LMU), 4 ruote e, se c'e' spazio,
-    lo stato di ogni angolo (OK / LIEVE / MEDIO / GRAVE / FORATA / PERSA) e dell'aerodinamica."""
+    """Danni come l'icona di LMU: auto vista dall'alto (muso in alto) disegnata a linee, 4 gomme azzurre con accanto
+    la striscia del freno (verde -> rosso con l'usura), frecce delle sospensioni, musetto e alettone colorati col danno.
+    Se c'e' spazio, ai lati lo stato di ogni angolo (OK / LIEVE / ... / PERSA) e dell'aerodinamica."""
     ch = bh * 0.94
-    cw = ch * 0.5
+    cw = ch * 0.62
     if cw > bw * 0.9:
         cw = bw * 0.9
-        ch = cw * 2
+        ch = cw / 0.62
     lw = (bw - cw) / 2.0 - 10
     labels = lw >= 46 and ch >= 120
     x0, y0 = bx + (bw - cw) / 2.0, by + (bh - ch) / 2.0
-    ix0, iw = x0 + cw * 0.08, cw * 0.84          # immagine (le ruote stanno ai lati)
-    it = [image("Auto", ix0, y0, iw, ch, "dt-auto-base")]
-    for z in range(1, 9):
-        it.append(image("Danno zona %d" % z, ix0, y0, iw, ch, "dt-dz%d-0" % z,
-                        "var l = $prop('DTPlugin.Danno_Z%d_Livello');\r\nl = (l == null) ? 0 : Math.max(0, Math.min(3, Math.round(l)));\r\n"
-                        "return 'dt-dz%d-' + l;" % (z, z)))
-    for (k, fx, fy) in WHEEL_RECTS:
-        it.append(rect("Gomma %s" % k, x0 + fx * cw, y0 + fy * ch, 0.08 * cw, 0.13 * ch, bg="#FF4A4A4A", radius=3,
-                       bindings={"BackgroundColor": js("var c = $prop('DTPlugin.Gomma_%s_StatoColore');\r\nreturn c ? c : '#FF4A4A4A';" % k)}))
+    lw_ = max(2, round(ch * 0.018))                      # spessore delle linee
+    tw, th = cw * 0.2, ch * 0.2                          # gomme
+    sw_ = max(3, tw * 0.28)                              # striscia freno
+    gap = max(2, tw * 0.12)
+    fy, ry = y0 + ch * 0.17, y0 + ch * 0.58              # cima delle gomme davanti / dietro
+    it = []
+    # scocca: due fianchi (colorati con i danni laterali) chiusi davanti e dietro
+    sx0, sx1 = x0 + tw * 0.55, x0 + cw - tw * 0.55 - lw_
+    top, bot = y0 + ch * 0.13, y0 + ch * 0.85
+    it.append(rect("Scocca sinistra", sx0, top, lw_, bot - top, bg=DMG_OK, radius=0, bindings={"BackgroundColor": js(_zone_js(3))}))
+    it.append(rect("Scocca destra", sx1, top, lw_, bot - top, bg=DMG_OK, radius=0, bindings={"BackgroundColor": js(_zone_js(7))}))
+    # davanti: parentesi (angoli anteriori) e ala (muso)
+    it.append(rect("Davanti linea", sx0, top, sx1 + lw_ - sx0, lw_, bg=DMG_OK, radius=0, bindings={"BackgroundColor": js(_zone_js(2, 8))}))
+    fw = cw * 0.62
+    it.append(rect("Ala anteriore", x0 + (cw - fw) / 2, y0 + ch * 0.03, fw, ch * 0.055, bg=DMG_OK, radius=int(ch * 0.02),
+                   bindings={"BackgroundColor": js(_zone_js(1))}))
+    # dietro: parentesi (angoli posteriori) e alettone
+    by0 = y0 + ch * 0.83
+    bl = cw * 0.5
+    bx0 = x0 + (cw - bl) / 2
+    br = [rect("Dietro fondo", bx0, by0 + ch * 0.035, bl, lw_ + 1, bg=DMG_OK, radius=0),
+          rect("Dietro sinistra", bx0, by0, lw_ + 1, ch * 0.035 + lw_ + 1, bg=DMG_OK, radius=0),
+          rect("Dietro destra", bx0 + bl - lw_ - 1, by0, lw_ + 1, ch * 0.035 + lw_ + 1, bg=DMG_OK, radius=0)]
+    for r_ in br:
+        r_["Bindings"] = {"BackgroundColor": js(_zone_js(4, 6))}
+        it.append(r_)
+    aw = cw * 0.46
+    it.append(rect("Alettone", x0 + (cw - aw) / 2, y0 + ch * 0.905, aw, ch * 0.07, bg="#FFE57373", radius=int(ch * 0.025),
+                   bindings={"BackgroundColor": js(_zone_js(5))}))
+    it[-1]["_pv"]["bg"] = DMG_OK
+    # gomme + freni + sospensioni
+    sfs = clamp(int(th * 0.55), 8, 40)
+    for k in ("FL", "FR", "RL", "RR"):
+        left = k[1] == "L"
+        ty = fy if k[0] == "F" else ry
+        tx = x0 if left else x0 + cw - tw
+        tcol = js("var s = $prop('DTPlugin.Gomma_%s_Stato');\r\nreturn s == 'PERSA' ? '#FFFF1744' : (s == 'FORATA' ? '#FFFF8C00' : '#FF4FC3F7');" % k)
+        it.append(rect("Gomma %s" % k, tx, ty, tw, th, bg="#FF4FC3F7", radius=int(min(tw, th) * 0.22), bindings={"BackgroundColor": tcol}))
+        bxs = tx + tw + gap if left else tx - gap - sw_
+        bcol = js("var v = $prop('DTPlugin.BrakeW%s_Valore');\r\nif (v == null || isNaN(v)) { return '#FF00E676'; }\r\n"
+                  "return v >= 60 ? '#FF00E676' : (v >= 30 ? '#FFFFD600' : '#FFFF1744');" % k)
+        it.append(rect("Freno %s" % k, bxs, ty + th * 0.18, sw_, th * 0.64, bg=GREEN, radius=int(sw_ * 0.3), bindings={"BackgroundColor": bcol}))
+        scol = js("var v = $prop('DTPlugin.Susp%s_Valore');\r\nif (v == null || isNaN(v) || v <= 0) { return '%s'; }\r\n"
+                  "return v < 25 ? '#FFFFD600' : (v < 60 ? '#FFFF8C00' : '#FFFF1744');" % (k, DMG_OK))
+        cx_ = x0 + cw / 2
+        chw = cw * 0.16
+        chx = cx_ - chw - 1 if left else cx_ + 1
+        it.append(text("Sospensione %s" % k, chx, ty, chw, th, None, "<" if left else ">", sfs, DMG_OK, weight="Black",
+                       ha=2 if left else 0, bindings={"TextColor": scol}))
     if not labels:
         return it
     vfs = clamp(int(min(ch * 0.085, lw / 3.6)), 11, 44)
@@ -1025,14 +1076,10 @@ def damage_items(bx, by, bw, bh):
                 text("Danno %s nome" % name, xx, ty + vfs * 1.15, lw, sfs * 1.3, None, sample_l, sfs, GREY, weight="Medium",
                      ha=2 if left else 0, va=0)]
 
-    for k, (fx, fy) in {"FL": (0.0, 0.165), "FR": (1.0, 0.165), "RL": (0.0, 0.725), "RR": (1.0, 0.725)}.items():
-        left = fx == 0.0
-        wx = x0 + (0 if left else 0.92 * cw)
-        cy = y0 + fy * ch
+    for k in ("FL", "FR", "RL", "RR"):
+        left = k[1] == "L"
+        cy = (fy if k[0] == "F" else ry) + th / 2
         lx = (x0 - 8) if left else (x0 + cw + 8)
-        # linea di richiamo dalla scritta alla ruota
-        it.append(rect("Danno %s linea" % k, min(lx, wx + (0 if left else 0.08 * cw)) + (2 if left else 0), cy - 0.75,
-                       abs((wx if left else wx + 0.08 * cw) - lx) - 2, 1.5, bg="#FF777777", radius=0))
         it += label(k, k, lx - 4 if left else lx + 4, cy, left, "OK", CORNER_NAME[k])
     it += label("Aero", "Aero", x0 + cw + 12, y0 + 0.93 * ch, False, "OK", "AERO")
     return it
@@ -1114,12 +1161,18 @@ def tyres3_items(ix, iy, iw, ih):
         items.append(text("Gomma %s pressione" % k, ox, dy, sw, dh / 2, ch_val("TyreP" + k), CH["TyreP" + k][7], sfs, WHITE, weight="Bold", ha=oha, va=2))
         wfs = min(int(sfs * 1.18), int(fit(sw - 2, dh * 0.5, 4, 0.95, 0.58)))   # percentuale un po' piu' grande
         items.append(text("Gomma %s usura" % k, ox, dy + dh / 2, sw, dh / 2, ch_val("TyreW" + k), CH["TyreW" + k][7], wfs, WHITE, weight="Bold", ha=oha, va=0))
-        items.append(text("Gomma %s freno" % k, nx, dy, sw, dh, ch_val("BrakeT" + k), CH["BrakeT" + k][7], sfs, WHITE, weight="Bold", ha=nha))
+        # temperatura freno: icona del freno sopra, numero sotto (come pressione/usura dall'altra parte)
+        isz = min(dh * 0.42, sfs * 1.25)
+        ix_ = nx + 2 if left else nx + sw - isz - 2
+        items.append(image("Gomma %s icona freno" % k, ix_, dy + dh / 2 - isz - 2, isz, isz, "dt-ico-freno"))
+        items.append(text("Gomma %s freno" % k, nx, dy + dh / 2, sw, dh / 2, ch_val("BrakeT" + k), CH["BrakeT" + k][7], sfs, WHITE, weight="Bold", ha=nha, va=0))
     # mescola al centro della croce
     pw = clamp(iw * 0.36, 50, 150)
     pfs = clamp(int(ph * 0.66), 8, 16)
-    pill = [rect("Mescola nome fondo", cx - pw / 2, cy - ph / 2, pw, ph, bg="#FF5A5A5A", radius=int(ph // 2)),
-            text("Mescola nome", cx - pw / 2, cy - ph / 2, pw, ph, "[DTPlugin.Gomme_MescolaNome]", "SOFT", pfs, WHITE, weight="Black")]
+    pill = [rect("Mescola nome fondo", cx - pw / 2, cy - ph / 2, pw, ph, bg="#FFFF1744", radius=int(ph // 2),
+                 bindings={"BackgroundColor": js("var c = $prop('DTPlugin.Gomme_MescolaSfondo');\r\nreturn c ? c : '#FF5A5A5A';")}),
+            text("Mescola nome", cx - pw / 2, cy - ph / 2, pw, ph, "[DTPlugin.Gomme_MescolaNome]", "SOFT", pfs, WHITE, weight="Black",
+                 bindings={"TextColor": js("var c = $prop('DTPlugin.Gomme_MescolaTesto');\r\nreturn c ? c : '#FFFFFFFF';")})]
     lay = layer("Mescola nome", pill)
     lay["Bindings"] = {"Visible": js("var m = $prop('DTPlugin.Gomme_MescolaNome');\r\nreturn m != null && m !== '';")}
     items.append(lay)
@@ -1287,20 +1340,41 @@ def center_items(fi):
           text("Motore spento centro marcia", x, y + h * 0.64, w, h * 0.3, ch_val("Gear"), "N", int(min(h * 0.24, 60)), "#FF000000", weight="Black")]
     it.append(layer("Motore spento (centro)", eo, None, ("MotoreSpentoCentro", 1),
                     vis_js="return $prop('DTPlugin.MotoreSpento') === true && $prop('DTPlugin.MotoreSpento_Stile') != 1;"))
-    x, y, w, h = cg["speed"]
-    it.append(flag_box(x, y, w, h))   # bandiere: sopra la velocita', sempre nello stesso posto
+    # bandiera: copre velocita' e giri (dalla linea al fondo del riquadro della marcia)
+    gx_, gy_, gw_, gh_ = cg["gear"]
+    sy_ = cg["speed"][1]
+    # dentro le barre laterali (barre a 8 px dal bordo, larghe 5) e fino al fondo delle barre
+    it.append(flag_box(gx_ + 17, sy_ - 8, gw_ - 34, gy_ + gh_ - 12 - (sy_ - 8), square=True))   # copre anche la linea   # bandiere: sopra la velocita', sempre nello stesso posto
     for i, (x, y, w, h) in enumerate(cg["rows"]):
         it.append(widget("Riga centrale %d" % (i + 1), x, y, w, h, card_file(w, h), "Slot_C%d" % (i + 1)))
     return it
 
 
-def flag_box(x, y, w, h):
-    """Bandiera esposta (DTPlugin.Bandiera_Riquadro) mostrata sopra il riquadro della velocita'."""
+def flag_box(x, y, w, h, square=False):
+    """Bandiera esposta (DTPlugin.Bandiera_Riquadro) mostrata sopra velocita' e giri."""
     fg = js("var c = $prop('DTPlugin.Bandiera_TestoColore');\r\nreturn c ? c : '#FF000000';")
-    kids = [rect("Bandiera fondo", x, y, w, h, bg="#FFFFD600", border="#FFFFFFFF", bw=2, radius=int(min(10, h / 3)),
-                 bindings={"BackgroundColor": js("var c = $prop('DTPlugin.Bandiera_Sfondo');\r\nreturn c ? c : '#FFFFD600';")})]
-    sz = h - 8
+    bgb = {"BackgroundColor": js("var c = $prop('DTPlugin.Bandiera_Sfondo');\r\nreturn c ? c : '#FFFFD600';")}
+    if square:
+        kids = [rect("Bandiera fondo", x, y, w, h, bg="#FFFFD600", radius=0, bindings=bgb)]
+    else:
+        kids = [rect("Bandiera fondo", x, y, w, h, bg="#FFFFD600", border="#FFFFFFFF", bw=2, radius=int(min(10, h / 3)), bindings=bgb)]
+    sz = min(h - 8, 44)
     tx = x + 6
+    if square:
+        # icona sopra, nome sotto, tutto centrato
+        # icona, nome e (con la gialla) il settore, tutto centrato
+        isz = min(h * 0.32, 44)
+        kids.append(image("Bandiera icona", x + (w - isz) / 2, y + h * 0.07, isz, isz, "dt-bandiera-nera",
+                          "var c = $prop('DTPlugin.Bandiera_TestoColore');\r\nreturn (c == '#FFFFFFFF') ? 'dt-bandiera-bianca' : 'dt-bandiera-nera';"))
+        ty = y + h * 0.07 + isz + 2
+        nh = h * 0.30
+        kids.append(text("Bandiera nome", x + 4, ty, w - 8, nh, "[DTPlugin.Bandiera_Testo]", "GIALLA",
+                         fit(w - 12, nh, 8, 0.85), "#FF000000", weight="Black", bindings={"TextColor": fg}))
+        sy2 = ty + nh
+        kids.append(text("Bandiera settore", x + 4, sy2, w - 8, y + h - sy2 - 3, None, "SETTORE 2",
+                         fit(w - 12, y + h - sy2 - 3, 10, 0.75), "#FF000000", weight="Bold",
+                         bindings={"Text": js("var t = $prop('DTPlugin.Bandiera_Settore');\r\nreturn t ? t : '';"), "TextColor": fg}))
+        return layer("Bandiera", kids, None, ("Bandiera_Riquadro", 1), vis_js="return $prop('DTPlugin.Bandiera_Riquadro') === true;")
     if sz >= 18:
         kids.append(image("Bandiera icona", x + 6, y + 4, sz, sz, "dt-bandiera-nera",
                           "var c = $prop('DTPlugin.Bandiera_TestoColore');\r\nreturn (c == '#FFFFFFFF') ? 'dt-bandiera-bianca' : 'dt-bandiera-nera';"))
@@ -1463,6 +1537,18 @@ def pit_box_items():
     return it
 
 
+def _slide(items, sign):
+    """Avviso di lato: ogni elemento entra dal bordo (DTPlugin.Avviso_Scorrimento px, che scende a 0)."""
+    for it in items:
+        if it.get("Childrens") is not None and it.get("$type") == T_LAYER:
+            _slide(it["Childrens"], sign)
+            continue
+        b = it.setdefault("Bindings", {})
+        if "Left" in b:
+            continue
+        b["Left"] = js("return %s %s ($prop('DTPlugin.Avviso_Scorrimento') || 0);" % (round(it["Left"], 1), "-" if sign < 0 else "+"))
+
+
 def alert_layer():
     """Avviso configurabile dal plugin (box/limitatore, cambio valori, fine giro)."""
     tcol = js("var c = $prop('DTPlugin.Avviso_Testo');\r\nreturn c ? c : '#FFFFFFFF';")
@@ -1518,6 +1604,8 @@ def alert_layer():
         kids += nl
         kids.append(layer("Schema danni", damage_items(ix, iy, iw, ih), None, ("Avviso_Danni", 1),
                           vis_js="return $prop('DTPlugin.Avviso_Danni') === true;"))
+        if vi in (7, 8):
+            _slide(kids, -1 if vi == 7 else 1)
         variants.append(layer("Variante %d" % vi, kids, None, ("Avviso_Variante", vi),
                               vis_js="return $prop('DTPlugin.Avviso_Variante') == %d && $prop('DTPlugin.Avviso_Box') !== true;" % vi))
     variants.append(layer("Schermata box", pit_box_items(), None, ("Avviso_Box", 1),

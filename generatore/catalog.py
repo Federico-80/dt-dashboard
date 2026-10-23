@@ -372,8 +372,8 @@ DEFAULT_PAGES = [
 
 
 # ---------------------------------------------------------------- avvisi (overlay)
-# varianti: 0 pieno schermo; 1-3 meta' (centro/alto/basso); 4-6 piccolo (centro/alto/basso)
-ALERT_SIZES = ["Pieno schermo", "Metà", "Piccolo"]
+# varianti: 0 pieno schermo; 1-3 meta' (centro/alto/basso); 4-6 piccolo (centro/alto/basso); 7-8 meta' di lato (sx/dx)
+ALERT_SIZES = ["Pieno schermo", "Metà", "Piccolo", "Metà di lato"]
 ALERT_POSITIONS = ["Centro", "Alto", "Basso"]
 def alert_variants():
     out = [(0, 0, DASH_W, DASH_H)]
@@ -383,6 +383,10 @@ def alert_variants():
     sw, sh = 400, 130
     for top in ((DASH_H - sh) // 2, 10, DASH_H - sh - 10):
         out.append(((DASH_W - sw) // 2, top, sw, sh))
+    # 7-8: meta' schermo di lato (entra da sinistra / da destra)
+    half = DASH_W // 2
+    out.append((0, 0, half, DASH_H))
+    out.append((DASH_W - half, 0, half, DASH_H))
     return out
 ALERT_VARIANTS = alert_variants()
 ALERT_MAX_VALUES = 4

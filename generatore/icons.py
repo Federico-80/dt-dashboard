@@ -125,6 +125,20 @@ def ico_water(d, u, c):
         d.line(pts, fill=c, width=int(5 * u), joint="curve")
 
 
+def ico_brake(d, u, c):
+    """Freno: disco con mozzo e fori, pinza sopra a destra."""
+    w = int(6 * u)
+    cx, cy = 44 * u, 52 * u
+    d.ellipse([cx - 32 * u, cy - 32 * u, cx + 32 * u, cy + 32 * u], outline=c, width=w)
+    d.ellipse([cx - 9 * u, cy - 9 * u, cx + 9 * u, cy + 9 * u], fill=c)
+    for a in range(0, 360, 72):
+        r = 19 * u
+        px, py = cx + r * math.cos(math.radians(a - 90)), cy + r * math.sin(math.radians(a - 90))
+        d.ellipse([px - 3.5 * u, py - 3.5 * u, px + 3.5 * u, py + 3.5 * u], fill=c)
+    # pinza
+    d.arc([cx - 46 * u, cy - 46 * u, cx + 46 * u, cy + 46 * u], start=-80, end=10, fill=c, width=int(12 * u))
+
+
 def ico_oil(d, u, c):
     w = int(6 * u)
     d.polygon([(22 * u, 44 * u), (66 * u, 44 * u), (82 * u, 34 * u), (88 * u, 40 * u), (70 * u, 70 * u), (22 * u, 70 * u)], outline=c, width=w)
@@ -224,7 +238,7 @@ def _build():
         "dt-tergi-off": wipers(GREY), "dt-tergi-on": wipers(ON["tergi"]),
         "dt-motore-off": engine(GREY), "dt-motore-acc": engine(ON["motore-acc"]), "dt-motore-on": engine(ON["motore"]),
         "dt-ico-pista": _ico(ico_track), "dt-ico-aria": _ico(ico_air), "dt-ico-bagnato": _ico(ico_wet),
-        "dt-ico-pioggia": _ico(ico_rain), "dt-ico-acqua": _ico(ico_water), "dt-ico-olio": _ico(ico_oil),
+        "dt-ico-pioggia": _ico(ico_rain), "dt-ico-acqua": _ico(ico_water), "dt-ico-olio": _ico(ico_oil), "dt-ico-freno": _ico(ico_brake),
         "dt-bandiera-off": flag(GREY), "dt-bandiera-nera": flag("#FF000000"), "dt-bandiera-bianca": flag("#FFFFFFFF"),
         "dt-freccia-su": arrow(True), "dt-freccia-giu": arrow(False),
         "dt-cambio-su": change_arrow(True), "dt-cambio-giu": change_arrow(False),

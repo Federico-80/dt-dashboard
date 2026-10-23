@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "2.05";
+        public const string VersionText = "2.06";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -342,6 +342,8 @@ namespace FedeDashboard
             }
             bridge.Attach("Bandiera_Riquadro", () => boxFlagOn);
             bridge.Attach("Bandiera_Testo", () => boxFlagText);
+            // settore della gialla (SETTORE 2, SETTORI 1 - 3, FULL COURSE YELLOW): solo con la gialla
+            bridge.Attach("Bandiera_Settore", () => FlagSector());
             bridge.Attach("Bandiera_Sfondo", () => boxFlagBg);
             bridge.Attach("Bandiera_TestoColore", () => boxFlagFg);
             bridge.Attach("Stato_Luci", () => lightsState);
@@ -416,6 +418,8 @@ namespace FedeDashboard
             bridge.Attach("GiriTotali", () => TotalLapsText());
             bridge.Attach("Sessione_Nome", () => SessionLabel(sessionTypeCache));
             bridge.Attach("Gomme_MescolaNome", () => CompoundNames());
+            bridge.Attach("Gomme_MescolaSfondo", () => CompoundPill(false));
+            bridge.Attach("Gomme_MescolaTesto", () => CompoundPill(true));
             // barra doppia (strategia) solo in gara e quando serve almeno una sosta per rifornire
             bridge.Attach("BarraDoppia", () =>
             {
@@ -460,6 +464,7 @@ namespace FedeDashboard
             bridge.Attach("Avviso_Titolo", () => alertTitle);
             bridge.Attach("Avviso_Sfondo", () => alertBg);
             bridge.Attach("Avviso_Testo", () => alertFg);
+            bridge.Attach("Avviso_Scorrimento", () => AlertSlide());
             bridge.Attach("Avviso_Freccia", () => alertActive ? alertArrow : 0);
             bridge.Attach("Avviso_TitoloColore", () => alertTitleColor ?? alertFg);
             for (int i = 0; i < AlertSettings.MaxValues; i++)
@@ -1060,6 +1065,7 @@ namespace FedeDashboard
 
         int flagLogLines;
         bool lastLoggedYellow;
+        volatile string yellowSectors = "";
         string lastFlagSnap = "";
 
         /// <summary>
@@ -1089,6 +1095,11 @@ namespace FedeDashboard
                 int sec = AsInt(Raw("CurrentPlayer.mSector"));
                 // LMU/rF2: mSector 0 = settore 3. Non e' certo se mSectorFlag[0] sia il settore 1 o il 3: controllo entrambe
                 int idxA = sec == 0 ? 2 : sec - 1, idxB = sec;
+                var ys = new List<string>();
+                if (arr != null)
+                    for (int i = 0; i < arr.Length && i < 3; i++) if (Num(arr.GetValue(i)) == 1) ys.Add((i + 1).ToString(CultureInfo.InvariantCulture));
+                yellowSectors = ys.Count == 0 ? "" : (ys.Count == 1 ? "SETTORE " + ys[0] : "SETTORI " + string.Join(" - ", ys.ToArray()));
+                if (Num(ph) == 6) yellowSectors = "FULL COURSE YELLOW";
                 if (arr != null)
                 {
                     foreach (var v in arr) sf += Convert.ToString(v, CultureInfo.InvariantCulture) + " ";
@@ -1109,6 +1120,34 @@ namespace FedeDashboard
             if (snap != lastFlagSnap && flagLogLines < 300) { flagLogLines++; lastFlagSnap = snap; FedeLog.Write("Bandiere: " + snap); }
             lastLoggedYellow = yellow;
             return yellow;
+        }
+
+        DateTime alertSince = DateTime.MinValue;
+        int shownVariant = -1;
+
+        /// <summary>Avviso visibile; se compare ora (o cambia forma) riparte l'animazione di entrata dal lato.</summary>
+        void MarkActive()
+        {
+            if (!alertActive || alertVariant != shownVariant) alertSince = DateTime.Now;
+            shownVariant = alertVariant;
+            alertActive = true;
+        }
+
+        /// <summary>Spostamento (px) dell'avviso "di lato" mentre entra: da mezzo schermo a 0 in un quarto di secondo.</summary>
+        double AlertSlide()
+        {
+            if (!alertActive) return 0;
+            double t = (DateTime.Now - alertSince).TotalSeconds / 0.25;
+            if (t >= 1 || t < 0) return 0;
+            return Math.Round((1 - t) * (1 - t) * 425);
+        }
+
+        string FlagSector()
+        {
+            if (!boxFlagOn) return "";
+            bool test = testKind == "Flag" && DateTime.Now < testUntil;
+            if (test) return yellowSectors.Length > 0 ? yellowSectors : "SETTORE 2";
+            return currentFlag == "Yellow" ? yellowSectors : "";
         }
 
         static string FlagTileColor(string flag)
@@ -1161,7 +1200,7 @@ namespace FedeDashboard
             alertBg = a.UseFlagColor ? WithOpacity(bg, a.Opacity) : WithOpacity(a.Background, a.Opacity);
             alertFg = a.UseFlagColor ? fg : NormalizeColor(a.TextColor, "#FFFFFFFF");
             alertDamage = false;
-            alertActive = true;
+            MarkActive();
         }
 
         void ShowDamage(AlertSettings a)
@@ -1173,7 +1212,7 @@ namespace FedeDashboard
             alertBg = WithOpacity(a.Background, a.Opacity);
             alertFg = NormalizeColor(a.TextColor, "#FFFFFFFF");
             alertDamage = true;
-            alertActive = true;
+            MarkActive();
         }
 
         /// <summary>Energia virtuale LMU in % (telemetria: frazione 0-1).</summary>
@@ -1676,7 +1715,7 @@ namespace FedeDashboard
             alertFg = NormalizeColor(a.TextColor, "#FFFFFFFF");
             if (alertTitleColor == null) alertTitleColor = alertFg;
             alertDamage = false;
-            alertActive = true;
+            MarkActive();
         }
 
         public static string NormalizeColor(string c, string def)
@@ -1857,6 +1896,23 @@ namespace FedeDashboard
             if (f.Length == 0) return r;
             if (r.Length == 0 || r == f) return f;
             return f.Substring(0, 1) + " / " + r.Substring(0, 1);
+        }
+
+        /// <summary>Colori della pastiglia della mescola: soft rossa, medium gialla, hard bianca, wet blu (grigia se diverse).</summary>
+        string CompoundPill(bool textColor)
+        {
+            string n = CompoundNames();
+            string bg;
+            switch (n)
+            {
+                case "SOFT": bg = "#FFFF1744"; break;
+                case "MEDIUM": bg = "#FFFFD600"; break;
+                case "HARD": bg = "#FFF5F5F5"; break;
+                case "WET": bg = "#FF2979FF"; break;
+                default: bg = "#FF5A5A5A"; break;
+            }
+            if (!textColor) return bg;
+            return (n == "MEDIUM" || n == "HARD") ? "#FF000000" : "#FFFFFFFF";
         }
 
         string Compound(int w, out string color)
