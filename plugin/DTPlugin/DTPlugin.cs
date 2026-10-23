@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.81";
+        public const string VersionText = "1.82";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -1261,7 +1261,7 @@ namespace FedeDashboard
             bool haveCons = nrg || !double.IsNaN(fuelPer);
             if (!haveCons || !(avgLap > 0))
             {
-                foreach (var k in new[] { "Soste", "Finestra", "Ratio", "Stint", "Giri", "Necessaria", "Litri", "EnergiaNec", "Questo", "Prossimo", "Chiusura" }) d[k] = "ATTESA";
+                foreach (var k in new[] { "Soste", "Finestra", "Ratio", "Stint", "Giri", "Necessaria", "Litri", "EnergiaNec", "Questo", "Prossimo", "Chiusura" }) d[k] = "-";
                 d["FinestraColore"] = "#FF404040";
                 SetStrat(d); return;
             }

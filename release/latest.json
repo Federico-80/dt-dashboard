@@ -1,5 +1,5 @@
 {
-  "version": "1.81",
-  "notes": "Spazi a metà strada; sessione con numeri più piccoli e posizioni guadagnate tra parentesi accanto a POS.",
+  "version": "1.82",
+  "notes": "Strategia: trattini invece di ATTESA quando i dati non ci sono ancora.",
   "date": "2026-10-23"
 }
