@@ -1,5 +1,5 @@
 {
-  "version": "1.78",
-  "notes": "Meteo: stato della pista (asciutto, umido, bagnato, pioggia) accanto alle temperature.",
+  "version": "1.79",
+  "notes": "Meno spazio vuoto e numeri più grandi in tutte le schede; stato pista abbreviato (ASC, UMI, BAG, PIO).",
   "date": "2026-10-23"
 }

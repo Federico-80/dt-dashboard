@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.78";
+        public const string VersionText = "1.79";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -58,10 +58,10 @@ namespace FedeDashboard
             if (lmuRest != null && lmuRest.FreshInfo && !double.IsNaN(lmuRest.Wetness) && double.IsNaN(wet)) wet = lmuRest.Wetness * 100;
             string t, bg, fg;
             if (double.IsNaN(wet) && double.IsNaN(rain)) { t = ""; bg = "#FF2A2A2A"; fg = "#FF9E9E9E"; }
-            else if (rain > 1) { t = "PIOGGIA"; bg = "#FF0D47A1"; fg = "#FFFFFFFF"; }
-            else if (wet >= 30) { t = "BAGNATO"; bg = "#FF1E88E5"; fg = "#FFFFFFFF"; }
-            else if (wet >= 5) { t = "UMIDO"; bg = "#FF26C6DA"; fg = "#FF111111"; }
-            else { t = "ASCIUTTO"; bg = "#FFE0E0E0"; fg = "#FF111111"; }
+            else if (rain > 1) { t = "PIO"; bg = "#FF0D47A1"; fg = "#FFFFFFFF"; }
+            else if (wet >= 30) { t = "BAG"; bg = "#FF1E88E5"; fg = "#FFFFFFFF"; }
+            else if (wet >= 5) { t = "UMI"; bg = "#FF26C6DA"; fg = "#FF111111"; }
+            else { t = "ASC"; bg = "#FFE0E0E0"; fg = "#FF111111"; }
             return what == 0 ? t : (what == 1 ? bg : fg);
         }
 

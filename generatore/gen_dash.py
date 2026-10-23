@@ -217,7 +217,7 @@ def dash_doc(w, h, screens, meta, controls=False):
 
 
 # ------------------------------------------------------------------ dimensioni testo
-def fit(w, h, chars, hfrac=0.8, wfrac=0.6, cap=200):
+def fit(w, h, chars, hfrac=0.8, wfrac=0.55, cap=200):
     return int(max(7, min(h * hfrac, w / (max(chars, 1) * wfrac), cap)))
 
 
@@ -281,16 +281,16 @@ def iconrow_items(card, w, h):
     if meteo:
         # stato della pista (ASCIUTTO / UMIDO / BAGNATO / PIOGGIA): a destra se in riga, sotto se a griglia
         if row:
-            bw = clamp(w * 0.24, 52, 96); bh = min(ih - 6, 26)
+            bw = clamp(w * 0.16, 34, 56); bh = min(ih - 8, 24)
             bx, by = w - 4 - bw, 3 + (ih - bh) / 2
             iw -= bw + 4
         else:
-            bh = clamp(ih * 0.2, 16, 26); bw = clamp(w * 0.45, 70, 140)
+            bh = clamp(ih * 0.18, 14, 22); bw = clamp(w * 0.3, 40, 80)
             bx, by = (w - bw) / 2, h - 4 - bh
             ih -= bh + 4
         it.append(rect("Pista stato fondo", bx, by, bw, bh, bg="#FFE0E0E0", radius=int(min(6, bh / 3)),
                        bindings={"BackgroundColor": js("var c = $prop('DTPlugin.Pista_StatoColore');\r\nreturn c ? c : '#FFE0E0E0';")}))
-        it.append(text("Pista stato", bx, by, bw, bh, None, "ASCIUTTO", min(15, fit(bw - 8, bh, 8, 0.7)), "#FF111111", weight="Black",
+        it.append(text("Pista stato", bx, by, bw, bh, None, "ASC", min(15, fit(bw - 6, bh, 3, 0.7, 0.66)), "#FF111111", weight="Black",
                        bindings={"Text": js("var t = $prop('DTPlugin.Pista_Stato');\r\nreturn t ? t : '-';"),
                                  "TextColor": js("var c = $prop('DTPlugin.Pista_StatoTesto');\r\nreturn c ? c : '#FF111111';")}))
     if row:
@@ -301,14 +301,14 @@ def iconrow_items(card, w, h):
     for i, (ico, c) in enumerate(ents):
         r, k = divmod(i, cols)
         x, y = 4 + k * cw, 3 + r * rh
-        sz = min(rh * 0.68, cw * 0.34)
-        tw = cw - sz - 10
-        vfs = fit(tw, rh, 4, 0.66, wfrac=0.58)
+        sz = min(rh * 0.6, cw * 0.27)
+        tw = cw - sz - 5
+        vfs = fit(tw, rh, len(CH[c][7]), 0.82, wfrac=0.55)
         # icona e valore affiancati e centrati nella cella
-        est = sz + 6 + vfs * 0.58 * 4
-        x0 = x + max(2, (cw - est) / 2)
+        est = sz + 3 + vfs * 0.55 * len(CH[c][7])
+        x0 = x + max(1, (cw - est) / 2)
         it.append(image("Icona %s" % c, x0, y + (rh - sz) / 2, sz, sz, ico))
-        it.append(text("Valore %s" % c, x0 + sz + 6, y, x + cw - (x0 + sz + 6) - 2, rh, ch_val(c), CH[c][7], vfs, WHITE, ha=0))
+        it.append(text("Valore %s" % c, x0 + sz + 3, y, x + cw - (x0 + sz + 3), rh, ch_val(c), CH[c][7], vfs, WHITE, ha=0))
     return it
 
 
@@ -374,12 +374,12 @@ def session_items(w, h):
     it = []
     ix, iw = 6, w - 12
     lh = clamp(round(h * 0.2), 8, 14)
-    vh = min(h - lh - 7, 56)
+    vh = min(h - lh - 5, 62)
     vy = max(3, (h - vh - lh) / 2 - 1)        # numeri + etichette centrati in altezza
     ly = vy + vh
     wts = [1.15, 1.35, 0.7]
     ws = [iw * t / sum(wts) for t in wts]
-    vfs = min(fit(ws[0] - 6, vh, 5, 0.92, 0.58), fit(ws[1] - 6, vh, 5, 0.92, 0.58), fit(ws[2] - 6, vh, 2, 0.92, 0.58))
+    vfs = min(fit(ws[0] - 4, vh, 5, 1.0, 0.55), fit(ws[1] - 4, vh, 5, 1.0, 0.55), fit(ws[2] - 4, vh, 2, 1.0, 0.55))
     lfs = clamp(int(lh * 0.82), 7, 12)
     x = ix
     # tempo: parte prima dei secondi bianca, ":ss" grigio
@@ -646,25 +646,25 @@ def entry_items(c, color, x, y, w, h, prefix, sub=None, chars=None, vfs=None):
         return items
     if h >= 40 and w >= 40:
         # numeri grandi, scritta sotto piccola e sottile
-        vh = h * (0.72 if sub is None else 0.6)
-        vfs = forced or (fit(w - 6, vh, chars, 0.95, 0.56) if sub is None else fit(w - 6, vh, chars, 0.85))
+        vh = h * (0.77 if sub is None else 0.62)
+        vfs = forced or (fit(w - 4, vh, chars, 1.0, 0.54) if sub is None else fit(w - 4, vh, chars, 0.9))
         items.append(text(prefix + " valore", x, y, w, vh, ch_val(c), sample, vfs, color, va=2))
         lh = h - vh
         if sub is None:
-            lfs = clamp(int(min(lh * 0.5, (w - 4) / (len(CH[c][1]) * 0.6))), 7, 12)
-            items.append(text(prefix + " nome", x, y + vh, w, lh, ch_name(c), CH[c][1], lfs, GREY, weight="Normal", va=0))
+            lfs = clamp(int(min(lh * 0.55, (w - 4) / (len(CH[c][1]) * 0.6))), 7, 11)
+            items.append(text(prefix + " nome", x, y + vh - 1, w, lh, ch_name(c), CH[c][1], lfs, GREY, weight="Normal", va=0))
         else:
             sfs = clamp(int(min(lh * 0.6, (w - 4) / (CH[sub][6] * 0.6))), 8, 22)
             items.append(text(prefix + " sotto", x, y + vh, w, lh, ch_val(sub), CH[sub][7], sfs, ORANGE, weight="Medium", va=0))
     else:
-        lw = w * 0.42
-        lfs = clamp(int(min(h * 0.42, lw / (max(len(CH[c][1]), 3) * 0.62))), 7, 13)
+        lw = w * 0.36
+        lfs = clamp(int(min(h * 0.4, lw / (max(len(CH[c][1]), 3) * 0.6))), 7, 12)
         if w >= 60:
-            items.append(text(prefix + " nome", x + 4, y, lw, h, ch_name(c), CH[c][1], lfs, GREY, weight="Medium", ha=0))
-            vfs = forced or fit(w - lw - 6, h, chars, 0.72)
-            items.append(text(prefix + " valore", x + lw, y, w - lw - 4, h, ch_val(c), sample, vfs, color, ha=2))
+            items.append(text(prefix + " nome", x + 3, y, lw, h, ch_name(c), CH[c][1], lfs, GREY, weight="Medium", ha=0))
+            vfs = forced or fit(w - lw - 4, h, chars, 0.85)
+            items.append(text(prefix + " valore", x + lw, y, w - lw - 3, h, ch_val(c), sample, vfs, color, ha=2))
         else:
-            vfs = fit(w - 4, h, chars, 0.72)
+            vfs = fit(w - 2, h, chars, 0.85)
             items.append(text(prefix + " valore", x, y, w, h, ch_val(c), sample, vfs, color))
     return items
 
@@ -729,28 +729,28 @@ def card_items(card, w, h):
         vb = {"TextColor": js(DELTA_COLOR_JS % c)} if kind == "delta" else None
         vcol = WHITE if kind != "delta" else GREEN
         if h >= 52:
-            lh = clamp(round(h * 0.2), 13, 24)
-            lfs = clamp(int(min(lh * 0.75, (w - 10) / (len(CH[c][1]) * 0.62))), 8, 18)
-            items.append(text("Nome", 4, 4, w - 8, lh, ch_name(c), CH[c][1], lfs, label_color(color), weight="Medium"))
-            vfs = fit(w - 14, h - lh - 8, chars, 0.8)
+            lh = clamp(round(h * 0.17), 11, 20)
+            lfs = clamp(int(min(lh * 0.75, (w - 10) / (len(CH[c][1]) * 0.62))), 8, 16)
+            items.append(text("Nome", 4, 3, w - 8, lh, ch_name(c), CH[c][1], lfs, label_color(color), weight="Medium"))
+            vfs = fit(w - 8, h - lh - 4, chars, 0.92)
             if kind == "delta":
                 sb = clamp(round(h * 0.07), 4, 9)
                 vfs = fit(w - 14, h - lh - sb - 14, chars, 0.8)
                 items.append(text("Valore", 4, lh + 2, w - 8, h - lh - sb - 12, ch_val(c), sample, vfs, vcol, bindings=vb))
                 items += sector_bars(8, h - sb - 7, w - 16, sb)
                 return items
-            items.append(text("Valore", 4, lh + 2, w - 8, h - lh - 6, ch_val(c), sample, vfs, vcol, bindings=vb))
+            items.append(text("Valore", 2, lh + 1, w - 4, h - lh - 3, ch_val(c), sample, vfs, vcol, bindings=vb))
         else:
-            lw = w * 0.42
-            lfs = clamp(int(min(h * 0.4, lw / (max(len(CH[c][1]), 3) * 0.62))), 7, 14)
-            items.append(text("Nome", 9, 0, lw, h, ch_name(c), CH[c][1], lfs, label_color(color), weight="Medium", ha=0))
-            vfs = fit(w - lw - 16, h, chars, 0.7)
+            lw = w * 0.36
+            lfs = clamp(int(min(h * 0.38, lw / (max(len(CH[c][1]), 3) * 0.6))), 7, 13)
+            items.append(text("Nome", 7, 0, lw, h, ch_name(c), CH[c][1], lfs, label_color(color), weight="Medium", ha=0))
+            vfs = fit(w - lw - 10, h, chars, 0.82)
             if kind == "delta":
                 vfs = fit(w - lw - 16, h - 8, chars, 0.7)
                 items.append(text("Valore", lw, 0, w - lw - 9, h - 6, ch_val(c), sample, vfs, vcol, ha=2, bindings=vb))
                 items += sector_bars(9, h - 6, w - 18, 3, gap=3)
                 return items
-            items.append(text("Valore", lw, 0, w - lw - 9, h, ch_val(c), sample, vfs, vcol, ha=2, bindings=vb))
+            items.append(text("Valore", lw, 0, w - lw - 6, h, ch_val(c), sample, vfs, vcol, ha=2, bindings=vb))
         if aid:
             for itx in items:
                 if itx.get("Name") == "Nome":
@@ -760,11 +760,11 @@ def card_items(card, w, h):
 
     title = card.get("title", "")
     show_title = h >= 70 and w >= 90 and bool(card.get("title"))
-    th = clamp(round(h * 0.09), 13, 18) if show_title else 0
+    th = clamp(round(h * 0.075), 11, 15) if show_title else 0
     if show_title:
-        items.append(text("Titolo", 6, 3, w - 12, th, None, title, int(th * 0.72), label_color(color), weight="Medium"))
-    ix, iy = 4, (th + 4 if show_title else 2)
-    iw, ih = w - 8, h - iy - 3
+        items.append(text("Titolo", 6, 2, w - 12, th, None, title, int(th * 0.75), label_color(color), weight="Medium"))
+    ix, iy = 3, (th + 2 if show_title else 2)
+    iw, ih = w - 6, h - iy - 2
 
     if kind == "group":
         ents = card["entries"]
@@ -823,9 +823,10 @@ def card_items(card, w, h):
             r, k = divmod(i, cols)
             if rh >= 40 and cw >= 60:
                 # mescola nell'angolo in alto, verso l'esterno della macchina
+                # in basso, all'esterno, accanto alla temperatura (in alto c'e' il numero grande)
                 d = clamp(rh * 0.2, 12, 20)
                 bx = ix + k * cw + 3 if wk in ("FL", "RL") else ix + (k + 1) * cw - d - 3
-                items.append(compound_badge(wk, bx, iy + r * rh + 3, d))
+                items.append(compound_badge(wk, bx, iy + (r + 1) * rh - d - 4, d))
             items.append(tyre_state_overlay(wk, ix + k * cw + 2, iy + r * rh + 2, cw - 4, rh - 4))
         return items
 
