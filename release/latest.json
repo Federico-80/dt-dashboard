@@ -1,5 +1,5 @@
 {
-  "version": "1.68",
-  "notes": "Barra strategia alta come la riga sopra, con soste, finestra, ratio, giri alla fine, litri necessari ed energia necessaria.",
+  "version": "1.69",
+  "notes": "Tempi giro: attuale in blu, ultimo in verde, migliore in viola.",
   "date": "2026-10-23"
 }

@@ -40,6 +40,7 @@ namespace FedeDashboard
             new ChannelDef("LastLap", "ULTIMO", "DataCorePlugin.GameData.LastLapTime", "laptime", 0, ""),
             new ChannelDef("BestLap", "MIGLIORE", "DataCorePlugin.GameData.BestLapTime", "laptime", 0, ""),
             new ChannelDef("EstLap", "STIMATO", "@stimato", "laptime", 0, ""),
+            new ChannelDef("CurLap", "ATTUALE", "DataCorePlugin.GameData.CurrentLapTime", "laptime", 0, ""),
             new ChannelDef("Delta", "DELTA", "@delta", "signed", 3, ""),
             new ChannelDef("GapAhead", "AVANTI", "@gap_avanti", "gap", 1, ""),
             new ChannelDef("GapBehind", "DIETRO", "@gap_dietro", "gap", 1, ""),
