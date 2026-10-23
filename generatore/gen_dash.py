@@ -253,12 +253,12 @@ DELTA_COLOR_JS = ("var d = $prop('DTPlugin.%s_Valore');\r\n"
 
 # ------------------------------------------------------------------ schede
 def gauge_items(card, w, h, items_ref=None):
-    """Barra di riempimento (carburante / energia) con valore e, tra parentesi, i giri che puoi ancora fare."""
+    """Barra di riempimento (carburante / energia): al centro i giri che puoi ancora fare, sotto tra parentesi la percentuale."""
     c, lp, pc, suf = card["ch"], card["laps"], card["pct"], card.get("suffix", "")
     it = []
     lh = 0
     if h >= 44 and items_ref is not None:
-        lfs = clamp(int(min(h * 0.16, (w - 24) / (len(card["title"]) * 0.62))), 7, 14)
+        lfs = clamp(int(min(h * 0.22, (w - 24) / (len(card["title"]) * 0.62))), 8, 19)
         lh = int(legend(items_ref, w, h, card["title"], lfs, GREY) * 0.8)
     bx, by, bw_, bh_ = 5, lh + 2, w - 10, h - lh - 6
     r = int(min(8, bh_ / 4))
@@ -266,15 +266,15 @@ def gauge_items(card, w, h, items_ref=None):
     pv = "Math.max(0, Math.min(100, $prop('DTPlugin.%s_Valore')))" % pc
     it.append(rect("Barra", bx, by, bw_ * 0.74, bh_, bg=card["fill"], radius=r, bindings={"Width": js("return %s * %d / 100;" % (pv, bw_))},
                    pv=dict(hfrac=0.74)))
-    # in grande i giri che puoi ancora fare, tra parentesi la quantita' (% di energia o litri)
-    sample = CH[c][7].replace("%", "")
-    qtxt = "var t = fd('%s');\r\nreturn '(' + ((t && t !== '-') ? t%s : '-') + ')';" % (c, (" + '%s'" % suf) if suf else "")
+    # al centro in grande i giri che puoi ancora fare, sotto tra parentesi la percentuale
     gtxt = "var g = fd('%s');\r\nreturn (g && g !== '') ? g : '-';" % lp
-    vfs = fit(bw_ * 0.5 - 4, bh_, 4, 0.92, wfrac=0.58)
-    it.append(text("Giri", bx, by, bw_ * 0.5, bh_, None, CH[lp][7], vfs, WHITE, ha=2, bindings={"Text": js(gtxt)}))
-    qfs = clamp(int(min(vfs * 0.6, (bw_ * 0.48 - 4) / (7 * 0.56))), 8, 60)
-    it.append(text("Valore", bx + bw_ * 0.52, by, bw_ * 0.48, bh_, None, "(" + sample + (suf or "%") + ")", qfs, WHITE, ha=0, weight="Medium",
-                   bindings={"Text": js(qtxt)}))
+    ptxt = "var t = fd('%s');\r\nif (!t || t === '-') { return '(-)'; }\r\nt = '' + t; if (t.indexOf('%%') < 0) { t = t + '%%'; }\r\nreturn '(' + t + ')';" % pc
+    gh_ = bh_ * 0.66
+    vfs = fit(bw_ - 10, gh_, 4, 0.95, wfrac=0.58)
+    it.append(text("Giri", bx, by, bw_, gh_ + 2, None, CH[lp][7], vfs, WHITE, va=2, bindings={"Text": js(gtxt)}))
+    qfs = clamp(int(min((bh_ - gh_) * 0.85, (bw_ - 8) / (7 * 0.56))), 8, 40)
+    it.append(text("Percentuale", bx, by + gh_, bw_, bh_ - gh_, None, "(" + CH[pc][7].replace("%", "") + "%)", qfs, WHITE, va=0, weight="Medium",
+                   bindings={"Text": js(ptxt)}))
     return it
 
 
