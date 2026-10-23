@@ -243,15 +243,15 @@ DELTA_COLOR_JS = ("var d = $prop('DTPlugin.%s_Valore');\r\n"
 
 
 # ------------------------------------------------------------------ schede
-def gauge_items(card, w, h):
+def gauge_items(card, w, h, items_ref=None):
     """Barra di riempimento (carburante / energia) con valore e, tra parentesi, i giri che puoi ancora fare."""
     c, lp, pc, suf = card["ch"], card["laps"], card["pct"], card.get("suffix", "")
     it = []
-    lh = clamp(round(h * 0.2), 10, 18) if h >= 44 else 0
-    if lh:
-        lfs = clamp(int(min(lh * 0.78, (w - 10) / (len(card["title"]) * 0.62))), 7, 17)
-        it.append(text("Titolo", 4, 2, w - 8, lh, None, card["title"], lfs, GREY, weight="Medium"))
-    bx, by, bw_, bh_ = 4, lh + 2, w - 8, h - lh - 6
+    lh = 0
+    if h >= 44 and items_ref is not None:
+        lfs = clamp(int(min(h * 0.16, (w - 24) / (len(card["title"]) * 0.62))), 7, 14)
+        lh = int(legend(items_ref, w, h, card["title"], lfs, GREY) * 0.8)
+    bx, by, bw_, bh_ = 5, lh + 2, w - 10, h - lh - 6
     r = int(min(8, bh_ / 4))
     it.append(rect("Barra fondo", bx, by, bw_, bh_, bg="#FF1A1A1A", radius=r))
     pv = "Math.max(0, Math.min(100, $prop('DTPlugin.%s_Valore')))" % pc
@@ -579,6 +579,21 @@ def center_card_sizes():
     return {(int(round(w)), int(round(h))) for fi in range(len(FRAMES)) for (x, y, w, h) in center_geom(fi)["rows"]}
 
 
+def legend(items, w, h, label, lfs, color, bind_text=None):
+    """Nome della scheda sul bordo superiore (come una "legenda"): il bordo passa a meta' della scritta.
+    Sposta la cornice (items[0]) in basso di meta' scritta e mette un fondo nero dietro al nome. Restituisce dove inizia il contenuto."""
+    lh = int(round(lfs * 1.25))
+    top = lh // 2
+    fr = items[0]
+    fr["Top"] = float(top)
+    fr["Height"] = float(round(h - top))
+    tw = min(w - 16, len(label) * lfs * 0.64 + 10)
+    items.append(rect("Nome fondo", (w - tw) / 2, 0, tw, lh, bg="#FF000000", radius=0))
+    b = {"Text": bind_text} if bind_text else None
+    items.append(text("Nome", (w - tw) / 2, 0, tw, lh, None, label, lfs, color, weight="Medium", bindings=b))
+    return lh
+
+
 def frame_rect(w, h, color):
     bw = CENTER_BW if (int(round(w)), int(round(h))) in center_card_sizes() else CARD_BW
     return rect("Cornice", 0, 0, w, h, bg=CARD_BG, border=color, bw=bw, radius=int(min(12, h / 4)))
@@ -703,7 +718,8 @@ def card_items(card, w, h):
     items = [frame_rect(w, h, color)]
 
     if kind == "gauge":
-        return items + gauge_items(card, w, h)
+        g = gauge_items(card, w, h, items)
+        return items + g
 
     if kind == "iconrow":
         return items + iconrow_items(card, w, h)
@@ -734,9 +750,9 @@ def card_items(card, w, h):
         vb = {"TextColor": js(DELTA_COLOR_JS % c)} if kind == "delta" else None
         vcol = WHITE if kind != "delta" else GREEN
         if h >= 52:
-            lh = clamp(round(h * 0.185), 12, 22)
-            lfs = clamp(int(min(lh * 0.75, (w - 10) / (len(CH[c][1]) * 0.62))), 8, 17)
-            items.append(text("Nome", 4, 3, w - 8, lh, ch_name(c), CH[c][1], lfs, label_color(color), weight="Medium"))
+            lfs = clamp(int(min(h * 0.16, (w - 24) / (len(CH[c][1]) * 0.62))), 8, 15)
+            lg = legend(items, w, h, CH[c][1], lfs, label_color(color), bind_text=js("return fdn('%s');" % c))
+            lh = int(lg * 0.6)                    # il nome sta sul bordo: il valore usa quasi tutta l'altezza
             vfs = fit(w - 11, h - lh - 6, chars, 0.86)
             if kind == "delta":
                 sb = clamp(round(h * 0.07), 4, 9)
@@ -765,10 +781,11 @@ def card_items(card, w, h):
 
     title = card.get("title", "")
     show_title = h >= 70 and w >= 90 and bool(card.get("title"))
-    th = clamp(round(h * 0.082), 12, 16) if show_title else 0
+    th = 0
     if show_title:
-        items.append(text("Titolo", 6, 2, w - 12, th, None, title, int(th * 0.74), label_color(color), weight="Medium"))
-    ix, iy = 4, (th + 3 if show_title else 2)
+        tfs = clamp(int(min(h * 0.07, (w - 24) / (len(title) * 0.62))), 8, 13)
+        th = int(legend(items, w, h, title, tfs, label_color(color)) * 0.75)
+    ix, iy = 4, (th + 2 if show_title else 2)
     iw, ih = w - 8, h - iy - 3
 
     if kind == "group":
