@@ -127,7 +127,7 @@ CARDS = [
     group("Gomme (temperature)", "TEMP. GOMME", [("TyreT" + w[0], WHITE) for w in WHEELS]),
     group("Usura gomme", "USURA GOMME", [("TyreW" + w[0], WHITE) for w in WHEELS]),
     group("Temperature freni", "FRENI", [("BrakeT" + w[0], ORANGE) for w in WHEELS]),
-    group("Tempi giro", "TEMPI GIRO", [("CurLap", BLUE), ("EstLap", WHITE), ("LastLap", GREEN), ("BestLap", PURPLE)]),
+    group("Tempi giro", "TEMPI GIRO", [("EstLap", BLUE), ("LastLap", GREEN), ("BestLap", PURPLE)]),
     group("Carburante", "CARBURANTE", [("Fuel", WHITE), ("FuelPerLap", WHITE), ("FuelLaps", WHITE)]),
     dict(name="Sessione", kind="session", title="", color=FRAME),
     dict(name="Distacchi", kind="gaps", title="DISTACCHI", sides=["Avanti", "Dietro"], color=FRAME),
@@ -234,7 +234,7 @@ SB = 20      # larghezza barra laterale
 TB = 78      # altezza barra inferiore
 WB = 78      # altezza della riga larga sotto (barra doppia)
 TB2 = 62     # altezza della riga di riquadri sopra, quando la barra e' doppia (piu' spazio alle schede in alto)
-CW = 172     # larghezza colonna centrale
+CW = 200     # larghezza colonna centrale
 CX = (DASH_W - CW) // 2  # 339
 
 # cornici: (nome, barre laterali, barra inferiore)

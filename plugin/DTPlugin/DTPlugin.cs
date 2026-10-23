@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.89";
+        public const string VersionText = "1.90";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();

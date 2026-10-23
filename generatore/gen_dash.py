@@ -684,7 +684,7 @@ def entry_items(c, color, x, y, w, h, prefix, sub=None, chars=None, vfs=None):
     else:
         lw = w * 0.39
         lfs = clamp(int(min(h * 0.41, lw / (max(len(CH[c][1]), 3) * 0.61))), 7, 13)
-        if w >= 60:
+        if w >= 84:
             items.append(text(prefix + " nome", x + 4, y, lw, h, ch_name(c), CH[c][1], lfs, GREY, weight="Medium", ha=0))
             vfs = forced or fit(w - lw - 5, h, chars, 0.78)
             items.append(text(prefix + " valore", x + lw, y, w - lw - 4, h, ch_val(c), sample, vfs, color, ha=2))
