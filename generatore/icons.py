@@ -195,6 +195,21 @@ def arrow(up):
     return _done(im)
 
 
+def change_arrow(up):
+    """Freccia del cambio valore (come le dash da gara): freccia + 3 trattini (verde su, rossa giu')."""
+    im, d = _canvas(); u = S * K / 96.0
+    c = _rgba("#FF00E676" if up else "#FFFF1744")
+    if up:
+        d.polygon([(48 * u, 4 * u), (84 * u, 40 * u), (62 * u, 40 * u), (62 * u, 56 * u), (34 * u, 56 * u), (34 * u, 40 * u), (12 * u, 40 * u)], fill=c)
+        bars = (62, 74, 86)
+    else:
+        d.polygon([(48 * u, 92 * u), (84 * u, 56 * u), (62 * u, 56 * u), (62 * u, 40 * u), (34 * u, 40 * u), (34 * u, 56 * u), (12 * u, 56 * u)], fill=c)
+        bars = (6, 18, 30)
+    for y in bars:
+        d.rectangle([34 * u, y * u, 62 * u, (y + 6) * u], fill=c)
+    return _done(im)
+
+
 def all_icons():
     """nome -> PNG"""
     if not _CACHE:
@@ -212,6 +227,7 @@ def _build():
         "dt-ico-pioggia": _ico(ico_rain), "dt-ico-acqua": _ico(ico_water), "dt-ico-olio": _ico(ico_oil),
         "dt-bandiera-off": flag(GREY), "dt-bandiera-nera": flag("#FF000000"), "dt-bandiera-bianca": flag("#FFFFFFFF"),
         "dt-freccia-su": arrow(True), "dt-freccia-giu": arrow(False),
+        "dt-cambio-su": change_arrow(True), "dt-cambio-giu": change_arrow(False),
         "dt-cielo-0": sky(0), "dt-cielo-1": sky(1), "dt-cielo-2": sky(2), "dt-cielo-3": sky(3), "dt-cielo-4": sky(4),
     }
 

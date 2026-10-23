@@ -1401,7 +1401,8 @@ def alert_layer():
                   border_bind=None if full else tcol)
         th = round(h * (0.17 if not full else 0.15))
         kids = [bg, text("Avviso titolo", x + 10, y + h * 0.03, w - 20, th, "[DTPlugin.Avviso_Titolo]", "PIT LIMITER",
-                         int(fit(w - 20, th, 12, 0.8) * 0.7), WHITE, weight="Bold", bindings={"TextColor": tcol})]
+                         int(fit(w - 20, th, 12, 0.8) * 0.7), WHITE, weight="Bold",
+                         bindings={"TextColor": js("var c = $prop('DTPlugin.Avviso_TitoloColore');\r\nreturn c ? c : '#FFFFFFFF';")})]
         iy = y + h * 0.03 + th
         ih = y + h - iy - h * 0.05
         ix, iw = x + w * 0.04, w * 0.92
@@ -1425,8 +1426,16 @@ def alert_layer():
                                   bindings={"TextColor": tcol}))
             if n == 1:
                 # un solo valore senza scritta sotto (cambio valori): il valore usa tutto lo spazio
-                solo = [text("Avviso valore solo", ix, iy, iw, ih, "[DTPlugin.Avviso_V1]", "4",
-                             fit(iw - 10, ih * 0.85, 6, 0.85, cap=260), WHITE, bindings={"TextColor": tcol})]
+                # ai lati la freccia: verde su se il valore e' aumentato, rossa giu' se e' diminuito
+                ad = min(ih * 0.42, iw * 0.13)
+                vw = iw - 2 * (ad + iw * 0.05)
+                solo = [text("Avviso valore solo", ix + (iw - vw) / 2, iy, vw, ih, "[DTPlugin.Avviso_V1]", "52.5",
+                             fit(vw - 10, ih * 0.85, 5, 0.85, cap=260), WHITE, bindings={"TextColor": tcol})]
+                img_js = "return $prop('DTPlugin.Avviso_Freccia') < 0 ? 'dt-cambio-giu' : 'dt-cambio-su';"
+                for side, ax in (("sinistra", ix + iw * 0.03), ("destra", ix + iw - iw * 0.03 - ad)):
+                    arr = image("Avviso freccia %s" % side, ax, iy + (ih - ad) / 2, ad, ad, "dt-cambio-su", img_js)
+                    arr.setdefault("Bindings", {})["Visible"] = js("var d = $prop('DTPlugin.Avviso_Freccia');\r\nreturn d != null && d != 0;")
+                    solo.append(arr)
                 nl.append(layer("Valore solo", solo, None, ("Avviso_Solo", 1),
                                 vis_js="var l = $prop('DTPlugin.Avviso_L1');\r\nreturn $prop('DTPlugin.Avviso_N') == 1 && (l == null || l === '') && $prop('DTPlugin.Avviso_Danni') !== true;"))
                 vis = ("var l = $prop('DTPlugin.Avviso_L1');\r\nreturn $prop('DTPlugin.Avviso_N') == 1 && l != null && l !== '' && $prop('DTPlugin.Avviso_Danni') !== true;")

@@ -153,6 +153,12 @@ namespace FedeDashboard
                 if (Timing != null) Timing.GapMode = 1;   // davanti/dietro: auto della propria classe, come la tabella di LMU
                 Version = 9;
             }
+            if (Version < 10)
+            {
+                // cambio valori come le dash da gara: a tutto schermo, nero pieno, freccia su/giu'
+                foreach (var a in Alerts) if (a != null && a.Id == "Change") { a.Size = 0; a.Background = "#FF000000"; a.Opacity = 100; a.TextColor = "#FFFFFFFF"; }
+                Version = 10;
+            }
 
         }
 
@@ -275,7 +281,7 @@ namespace FedeDashboard
                     return new AlertSettings { Id = id, Enabled = true, Size = 2, Position = 1, Background = "#FF000000", Opacity = 100,
                         TextColor = "#FFFFFFFF", Seconds = 3, Title = "BANDIERA", UseFlagColor = true, Channels = new List<string>() };
                 case "Change":
-                    return new AlertSettings { Id = id, Enabled = true, Size = 1, Position = 0, Background = "#FF000000", Opacity = 90,
+                    return new AlertSettings { Id = id, Enabled = true, Size = 0, Position = 0, Background = "#FF000000", Opacity = 100,
                         TextColor = "#FFFFFFFF", Seconds = 1.5, Title = "",
                         Channels = new List<string> { "TC", "TCCut", "ABS", "BB", "Map" } };
                 default:

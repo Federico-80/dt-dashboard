@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.94";
+        public const string VersionText = "1.95";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -201,6 +201,9 @@ namespace FedeDashboard
         string alertTitle = "", alertBg = "#FF000000", alertFg = "#FFFFFFFF";
         readonly string[] alertV = { "", "", "", "" }, alertL = { "", "", "", "" };
         readonly Dictionary<string, string> lastTexts = new Dictionary<string, string>();
+        readonly Dictionary<string, double> lastValues = new Dictionary<string, double>();
+        int changeDir, alertArrow;
+        string alertTitleColor = "#FFFFFFFF";
         DateTime changeUntil = DateTime.MinValue, lapUntil = DateTime.MinValue, testUntil = DateTime.MinValue, runningSince = DateTime.MaxValue;
         string changeId = "", testKind = "";
         double lastLapNumber = -1, fuelAtLapStart = double.NaN, fuelLastLap = double.NaN;
@@ -456,6 +459,8 @@ namespace FedeDashboard
             bridge.Attach("Avviso_Titolo", () => alertTitle);
             bridge.Attach("Avviso_Sfondo", () => alertBg);
             bridge.Attach("Avviso_Testo", () => alertFg);
+            bridge.Attach("Avviso_Freccia", () => alertActive ? alertArrow : 0);
+            bridge.Attach("Avviso_TitoloColore", () => alertTitleColor ?? alertFg);
             for (int i = 0; i < AlertSettings.MaxValues; i++)
             {
                 int idx = i;
@@ -1147,7 +1152,7 @@ namespace FedeDashboard
                 case "Green": text = "VERDE"; bg = "#FF00C853"; fg = "#FFFFFFFF"; break;
                 default: text = "SCACCHI"; bg = "#FF202020"; fg = "#FFFFFFFF"; break;
             }
-            alertTitle = a.Title ?? "";
+            alertTitle = a.Title ?? ""; alertArrow = 0; alertTitleColor = null;
             alertV[0] = text; alertL[0] = "";
             for (int i = 1; i < AlertSettings.MaxValues; i++) { alertV[i] = ""; alertL[i] = ""; }
             alertN = 1;
@@ -1160,7 +1165,7 @@ namespace FedeDashboard
 
         void ShowDamage(AlertSettings a)
         {
-            alertTitle = a.Title ?? "";
+            alertTitle = a.Title ?? ""; alertArrow = 0; alertTitleColor = null;
             for (int i = 0; i < AlertSettings.MaxValues; i++) { alertV[i] = ""; alertL[i] = ""; }
             alertN = 1;
             alertVariant = a.Variant;
@@ -1581,12 +1586,18 @@ namespace FedeDashboard
                 var rt = Find(id);
                 if (rt == null) continue;
                 string t = rt.Text, old;
+                double ov;
                 if (lastTexts.TryGetValue(id, out old) && old != t && old != ValueFormatter.Empty && t != ValueFormatter.Empty && settled && chg.Enabled)
                 {
+                    // freccia verde su se il valore e' aumentato, rossa giu' se e' diminuito
+                    int dir = 0;
+                    if (lastValues.TryGetValue(id, out ov) && !double.IsNaN(ov) && !double.IsNaN(rt.Value) && rt.Value != ov) dir = rt.Value > ov ? 1 : -1;
+                    if (id != changeId || now >= changeUntil || dir != 0) changeDir = dir;
                     changeId = id;
                     changeUntil = now.AddSeconds(Math.Max(0.3, chg.Seconds));
                 }
                 lastTexts[id] = t;
+                lastValues[id] = rt.Value;
             }
 
             var lim = Find("PitLimiter"); var inPit = Find("InPit");
@@ -1606,7 +1617,11 @@ namespace FedeDashboard
             {
                 if (testKind == "Damage") ShowDamage(dmg);
                 else if (testKind == "Flag") { if (flg.FlagAsPopup) ShowFlag(flg, "Yellow"); else { alertActive = false; alertDamage = false; } }
-                else ShowAlert(Alert(testKind), testKind == "Change" ? FirstOr(chg.Channels, "BB") : null, testKind == "Pit" ? (pit.Title ?? "") : null);
+                else
+                {
+                    if (testKind == "Change") changeDir = (now.Second % 2 == 0) ? 1 : -1;   // prova: su e giu' alternati
+                    ShowAlert(Alert(testKind), testKind == "Change" ? FirstOr(chg.Channels, "BB") : null, testKind == "Pit" ? (pit.Title ?? "") : null);
+                }
             }
             else if (pitOn) ShowAlert(pit, null, limiterOn ? pit.Title : "CORSIA BOX");
             else if (now < damageUntil) ShowDamage(dmg);
@@ -1650,12 +1665,15 @@ namespace FedeDashboard
                 var rt = Find(singleId);
                 alertTitle = rt != null ? rt.Settings.Label : "";
                 alertL[0] = "";   // cambio valori: solo il valore, nessuna scritta sotto
+                alertArrow = changeDir;
+                alertTitleColor = "#FF8EC5FF";   // nome del valore cambiato in azzurro
             }
-            else alertTitle = titleOverride ?? a.Title ?? "";
+            else { alertTitle = titleOverride ?? a.Title ?? ""; alertArrow = 0; alertTitleColor = null; }
             alertN = n;
             alertVariant = a.Variant;
             alertBg = WithOpacity(a.Background, a.Opacity);
             alertFg = NormalizeColor(a.TextColor, "#FFFFFFFF");
+            if (alertTitleColor == null) alertTitleColor = alertFg;
             alertDamage = false;
             alertActive = true;
         }
