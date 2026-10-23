@@ -56,8 +56,8 @@ for fi in range(len(FRAMES)):
     g = frame_geom(fi)
     w("            new int[][][][] {")
     for gi in range(len(GRIDS)):
-        l = grid_cells(g["left"][0], g["left"][1], g["top"], g["bottom"], gi)
-        r = grid_cells(g["right"][0], g["right"][1], g["top"], g["bottom"], gi)
+        l = grid_cells(g["left"][0], g["left"][1], g["top"], g["bottom"], gi, g["row_h"])
+        r = grid_cells(g["right"][0], g["right"][1], g["top"], g["bottom"], gi, g["row_h"])
         w("                new int[][][] { %s, %s }," % (rects(l), rects(r)))
     w("            },")
 w("        };")

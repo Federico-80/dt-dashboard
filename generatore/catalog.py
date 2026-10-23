@@ -282,15 +282,20 @@ def frame_geom(fi):
     xl1 = CX - G
     xr0 = CX + CW + G
     xr1 = DASH_W - M - (SB + G if sidebars else 0)
+    # altezza della riga in alto nella griglia "Riga + grande": come i riquadri della barra in basso
+    row_h = TB2 if toolbar in (2, 3) else TB
     return dict(sidebars=sidebars, toolbar=toolbar, top=M, bottom=bottom,
-                left=(xl0, xl1), right=(xr0, xr1))
+                left=(xl0, xl1), right=(xr0, xr1), row_h=row_h)
 
 
-def grid_cells(region_x0, region_x1, top, bottom, gi):
+def grid_cells(region_x0, region_x1, top, bottom, gi, row_h=None):
     W = region_x1 - region_x0
     H = bottom - top
     cw = (W - G) / 2.0
     rh = (H - 3 * G) / 4.0
+    if gi == 0 and row_h:
+        # "Riga + grande": la riga alta come la barra in basso, il resto alla scheda grande
+        return [(region_x0, top, round(W), row_h), (region_x0, top + row_h + G, round(W), bottom - (top + row_h + G))]
     out = []
     for (c, r, cs, rs) in GRIDS[gi][1]:
         x = region_x0 + round(c * (cw + G))

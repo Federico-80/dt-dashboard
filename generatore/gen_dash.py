@@ -1315,7 +1315,7 @@ def frame_layer(fi):
         x0, x1 = g[side]
         gl = []
         for gi, (gname, _) in enumerate(GRIDS):
-            cells = grid_cells(x0, x1, g["top"], g["bottom"], gi)
+            cells = grid_cells(x0, x1, g["top"], g["bottom"], gi, g["row_h"])
             ws = [widget("Slot %s%d" % (key, i + 1), x, y, w, h, card_file(w, h), "Slot_%s%d" % (key, i + 1))
                   for i, (x, y, w, h) in enumerate(cells)]
             gl.append(layer("Griglia %s" % gname, ws, None, ("Griglia_" + key, gi), vis_js=vis_eq("Griglia_" + key, gi)))
@@ -1341,7 +1341,7 @@ def piece_grid(fi, key, gi):
     g = frame_geom(fi)
     x0, x1 = g["left" if key == "L" else "right"]
     return [widget("Slot %s%d" % (key, i + 1), x, y, w, h, card_file(w, h), "Slot_%s%d" % (key, i + 1))
-            for i, (x, y, w, h) in enumerate(grid_cells(x0, x1, g["top"], g["bottom"], gi))]
+            for i, (x, y, w, h) in enumerate(grid_cells(x0, x1, g["top"], g["bottom"], gi, g["row_h"]))]
 
 
 def piece_toolbar(fi, ti):
