@@ -348,6 +348,53 @@ STD_SAMPLE = [("5", "GT3", "S. Bovy", "-19.4", False), ("6", "GT3", "M. Berry", 
 FC_SAMPLE = [("INIZIO", 1, "24°", "10%"), ("25%", 2, "23°", "30%"), ("50%", 3, "21°", "70%"), ("75%", 3, "20°", "80%"), ("FINE", 1, "22°", "20%")]
 
 
+SES_GREY = "#FF8A8A8A"
+
+
+def session_items(w, h):
+    """Sessione come le dash da gara: 18:39 (minuti bianchi, secondi grigi), 25/25 (posizione bianca, totale grigio), giri.
+    Sotto in piccolo le etichette; accanto a POS le posizioni guadagnate (verde) o perse (rossa)."""
+    it = []
+    ix, iw = 6, w - 12
+    lh = clamp(round(h * 0.2), 8, 14)
+    vh = min(h - lh - 7, 56)
+    vy = max(3, (h - vh - lh) / 2 - 1)        # numeri + etichette centrati in altezza
+    ly = vy + vh
+    wts = [1.15, 1.35, 0.7]
+    ws = [iw * t / sum(wts) for t in wts]
+    vfs = min(fit(ws[0] - 6, vh, 5, 0.92, 0.58), fit(ws[1] - 6, vh, 5, 0.92, 0.58), fit(ws[2] - 6, vh, 2, 0.92, 0.58))
+    lfs = clamp(int(lh * 0.82), 7, 12)
+    x = ix
+    # tempo: parte prima dei secondi bianca, ":ss" grigio
+    w0 = ws[0]; sp = x + w0 * 0.56
+    t_js = "var t = fd('TimeLeft');\r\nif (!t || t === '-') { return %s; }\r\nvar i = t.lastIndexOf(':');\r\nreturn i < 0 ? %s : %s;"
+    it.append(text("Tempo principale", x, vy, sp - x, vh, None, "18", vfs, WHITE, weight="Black", ha=2, va=2,
+                   bindings={"Text": js(t_js % ("'-'", "t", "t.substring(0, i)"))}))
+    it.append(text("Tempo secondi", sp, vy, x + w0 - sp, vh, None, ":39", vfs, SES_GREY, weight="Bold", ha=0, va=2,
+                   bindings={"Text": js(t_js % ("''", "''", "t.substring(i)"))}))
+    it.append(text("Tempo etichetta", x, ly, w0, lh, None, "TEMPO", lfs, GREY, weight="Medium"))
+    x += w0
+    # posizione: "25" bianco, "/25" grigio; sotto freccia + numero posizioni e "POS"
+    w1 = ws[1]; sp = x + w1 * 0.5
+    it.append(text("Pos principale", x, vy, sp - x, vh, None, "25", vfs, WHITE, weight="Black", ha=2, va=2,
+                   bindings={"Text": js("var p = fd('Pos');\r\nif (!p || p === '-') { return '-'; }\r\nvar i = ('' + p).indexOf('/');\r\nreturn i < 0 ? p : ('' + p).substring(0, i);")}))
+    it.append(text("Pos totale", sp, vy, x + w1 - sp, vh, None, "/25", vfs, SES_GREY, weight="Bold", ha=0, va=2,
+                   bindings={"Text": js("var n = fd('Cars');\r\nreturn (n && n !== '-' && n != '0') ? '/' + n : '';")}))
+    gw = lfs * 1.3
+    ad = lfs * 0.9
+    it.append(text("Pos guadagno", sp - 3 - gw, ly, gw, lh, None, "18", lfs, RED, weight="Bold", ha=2,
+                   bindings={"Text": js("var d = $prop('DTPlugin.PosGain_Dir');\r\nif (d == null || d == 0) { return ''; }\r\nvar g = fd('PosGain');\r\nreturn (g && g !== '-') ? g : '';"),
+                             "TextColor": js("var c = $prop('DTPlugin.PosGain_Colore');\r\nreturn c ? c : '#FF9E9E9E';")}))
+    it.append(pos_arrow("Pos", sp - 4 - gw - ad, ly + (lh - ad) / 2, ad))
+    it.append(text("Pos etichetta", sp + 2, ly, x + w1 - sp - 2, lh, None, "POS", lfs, GREY, weight="Medium", ha=0))
+    x += w1
+    # giri
+    w2 = ws[2]
+    it.append(text("Giro", x, vy, w2, vh, ch_val("Lap"), "4", vfs, WHITE, weight="Black", va=2))
+    it.append(text("Giro etichetta", x, ly, w2, lh, None, "GIRO", lfs, GREY, weight="Medium"))
+    return it
+
+
 def forecast_items(card, w, h):
     """Previsioni meteo di LMU per la sessione: inizio, 25%, 50%, 75%, fine (cielo, temperatura, probabilita' di pioggia)."""
     show_title = h >= 110
@@ -650,6 +697,9 @@ def card_items(card, w, h):
 
     if kind == "forecast":
         return items + forecast_items(card, w, h)
+
+    if kind == "session":
+        return items + session_items(w, h)
 
     if kind in ("single", "delta"):
         c = card["ch"]
