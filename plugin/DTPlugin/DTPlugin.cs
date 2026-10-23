@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.85";
+        public const string VersionText = "1.86";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -382,6 +382,13 @@ namespace FedeDashboard
                 }
             }
             bridge.Attach("PosGain_Colore", () => posGainColor);
+            // barra doppia (strategia) solo in gara e quando serve almeno una sosta per rifornire
+            bridge.Attach("BarraDoppia", () =>
+            {
+                string a, so; int n;
+                lock (strat) { strat.TryGetValue("Attiva", out a); strat.TryGetValue("Soste", out so); }
+                return a == "1" && int.TryParse(so ?? "", out n) && n > 0;
+            });
             bridge.Attach("Pista_Stato", () => TrackState(0));
             bridge.Attach("Pista_StatoColore", () => TrackState(1));
             bridge.Attach("Pista_StatoTesto", () => TrackState(2));

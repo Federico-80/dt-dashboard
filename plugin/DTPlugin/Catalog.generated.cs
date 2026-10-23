@@ -108,9 +108,9 @@ namespace FedeDashboard
 
         public static readonly string[] Cards = new string[] { "Vuoto", "Gomme (pressione + temperatura)", "Gomme (temperature)", "Usura gomme", "Temperature freni", "Tempi giro", "Carburante", "Sessione", "Distacchi", "Pedali", "Meteo", "Motore (acqua/olio)", "Assetto (TC/ABS/BB/MAP)", "Delta", "TC", "TC Cut", "ABS", "Ripartizione freno (BB)", "Mappa motore", "Posizione", "Giro", "Tempo rimasto", "Ultimo giro", "Miglior giro", "Giro stimato", "Velocità", "Giri motore", "Carburante (litri)", "Carburante (giri)", "Consumo medio", "ERS / batteria", "Ora", "Distacco avanti", "Distacco dietro", "Temperatura aria", "Temperatura pista", "Personalizzato 1", "Personalizzato 2", "Personalizzato 3", "Personalizzato 4", "Personalizzato 5", "Personalizzato 6", "Gomme complete (temp. carcassa, pressione, freni)", "Energia virtuale (VE)", "Giri energia virtuale", "Consumo energia virtuale", "Energia virtuale (completa)", "TC Slip", "Danni (schema auto)", "Stato auto (luci, bandiera, tergi, motore)", "Carburante (barra + giri)", "Energia virtuale (barra + giri)", "Strategia gara (soste, finestra, rifornimento)", "Classifica generale", "Classifica di classe", "Sosta (tempi stimati da LMU)", "Tempo sosta totale", "Danni sospensioni", "Danni (aero e motore)", "Usura freni", "Gomme nuove rimaste", "Track limits", "Batteria", "Previsioni meteo" };
         public static readonly string[] Bars = new string[] { "Vuoto", "Giri motore", "Gas", "Freno", "Frizione", "Carburante", "ERS / batteria" };
-        public static readonly string[] Frames = new string[] { "Completo (barre laterali + barra inferiore)", "Solo barra inferiore", "Solo barre laterali", "Pulito (solo riquadri)", "Completo con barra doppia", "Barra doppia senza barre laterali" };
-        public static readonly bool[] FrameHasSidebars = new bool[] { true, false, true, false, true, false };
-        public static readonly bool[] FrameHasToolbar = new bool[] { true, true, false, false, true, true };
+        public static readonly string[] Frames = new string[] { "Completo (barre laterali + barra inferiore)", "Solo barra inferiore", "Solo barre laterali", "Pulito (solo riquadri)", "Completo con barra doppia", "Barra doppia senza barre laterali", "Barra bassa con barre laterali", "Barra bassa" };
+        public static readonly bool[] FrameHasSidebars = new bool[] { true, false, true, false, true, false, true, false };
+        public static readonly bool[] FrameHasToolbar = new bool[] { true, true, false, false, true, true, true, true };
         public static readonly string[] Grids = new string[] { "Riga + grande", "2 grandi", "Grande + 2 medi", "4 medi", "Grande + 4 piccoli", "4 righe", "8 piccoli", "2 righe + grande", "Grande + 2 righe", "Grande + riga", "Unico" };
         public static readonly string[] Categories = new string[] { "Tempi", "Carburante ed energia", "Comandi auto", "Gomme e freni", "Sessione e gara", "Motore e pedali", "Meteo", "Sosta e danni (LMU)", "Personalizzati" };
         // CategoryCards[categoria] = indici delle schede
@@ -201,6 +201,32 @@ namespace FedeDashboard
                 new int[][][] { new int[][] { new[] { 5, 5, 328, 237 }, new[] { 5, 248, 328, 75 } }, new int[][] { new[] { 517, 5, 328, 237 }, new[] { 517, 248, 328, 75 } } },
                 new int[][][] { new int[][] { new[] { 5, 5, 328, 318 } }, new int[][] { new[] { 517, 5, 328, 318 } } },
             },
+            new int[][][][] {
+                new int[][][] { new int[][] { new[] { 31, 5, 302, 96 }, new[] { 31, 107, 302, 300 } }, new int[][] { new[] { 517, 5, 302, 96 }, new[] { 517, 107, 302, 300 } } },
+                new int[][][] { new int[][] { new[] { 31, 5, 302, 198 }, new[] { 31, 209, 302, 198 } }, new int[][] { new[] { 517, 5, 302, 198 }, new[] { 517, 209, 302, 198 } } },
+                new int[][][] { new int[][] { new[] { 31, 5, 302, 198 }, new[] { 31, 209, 148, 198 }, new[] { 185, 209, 148, 198 } }, new int[][] { new[] { 517, 5, 302, 198 }, new[] { 517, 209, 148, 198 }, new[] { 671, 209, 148, 198 } } },
+                new int[][][] { new int[][] { new[] { 31, 5, 148, 198 }, new[] { 185, 5, 148, 198 }, new[] { 31, 209, 148, 198 }, new[] { 185, 209, 148, 198 } }, new int[][] { new[] { 517, 5, 148, 198 }, new[] { 671, 5, 148, 198 }, new[] { 517, 209, 148, 198 }, new[] { 671, 209, 148, 198 } } },
+                new int[][][] { new int[][] { new[] { 31, 5, 302, 198 }, new[] { 31, 209, 148, 96 }, new[] { 185, 209, 148, 96 }, new[] { 31, 311, 148, 96 }, new[] { 185, 311, 148, 96 } }, new int[][] { new[] { 517, 5, 302, 198 }, new[] { 517, 209, 148, 96 }, new[] { 671, 209, 148, 96 }, new[] { 517, 311, 148, 96 }, new[] { 671, 311, 148, 96 } } },
+                new int[][][] { new int[][] { new[] { 31, 5, 302, 96 }, new[] { 31, 107, 302, 96 }, new[] { 31, 209, 302, 96 }, new[] { 31, 311, 302, 96 } }, new int[][] { new[] { 517, 5, 302, 96 }, new[] { 517, 107, 302, 96 }, new[] { 517, 209, 302, 96 }, new[] { 517, 311, 302, 96 } } },
+                new int[][][] { new int[][] { new[] { 31, 5, 148, 96 }, new[] { 185, 5, 148, 96 }, new[] { 31, 107, 148, 96 }, new[] { 185, 107, 148, 96 }, new[] { 31, 209, 148, 96 }, new[] { 185, 209, 148, 96 }, new[] { 31, 311, 148, 96 }, new[] { 185, 311, 148, 96 } }, new int[][] { new[] { 517, 5, 148, 96 }, new[] { 671, 5, 148, 96 }, new[] { 517, 107, 148, 96 }, new[] { 671, 107, 148, 96 }, new[] { 517, 209, 148, 96 }, new[] { 671, 209, 148, 96 }, new[] { 517, 311, 148, 96 }, new[] { 671, 311, 148, 96 } } },
+                new int[][][] { new int[][] { new[] { 31, 5, 302, 96 }, new[] { 31, 107, 302, 96 }, new[] { 31, 209, 302, 198 } }, new int[][] { new[] { 517, 5, 302, 96 }, new[] { 517, 107, 302, 96 }, new[] { 517, 209, 302, 198 } } },
+                new int[][][] { new int[][] { new[] { 31, 5, 302, 198 }, new[] { 31, 209, 302, 96 }, new[] { 31, 311, 302, 96 } }, new int[][] { new[] { 517, 5, 302, 198 }, new[] { 517, 209, 302, 96 }, new[] { 517, 311, 302, 96 } } },
+                new int[][][] { new int[][] { new[] { 31, 5, 302, 300 }, new[] { 31, 311, 302, 96 } }, new int[][] { new[] { 517, 5, 302, 300 }, new[] { 517, 311, 302, 96 } } },
+                new int[][][] { new int[][] { new[] { 31, 5, 302, 402 } }, new int[][] { new[] { 517, 5, 302, 402 } } },
+            },
+            new int[][][][] {
+                new int[][][] { new int[][] { new[] { 5, 5, 328, 96 }, new[] { 5, 107, 328, 300 } }, new int[][] { new[] { 517, 5, 328, 96 }, new[] { 517, 107, 328, 300 } } },
+                new int[][][] { new int[][] { new[] { 5, 5, 328, 198 }, new[] { 5, 209, 328, 198 } }, new int[][] { new[] { 517, 5, 328, 198 }, new[] { 517, 209, 328, 198 } } },
+                new int[][][] { new int[][] { new[] { 5, 5, 328, 198 }, new[] { 5, 209, 161, 198 }, new[] { 172, 209, 161, 198 } }, new int[][] { new[] { 517, 5, 328, 198 }, new[] { 517, 209, 161, 198 }, new[] { 684, 209, 161, 198 } } },
+                new int[][][] { new int[][] { new[] { 5, 5, 161, 198 }, new[] { 172, 5, 161, 198 }, new[] { 5, 209, 161, 198 }, new[] { 172, 209, 161, 198 } }, new int[][] { new[] { 517, 5, 161, 198 }, new[] { 684, 5, 161, 198 }, new[] { 517, 209, 161, 198 }, new[] { 684, 209, 161, 198 } } },
+                new int[][][] { new int[][] { new[] { 5, 5, 328, 198 }, new[] { 5, 209, 161, 96 }, new[] { 172, 209, 161, 96 }, new[] { 5, 311, 161, 96 }, new[] { 172, 311, 161, 96 } }, new int[][] { new[] { 517, 5, 328, 198 }, new[] { 517, 209, 161, 96 }, new[] { 684, 209, 161, 96 }, new[] { 517, 311, 161, 96 }, new[] { 684, 311, 161, 96 } } },
+                new int[][][] { new int[][] { new[] { 5, 5, 328, 96 }, new[] { 5, 107, 328, 96 }, new[] { 5, 209, 328, 96 }, new[] { 5, 311, 328, 96 } }, new int[][] { new[] { 517, 5, 328, 96 }, new[] { 517, 107, 328, 96 }, new[] { 517, 209, 328, 96 }, new[] { 517, 311, 328, 96 } } },
+                new int[][][] { new int[][] { new[] { 5, 5, 161, 96 }, new[] { 172, 5, 161, 96 }, new[] { 5, 107, 161, 96 }, new[] { 172, 107, 161, 96 }, new[] { 5, 209, 161, 96 }, new[] { 172, 209, 161, 96 }, new[] { 5, 311, 161, 96 }, new[] { 172, 311, 161, 96 } }, new int[][] { new[] { 517, 5, 161, 96 }, new[] { 684, 5, 161, 96 }, new[] { 517, 107, 161, 96 }, new[] { 684, 107, 161, 96 }, new[] { 517, 209, 161, 96 }, new[] { 684, 209, 161, 96 }, new[] { 517, 311, 161, 96 }, new[] { 684, 311, 161, 96 } } },
+                new int[][][] { new int[][] { new[] { 5, 5, 328, 96 }, new[] { 5, 107, 328, 96 }, new[] { 5, 209, 328, 198 } }, new int[][] { new[] { 517, 5, 328, 96 }, new[] { 517, 107, 328, 96 }, new[] { 517, 209, 328, 198 } } },
+                new int[][][] { new int[][] { new[] { 5, 5, 328, 198 }, new[] { 5, 209, 328, 96 }, new[] { 5, 311, 328, 96 } }, new int[][] { new[] { 517, 5, 328, 198 }, new[] { 517, 209, 328, 96 }, new[] { 517, 311, 328, 96 } } },
+                new int[][][] { new int[][] { new[] { 5, 5, 328, 300 }, new[] { 5, 311, 328, 96 } }, new int[][] { new[] { 517, 5, 328, 300 }, new[] { 517, 311, 328, 96 } } },
+                new int[][][] { new int[][] { new[] { 5, 5, 328, 402 } }, new int[][] { new[] { 517, 5, 328, 402 } } },
+            },
         };
         // ToolbarRects[cornice][modello] (vuoto se la cornice non ha barra inferiore)
         public static readonly int[][][][] ToolbarRects = new int[][][][]
@@ -211,6 +237,8 @@ namespace FedeDashboard
             new int[][][] { new int[0][], new int[0][], new int[0][], new int[0][], new int[0][] },
             new int[][][] { new int[][] { new[] { 33, 329, 152, 62 }, new[] { 191, 329, 152, 62 }, new[] { 349, 329, 152, 62 }, new[] { 507, 329, 152, 62 }, new[] { 665, 329, 152, 62 }, new[] { 31, 397, 788, 78 } }, new int[][] { new[] { 32, 329, 126, 62 }, new[] { 164, 329, 126, 62 }, new[] { 296, 329, 126, 62 }, new[] { 428, 329, 126, 62 }, new[] { 560, 329, 126, 62 }, new[] { 692, 329, 126, 62 }, new[] { 31, 397, 788, 78 } }, new int[][] { new[] { 32, 329, 192, 62 }, new[] { 230, 329, 192, 62 }, new[] { 428, 329, 192, 62 }, new[] { 626, 329, 192, 62 }, new[] { 31, 397, 788, 78 } }, new int[][] { new[] { 32, 329, 258, 62 }, new[] { 296, 329, 258, 62 }, new[] { 560, 329, 258, 62 }, new[] { 31, 397, 788, 78 } }, new int[][] { new[] { 31, 329, 788, 62 }, new[] { 31, 397, 788, 78 } } },
             new int[][][] { new int[][] { new[] { 5, 329, 163, 62 }, new[] { 174, 329, 163, 62 }, new[] { 343, 329, 163, 62 }, new[] { 512, 329, 163, 62 }, new[] { 681, 329, 163, 62 }, new[] { 5, 397, 840, 78 } }, new int[][] { new[] { 5, 329, 135, 62 }, new[] { 146, 329, 135, 62 }, new[] { 287, 329, 135, 62 }, new[] { 428, 329, 135, 62 }, new[] { 569, 329, 135, 62 }, new[] { 710, 329, 135, 62 }, new[] { 5, 397, 840, 78 } }, new int[][] { new[] { 6, 329, 205, 62 }, new[] { 217, 329, 205, 62 }, new[] { 428, 329, 205, 62 }, new[] { 639, 329, 205, 62 }, new[] { 5, 397, 840, 78 } }, new int[][] { new[] { 5, 329, 276, 62 }, new[] { 287, 329, 276, 62 }, new[] { 569, 329, 276, 62 }, new[] { 5, 397, 840, 78 } }, new int[][] { new[] { 5, 329, 840, 62 }, new[] { 5, 397, 840, 78 } } },
+            new int[][][] { new int[][] { new[] { 33, 413, 152, 62 }, new[] { 191, 413, 152, 62 }, new[] { 349, 413, 152, 62 }, new[] { 507, 413, 152, 62 }, new[] { 665, 413, 152, 62 } }, new int[][] { new[] { 32, 413, 126, 62 }, new[] { 164, 413, 126, 62 }, new[] { 296, 413, 126, 62 }, new[] { 428, 413, 126, 62 }, new[] { 560, 413, 126, 62 }, new[] { 692, 413, 126, 62 } }, new int[][] { new[] { 32, 413, 192, 62 }, new[] { 230, 413, 192, 62 }, new[] { 428, 413, 192, 62 }, new[] { 626, 413, 192, 62 } }, new int[][] { new[] { 32, 413, 258, 62 }, new[] { 296, 413, 258, 62 }, new[] { 560, 413, 258, 62 } }, new int[][] { new[] { 31, 413, 788, 62 } } },
+            new int[][][] { new int[][] { new[] { 5, 413, 163, 62 }, new[] { 174, 413, 163, 62 }, new[] { 343, 413, 163, 62 }, new[] { 512, 413, 163, 62 }, new[] { 681, 413, 163, 62 } }, new int[][] { new[] { 5, 413, 135, 62 }, new[] { 146, 413, 135, 62 }, new[] { 287, 413, 135, 62 }, new[] { 428, 413, 135, 62 }, new[] { 569, 413, 135, 62 }, new[] { 710, 413, 135, 62 } }, new int[][] { new[] { 6, 413, 205, 62 }, new[] { 217, 413, 205, 62 }, new[] { 428, 413, 205, 62 }, new[] { 639, 413, 205, 62 } }, new int[][] { new[] { 5, 413, 276, 62 }, new[] { 287, 413, 276, 62 }, new[] { 569, 413, 276, 62 } }, new int[][] { new[] { 5, 413, 840, 62 } } },
         };
         // SidebarRects[cornice] (vuoto se senza barre laterali)
         public static readonly int[][][] SidebarRects = new int[][][]
@@ -220,6 +248,8 @@ namespace FedeDashboard
             new int[][] { new[] { 5, 5, 20, 470 }, new[] { 825, 5, 20, 470 } },
             new int[0][],
             new int[][] { new[] { 5, 5, 20, 318 }, new[] { 825, 5, 20, 318 } },
+            new int[0][],
+            new int[][] { new[] { 5, 5, 20, 402 }, new[] { 825, 5, 20, 402 } },
             new int[0][],
         };
         // CenterRects[cornice] = { delta, marcia, velocita', riga1, riga2, riga3 }
@@ -231,6 +261,8 @@ namespace FedeDashboard
             new int[][] { new[] { 339, 5, 172, 34 }, new[] { 339, 45, 172, 258 }, new[] { 339, 309, 172, 40 }, new[] { 339, 355, 172, 36 }, new[] { 339, 397, 172, 36 }, new[] { 339, 439, 172, 36 } },
             new int[][] { new[] { 339, 5, 172, 34 }, new[] { 339, 45, 172, 106 }, new[] { 339, 157, 172, 40 }, new[] { 339, 203, 172, 36 }, new[] { 339, 245, 172, 36 }, new[] { 339, 287, 172, 36 } },
             new int[][] { new[] { 339, 5, 172, 34 }, new[] { 339, 45, 172, 106 }, new[] { 339, 157, 172, 40 }, new[] { 339, 203, 172, 36 }, new[] { 339, 245, 172, 36 }, new[] { 339, 287, 172, 36 } },
+            new int[][] { new[] { 339, 5, 172, 34 }, new[] { 339, 45, 172, 190 }, new[] { 339, 241, 172, 40 }, new[] { 339, 287, 172, 36 }, new[] { 339, 329, 172, 36 }, new[] { 339, 371, 172, 36 } },
+            new int[][] { new[] { 339, 5, 172, 34 }, new[] { 339, 45, 172, 190 }, new[] { 339, 241, 172, 40 }, new[] { 339, 287, 172, 36 }, new[] { 339, 329, 172, 36 }, new[] { 339, 371, 172, 36 } },
         };
 
         public static List<PageSettings> DefaultPages()

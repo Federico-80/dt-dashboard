@@ -100,11 +100,16 @@ namespace FedeDashboard
                 int f = Clamp(p.Frame, Catalog.Frames.Length), gl = Clamp(p.GridLeft, Catalog.Grids.Length),
                     gr = Clamp(p.GridRight, Catalog.Grids.Length), tb = Clamp(p.Toolbar, Catalog.Toolbars.Length);
                 var kids = new List<string>();
-                AddArray(kids, pieces, "CENTRO_" + f);
-                AddArray(kids, pieces, "GRIGLIA_" + f + "_L_" + gl);
-                AddArray(kids, pieces, "GRIGLIA_" + f + "_R_" + gr);
-                AddArray(kids, pieces, "BARRA_" + f + "_" + tb);
-                AddArray(kids, pieces, "LATERALI_" + f);
+                string single, stD, stS;
+                int fs;
+                if (pieces.TryGetValue("SINGOLA_" + f, out single) && int.TryParse(single.Trim(), out fs)
+                    && pieces.TryGetValue("STRATO_D", out stD) && pieces.TryGetValue("STRATO_S", out stS))
+                {
+                    // barra doppia solo quando serve rifornire (DTPlugin.BarraDoppia), altrimenti la cornice con la barra singola
+                    kids.Add(stD.Replace("\"@@FIGLI@@\"", string.Join(",", Layout(pieces, f, gl, gr, tb))));
+                    kids.Add(stS.Replace("\"@@FIGLI@@\"", string.Join(",", Layout(pieces, fs, gl, gr, tb))));
+                }
+                else kids = Layout(pieces, f, gl, gr, tb);
                 string idx = (i + 1).ToString(CultureInfo.InvariantCulture);
                 layers.Add(pageTpl.Replace("\"@@FIGLI@@\"", string.Join(",", kids)).Replace("@@IDX@@", idx));
             }
@@ -229,6 +234,17 @@ namespace FedeDashboard
             File.WriteAllText(stampPath, now.Key);
             if (changed > 0) FedeLog.Write("Carattere applicato a " + changed + " schede: " + now.Key);
             return changed;
+        }
+
+        static List<string> Layout(Dictionary<string, string> pieces, int f, int gl, int gr, int tb)
+        {
+            var kids = new List<string>();
+            AddArray(kids, pieces, "CENTRO_" + f);
+            AddArray(kids, pieces, "GRIGLIA_" + f + "_L_" + gl);
+            AddArray(kids, pieces, "GRIGLIA_" + f + "_R_" + gr);
+            AddArray(kids, pieces, "BARRA_" + f + "_" + tb);
+            AddArray(kids, pieces, "LATERALI_" + f);
+            return kids;
         }
 
         static int Clamp(int v, int n) { return v < 0 ? 0 : (v >= n ? n - 1 : v); }

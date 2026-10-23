@@ -1217,10 +1217,23 @@ def page_vis(idx):
     return "var p = $prop('DTPlugin.Pagina');\r\nif (p == null) { p = 1; }\r\nreturn p == %s;" % idx
 
 
+DOUBLE_ON = "return $prop('DTPlugin.BarraDoppia') === true;"
+DOUBLE_OFF = "return $prop('DTPlugin.BarraDoppia') !== true;"
+
+
+def layout_items(fi, page):
+    return center_items(fi) + piece_grid(fi, "L", page["grid_l"]) + piece_grid(fi, "R", page["grid_r"]) \
+        + piece_toolbar(fi, page["toolbar"]) + piece_sidebars(fi)
+
+
 def page_layer(pi, page):
     fi = page["frame"]
-    kids = center_items(fi) + piece_grid(fi, "L", page["grid_l"]) + piece_grid(fi, "R", page["grid_r"]) \
-        + piece_toolbar(fi, page["toolbar"]) + piece_sidebars(fi)
+    if fi in SINGLE_OF:
+        # barra doppia solo quando serve rifornire, altrimenti barra singola e schede piu' grandi
+        kids = [layer("Barra doppia", layout_items(fi, page), None, ("BarraDoppia", 1), vis_js=DOUBLE_ON),
+                layer("Barra singola", layout_items(SINGLE_OF[fi], page), None, ("BarraDoppia", 0), vis_js=DOUBLE_OFF)]
+    else:
+        kids = layout_items(fi, page)
     return layer("Pagina %d" % (pi + 1), kids, None, ("Pagina", pi + 1), vis_js=page_vis(pi + 1))
 
 
@@ -1813,6 +1826,10 @@ def write_all():
         f.write(json.dumps(strip(tpl), ensure_ascii=False, separators=(",", ":")))
     with open(os.path.join(folder, DASH_NAME + ".pezzi"), "w", encoding="utf-8", newline="\n") as f:
         f.write("PAGINA\t" + json.dumps(strip(page_tpl), ensure_ascii=False, separators=(",", ":")) + "\n")
+        for nm, key, cond, pv in (("Barra doppia", "STRATO_D", DOUBLE_ON, 1), ("Barra singola", "STRATO_S", DOUBLE_OFF, 0)):
+            f.write(key + "\t" + json.dumps(strip(layer(nm, ["@@FIGLI@@"], None, ("BarraDoppia", pv), vis_js=cond)), ensure_ascii=False, separators=(",", ":")) + "\n")
+        for fd_, fs_ in SINGLE_OF.items():
+            f.write("SINGOLA_%d\t%d\n" % (fd_, fs_))
         for k, v in pieces.items():
             f.write(k + "\t" + json.dumps(strip(v), ensure_ascii=False, separators=(",", ":")) + "\n")
     os.makedirs(os.path.join(folder, "JavascriptExtensions"))

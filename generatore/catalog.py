@@ -246,7 +246,12 @@ FRAMES = [
     # barra inferiore doppia (toolbar = 2): riga di riquadri + sotto un riquadro largo (es. strategia gara)
     ("Completo con barra doppia", True, 2),
     ("Barra doppia senza barre laterali", False, 2),
+    # usate dalla barra doppia quando non serve rifornire (non compaiono tra le scelte): una sola riga, bassa come quella della doppia
+    ("Barra bassa con barre laterali", True, 3),
+    ("Barra bassa", False, 3),
 ]
+# barra doppia "intelligente": quando non serve rifornire la pagina usa la cornice con la sola riga di riquadri
+SINGLE_OF = {4: 6, 5: 7}
 
 # griglie dei lati: unita' 2 colonne x 4 righe  (col, riga, larghezza, altezza)
 GRIDS = [
@@ -270,7 +275,7 @@ CENTER_ROWS = 3
 
 def frame_geom(fi):
     _, sidebars, toolbar = FRAMES[fi]
-    bottom = DASH_H - M - (((TB2 + G + WB + G) if toolbar == 2 else (TB + G)) if toolbar else 0)
+    bottom = DASH_H - M - (((TB2 + G + WB + G) if toolbar == 2 else ((TB2 + G) if toolbar == 3 else (TB + G))) if toolbar else 0)
     xl0 = M + (SB + G if sidebars else 0)
     xl1 = CX - G
     xr0 = CX + CW + G
@@ -302,7 +307,7 @@ def toolbar_cells(fi, ti):
     w = (W - (n - 1) * G) // n
     lead = (W - (n * w + (n - 1) * G)) // 2
     double = FRAMES[fi][2] == 2
-    th = TB2 if double else TB
+    th = TB2 if (double or FRAMES[fi][2] == 3) else TB
     y = DASH_H - M - th - ((WB + G) if double else 0)
     cells = [(x0 + lead + i * (w + G), y, w, th) for i in range(n)]
     if double:

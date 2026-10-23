@@ -1,5 +1,5 @@
 {
-  "version": "1.85",
-  "notes": "Strategia: NO RIFORNIMENTO e trattini su litri/energia necessari quando non serve fermarsi.",
+  "version": "1.86",
+  "notes": "Barra doppia intelligente: la riga della strategia compare solo quando in gara serve rifornire, altrimenti sparisce e le schede si ingrandiscono.",
   "date": "2026-10-23"
 }
