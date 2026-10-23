@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.87";
+        public const string VersionText = "1.88";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -794,14 +794,24 @@ namespace FedeDashboard
             if (t.Contains("QUALI")) kind = "Q";
             else if (t.Contains("RACE") || t.Contains("GARA")) kind = "R";
             else if (t.Length > 0) kind = "P";
-            if (kind == "R" && simStartPos == 0 && AsInt(bridge.GetPropertyValue("DataCorePlugin.GameData.CurrentLap")) <= 1)
+            if (kind == "R" && !startFrozen)
             {
-                int sp = AsInt(TimingPosition());
-                if (sp > 0) simStartPos = sp;     // altri giochi: posizione al via
+                // posizione di partenza: aggiornata fino al via (giro di formazione), poi bloccata per tutta la gara
+                int lapNow = AsInt(bridge.GetPropertyValue("DataCorePlugin.GameData.CurrentLap"));
+                object ph = Raw("Scoring.mScoringInfo.mGamePhase");
+                bool green = ph != null ? Num(ph) >= 5 : lapNow >= 1;
+                int all = lmuPlace > 0 ? lmuPlace : AsInt(bridge.GetPropertyValue("DataCorePlugin.GameData.Position"));
+                if (all > 0) startPosAll = all;
+                if (playerClassPos > 0) startPosClass = playerClassPos;
+                if (green && (startPosAll > 0 || startPosClass > 0))
+                {
+                    startFrozen = true;
+                    FedeLog.Write("Partenza: posizione " + startPosAll + " assoluta, " + startPosClass + " nella classe");
+                }
             }
             if (kind == sessionKind) return;
             sessionKind = kind;
-            simStartPos = 0; startPosAll = 0; startPosClass = 0;
+            simStartPos = 0; startPosAll = 0; startPosClass = 0; startFrozen = false;
             if (kind.Length == 0) return;
             var pages = Settings.Pages;
             for (int i = 0; i < pages.Count; i++)
@@ -1903,6 +1913,7 @@ namespace FedeDashboard
                 case "@pos_guadagno":
                     {
                         int now0 = AsInt(TimingPosition());
+                        if (!startFrozen) { posGainDir = 0; posGainColor = "#FF9E9E9E"; return "0"; }
                         int start = Settings.Timing.PositionMode != 0 ? startPosClass : startPosAll;
                         if (start <= 0 && simStartPos > 0) start = simStartPos;
                         if (now0 <= 0 || start <= 0) return null;
@@ -2141,6 +2152,7 @@ namespace FedeDashboard
 
         class LmuCar { public int Place, Qual; public double Tbl, Tbn, Lbn, Best, Last, Progress, LapsBehindLeader, Speed, EstLap; public string Cls = "", Name = ""; public bool Player; }
         volatile int startPosClass, startPosAll, simStartPos;
+        volatile bool startFrozen;
         volatile string posGainColor = "#FF9E9E9E";
         volatile int posGainDir;     // posizione di partenza (griglia) nella classe / assoluta
         double lmuEstLap = double.NaN;               // tempo sul giro stimato da LMU per il giocatore
@@ -2199,14 +2211,6 @@ namespace FedeDashboard
             cars.Sort((a, b) => a.Place.CompareTo(b.Place));
             lmuPlace = me.Place; lmuCars = cars.Count;
             lmuEstLap = me.EstLap > 0 ? me.EstLap : double.NaN;
-            // posizione di partenza: griglia di LMU (mQualification), assoluta e nella classe
-            if (me.Qual > 0)
-            {
-                startPosAll = me.Qual;
-                int cp = 1;
-                foreach (var c in cars) if (c != me && c.Cls == me.Cls && c.Qual > 0 && c.Qual < me.Qual) cp++;
-                startPosClass = cp;
-            }
             var same = cars.FindAll(c => c.Cls == me.Cls);
             classCount = same.Count;
             playerClassPos = same.IndexOf(me) + 1;

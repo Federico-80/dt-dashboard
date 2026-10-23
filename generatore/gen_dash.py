@@ -257,14 +257,15 @@ def gauge_items(card, w, h, items_ref=None):
     pv = "Math.max(0, Math.min(100, $prop('DTPlugin.%s_Valore')))" % pc
     it.append(rect("Barra", bx, by, bw_ * 0.74, bh_, bg=card["fill"], radius=r, bindings={"Width": js("return %s * %d / 100;" % (pv, bw_))},
                    pv=dict(hfrac=0.74)))
+    # in grande i giri che puoi ancora fare, tra parentesi la quantita' (% di energia o litri)
     sample = CH[c][7].replace("%", "")
-    vtxt = "var t = fd('%s');\r\nreturn (t && t !== '-') ? t%s : '-';" % (c, (" + '%s'" % suf) if suf else "")
-    vfs = fit(bw_ * 0.62 - 4, bh_, 5.2, 0.92, wfrac=0.58)
-    it.append(text("Valore", bx, by, bw_ * 0.62, bh_, None, sample + (suf or "%"), vfs, WHITE, ha=2,
-                   bindings={"Text": js(vtxt)}))
-    lfs2 = clamp(int(min(vfs * 0.68, bw_ * 0.35 / (5 * 0.56))), 8, 70)
-    it.append(text("Giri", bx + bw_ * 0.64, by, bw_ * 0.36, bh_, None, "(" + CH[lp][7] + ")", lfs2, WHITE, ha=0, weight="Medium",
-                   bindings={"Text": js("var g = fd('%s');\r\nreturn '(' + ((g && g !== '') ? g : '-') + ')';" % lp)}))
+    qtxt = "var t = fd('%s');\r\nreturn '(' + ((t && t !== '-') ? t%s : '-') + ')';" % (c, (" + '%s'" % suf) if suf else "")
+    gtxt = "var g = fd('%s');\r\nreturn (g && g !== '') ? g : '-';" % lp
+    vfs = fit(bw_ * 0.5 - 4, bh_, 4, 0.92, wfrac=0.58)
+    it.append(text("Giri", bx, by, bw_ * 0.5, bh_, None, CH[lp][7], vfs, WHITE, ha=2, bindings={"Text": js(gtxt)}))
+    qfs = clamp(int(min(vfs * 0.6, (bw_ * 0.48 - 4) / (7 * 0.56))), 8, 60)
+    it.append(text("Valore", bx + bw_ * 0.52, by, bw_ * 0.48, bh_, None, "(" + sample + (suf or "%") + ")", qfs, WHITE, ha=0, weight="Medium",
+                   bindings={"Text": js(qtxt)}))
     return it
 
 

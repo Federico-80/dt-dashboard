@@ -1,5 +1,5 @@
 {
-  "version": "1.87",
-  "notes": "Sessione: accanto al giro i giri totali stimati come LMU (es. 1 /~27.1).",
+  "version": "1.88",
+  "notes": "Posizioni guadagnate rispetto alla partenza (bloccata al via). Energia e carburante: giri in grande, quantità tra parentesi.",
   "date": "2026-10-23"
 }
