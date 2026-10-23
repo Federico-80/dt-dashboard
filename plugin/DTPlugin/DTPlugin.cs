@@ -24,12 +24,14 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.65";
+        public const string VersionText = "1.66";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
         public readonly DashBuilder DashBuilder = new DashBuilder();
         public Access Access;
+        LmuRest lmuRest;
+        volatile bool lmuActive;
         public PluginManager PluginManager { get; set; }
         public string LeftMenuTitle { get { return "DT Plugin"; } }
 
@@ -98,6 +100,8 @@ namespace FedeDashboard
             {
                 Settings = SettingsStore.Load();
                 Access = new Access(Settings.Access, SaveSettings);
+                lmuRest = new LmuRest(() => lmuActive);
+                lmuRest.Start();
                 Access.Start();
                 Updater.Changed += OnUpdaterChanged;
                 Updater.CheckAsync(VersionText);   // controllo aggiornamenti su GitHub in background
@@ -393,6 +397,7 @@ namespace FedeDashboard
         public void End(PluginManager pluginManager)
         {
             try { if (updateTimer != null) updateTimer.Dispose(); } catch { }
+            try { if (lmuRest != null) lmuRest.Stop(); } catch { }
             SaveSettings();
             FedeLog.Write("Chiusura");
         }
@@ -559,6 +564,7 @@ namespace FedeDashboard
                 var now = DateTime.Now;
                 currentGame = Convert.ToString(bridge.GetPropertyValue("DataCorePlugin.CurrentGame") ?? "");
                 isIRacing = currentGame.Equals("IRacing", StringComparison.OrdinalIgnoreCase);
+                lmuActive = AsBool(GetMember(data, "GameRunning")) && (currentGame.IndexOf("LMU", StringComparison.OrdinalIgnoreCase) >= 0 || Raw("Scoring.mVehicles") != null);
                 if (now >= nextGapUpdate)
                 {
                     nextGapUpdate = now.AddMilliseconds(250);
@@ -882,6 +888,12 @@ namespace FedeDashboard
             try
             {
                 var arr = Raw("Scoring.mScoringInfo.mSectorFlag") as Array;
+                if (arr == null || arr.Length == 0)
+                {
+                    // LMU tramite SimHub: le gialle di settore stanno in Data.mSectorFlag01..03 (come nella dash TK)
+                    object f1 = Raw("Data.mSectorFlag01"), f2 = Raw("Data.mSectorFlag02"), f3 = Raw("Data.mSectorFlag03");
+                    if (f1 != null || f2 != null || f3 != null) arr = new object[] { f1 ?? 0, f2 ?? 0, f3 ?? 0 };
+                }
                 int sec = AsInt(Raw("CurrentPlayer.mSector"));
                 // LMU/rF2: mSector 0 = settore 3. Non e' certo se mSectorFlag[0] sia il settore 1 o il 3: controllo entrambe
                 int idxA = sec == 0 ? 2 : sec - 1, idxB = sec;
@@ -1000,6 +1012,7 @@ namespace FedeDashboard
                 double v = Num(o);
                 if (!double.IsNaN(v) && v > 0.01) { source = vs[0]; return v; }
             }
+            if (lmuRest != null) { double rp = lmuRest.VePerLapPct; if (!double.IsNaN(rp)) { source = "LMU (consumo previsto dal gioco)"; return rp; } }
             source = "DT Plugin";
             double a = VeAverage();
             if (double.IsNaN(a) || a <= 0.01) a = veLastLap;
@@ -1015,6 +1028,7 @@ namespace FedeDashboard
                 double v = Num(o);
                 if (!double.IsNaN(v) && v > 0) { source = vs[0]; return v; }
             }
+            if (lmuRest != null) { double rv = lmuRest.VeLaps; if (!double.IsNaN(rv) && rv > 0) { source = "LMU (consumo previsto dal gioco)"; return rv; } }
             double ve = VePercent(), per = VePerLap(out source);
             if (double.IsNaN(ve) || double.IsNaN(per) || per <= 0.01) return double.NaN;
             return ve / per;
@@ -1027,6 +1041,7 @@ namespace FedeDashboard
 
         double FuelPerLap()
         {
+            if (lmuRest != null) { double rf = lmuRest.FuelPerLapFresh; if (!double.IsNaN(rf)) return rf; }
             {
                 string vs, rs;
                 double ve = VePercent(), vePer = VePerLap(out vs), ratio = FuelRatio(out rs);
@@ -1216,6 +1231,12 @@ namespace FedeDashboard
 
         double FuelLapsLeft(out string source)
         {
+            // LMU: carburante a bordo / consumo previsto dal gioco (gli stessi numeri del menu)
+            if (lmuRest != null)
+            {
+                double rl = lmuRest.FuelLaps;
+                if (!double.IsNaN(rl) && rl > 0) { source = "LMU (consumo previsto dal gioco)"; return rl; }
+            }
             // auto con energia virtuale (LMU): carburante per giro = energia per giro x ratio -> giusto gia' dal primo giro
             {
                 string vs, rs;
@@ -1576,7 +1597,8 @@ namespace FedeDashboard
             string name = "";
             try
             {
-                name = RawCompoundName(w < 2);
+                if (lmuRest != null) name = lmuRest.Compound(w);   // LMU: menu gomme del gioco (come TK)
+                if (string.IsNullOrWhiteSpace(name)) name = RawCompoundName(w < 2);
                 if (string.IsNullOrWhiteSpace(name))
                 {
                     object ir = Raw("Telemetry.PlayerTireCompound");

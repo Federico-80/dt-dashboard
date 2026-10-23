@@ -1,5 +1,5 @@
 {
-  "version": "1.65",
-  "notes": "Posizione e distacchi nella propria classe (es. 3/12). Distacchi visibili anche a inizio gara. Mescole lette in modo più robusto (scritte nel log).",
+  "version": "1.66",
+  "notes": "LMU: mescole, consumo previsto di energia e carburante letti dal gioco (come TK LMU Plugin). Bandiere gialle di settore dal dato corretto.",
   "date": "2026-10-23"
 }
