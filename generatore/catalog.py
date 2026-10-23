@@ -331,7 +331,7 @@ def sidebar_cells(fi):
 def center_geom(fi):
     g = frame_geom(fi)
     top, bottom = g["top"], g["bottom"]
-    delta_h, speed_h, row_h = 34, 40, 36
+    delta_h, speed_h, row_h = 50, 40, 36   # delta piu' alto (spazio preso dal riquadro della marcia)
     rows_h = CENTER_ROWS * row_h + (CENTER_ROWS - 1) * G
     gear_top = top + delta_h + G
     gear_h = bottom - rows_h - G - speed_h - G - gear_top

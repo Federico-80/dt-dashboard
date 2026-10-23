@@ -1095,13 +1095,15 @@ def tyres3_items(ix, iy, iw, ih):
         pfs = fit(cw - 30, pH, 4, 0.8, 0.58)
         items.append(text("Gomma %s temp" % k, x0 + 4, py, cw - 8, pH, ch_val("TyreT" + k), CH["TyreT" + k][7], pfs, WHITE, weight="Black"))
         # battistrada: 3 strisce
-        tw = clamp(cw * 0.13, 9, 24)
+        tw = clamp(cw * 0.21, 16, 40)               # gomma larga: 3 fasce con un piccolo spazio
         th = dh * 0.92
         tx = x0 + (cw - tw) / 2
         ty = dy + (dh - th) / 2
-        stw = (tw - 4) / 3.0
+        gp = 3 if tw >= 24 else 2
+        stw = (tw - 2 * gp) / 3.0
         for j in range(3):
-            items.append(rect("Gomma %s striscia %d" % (k, j + 1), tx + j * (stw + 2), ty, stw, th, bg=GREEN, radius=2,
+            rr = 5 if j != 1 else 2
+            items.append(rect("Gomma %s striscia %d" % (k, j + 1), tx + j * (stw + gp), ty, stw, th, bg=GREEN, radius=rr,
                               bindings={"BackgroundColor": js("var c = $prop('DTPlugin.Strisce_%s_%d');\r\nreturn c ? c : '#FF3A3A3A';" % (k, j + 1))}))
             items[-1]["_pv"]["bg"] = TYRE_SAMPLE_COL[k]
         sw = (cw - tw) / 2 - 8                         # spazio ai lati della striscia
@@ -1236,7 +1238,7 @@ def center_items(fi):
     x, y, w, h = cg["delta"]
     it.append(rect("Delta fondo", x, y, w, h, bg="#FF161616", radius=8))
     sbh = 5
-    it.append(text("Delta", x, y, w, h - sbh - 4, ch_val("Delta"), CH["Delta"][7], 24, GREEN,
+    it.append(text("Delta", x, y + 1, w, h - sbh - 5, ch_val("Delta"), CH["Delta"][7], fit(w - 16, h - sbh - 6, 6, 0.92, 0.6), GREEN,
                    bindings={"TextColor": js(DELTA_COLOR_JS % "Delta")}))
     it += sector_bars(x + 6, y + h - sbh - 4, w - 12, sbh, gap=3)
     x, y, w, h = cg["gear"]
