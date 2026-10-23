@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "2.10";
+        public const string VersionText = "2.11";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -756,6 +756,26 @@ namespace FedeDashboard
 
         bool isIRacing;
         string currentGame = "";
+        string lastGameKey = null;
+
+        /// <summary>Gioco cambiato: se ha pagine proprie le mette in uso (la dash si ricompone da sola), altrimenti le predefinite.</summary>
+        void CheckGamePages()
+        {
+            if (currentGame.Length == 0) return;
+            string key = GameProfile.KeyOf(currentGame);
+            if (key == lastGameKey) return;
+            lastGameKey = key;
+            var s = Settings;
+            if (!s.AutoGamePages) return;
+            string target = s.HasProfile(key) ? key : "";
+            if (target == s.ProfileGame) return;
+            if (s.SwitchProfile(target))
+            {
+                FedeLog.Write("Gioco " + currentGame + ": pagine di '" + GameProfile.NameOf(target) + "'");
+                SaveSettings();
+                SetActivePage(s.ActivePage, true);
+            }
+        }
 
         /// <summary>Valori di iRacing per i canali che con LMU arrivano da dati specifici del gioco.</summary>
         object IRacingFallback(string id)
@@ -780,6 +800,7 @@ namespace FedeDashboard
                 var now = DateTime.Now;
                 currentGame = Convert.ToString(bridge.GetPropertyValue("DataCorePlugin.CurrentGame") ?? "");
                 isIRacing = currentGame.Equals("IRacing", StringComparison.OrdinalIgnoreCase);
+                CheckGamePages();
                 sessionTypeCache = Convert.ToString(bridge.GetPropertyValue("DataCorePlugin.GameData.SessionTypeName") ?? "");
                 if (playerNameCache.Length == 0 || now.Second == 0) playerNameCache = SectorTracker.Str(Raw("CurrentPlayer.mDriverName"));
                 lmuActive = AsBool(GetMember(data, "GameRunning")) && (currentGame.IndexOf("LMU", StringComparison.OrdinalIgnoreCase) >= 0 || Raw("Scoring.mVehicles") != null);

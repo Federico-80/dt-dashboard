@@ -95,7 +95,15 @@ namespace FedeDashboard
         <ScrollViewer VerticalScrollBarVisibility='Auto'>
         <DockPanel Margin='22,18,22,16'>
           <StackPanel DockPanel.Dock='Top'>
-            <Grid Margin='0,4,0,12'><Grid.ColumnDefinitions><ColumnDefinition Width='Auto'/><ColumnDefinition Width='*'/></Grid.ColumnDefinitions><TextBlock Text='PAGINA' FontWeight='Bold' FontSize='14' Foreground='White'/><Border Grid.Column='1' Height='1' Background='#FF4A4A4A' VerticalAlignment='Center' Margin='12,0,0,0'/></Grid>
+            <Grid Margin='0,4,0,12'><Grid.ColumnDefinitions><ColumnDefinition Width='Auto'/><ColumnDefinition Width='*'/></Grid.ColumnDefinitions><TextBlock Text='GIOCO' FontWeight='Bold' FontSize='14' Foreground='White'/><Border Grid.Column='1' Height='1' Background='#FF4A4A4A' VerticalAlignment='Center' Margin='12,0,0,0'/></Grid>
+            <WrapPanel Margin='24,0,0,4'>
+              <ComboBox x:Name='CbGame' Width='240' Margin='0,2,10,2' VerticalContentAlignment='Center'/>
+              <Button x:Name='BtnGameCreate' Content='Crea pagine per questo gioco' Margin='0,2,6,2'/>
+              <Button x:Name='BtnGameDelete' Content='Usa le pagine predefinite' Margin='0,2,6,2'/>
+            </WrapPanel>
+            <TextBlock x:Name='GameInfo' Margin='24,2,0,4' TextWrapping='Wrap' Foreground='#FF9A9A9A' FontSize='12'/>
+            <CheckBox x:Name='ChkAutoGame' Margin='24,2,0,8' Content='Quando parte un gioco, usa da solo le sue pagine'/>
+            <Grid Margin='0,10,0,12'><Grid.ColumnDefinitions><ColumnDefinition Width='Auto'/><ColumnDefinition Width='*'/></Grid.ColumnDefinitions><TextBlock Text='PAGINA' FontWeight='Bold' FontSize='14' Foreground='White'/><Border Grid.Column='1' Height='1' Background='#FF4A4A4A' VerticalAlignment='Center' Margin='12,0,0,0'/></Grid>
             <WrapPanel Margin='24,0,0,4'>
               <ComboBox x:Name='CbPage' Width='180' Margin='0,2,10,2' VerticalContentAlignment='Center'/>
               <TextBox x:Name='TbName' Width='160' Margin='0,2,14,2' ToolTip='Nome della pagina'/>
@@ -276,7 +284,8 @@ namespace FedeDashboard
         readonly DTPlugin plugin;
         readonly ObservableCollection<ChannelRow> rows = new ObservableCollection<ChannelRow>();
         public readonly object Root;
-        readonly dynamic root, tabs, cbPage, tbName, chkP, chkQ, chkR, chkInputs, chkNoBars, chkLeds, frameButtons, toolbarButtons,
+        string uiGame = "";
+        readonly dynamic root, tabs, cbPage, tbName, chkP, chkQ, chkR, chkInputs, chkNoBars, chkLeds, cbGame, gameInfo, chkAutoGame, frameButtons, toolbarButtons,
                          gridLButtons, gridRButtons, preview, pickerPanel, grid, timer, alertsPanel, tyresPanel, idlePanel, idlePreview;
         dynamic tyreLive;
         bool updating;
@@ -373,6 +382,7 @@ namespace FedeDashboard
             chkInputs = F("ChkInputs");
             chkNoBars = F("ChkNoBars");
             chkLeds = F("ChkLeds");
+            cbGame = F("CbGame"); gameInfo = F("GameInfo"); chkAutoGame = F("ChkAutoGame");
             frameButtons = F("FrameButtons");
             toolbarButtons = F("ToolbarButtons");
             gridLButtons = F("GridLButtons");
@@ -408,6 +418,33 @@ namespace FedeDashboard
             OnCheck((object)chkInputs, v => Page.ShowInputs = v);
             OnCheck((object)chkNoBars, v => Page.HideSideBars = v);
             OnCheck((object)chkLeds, v => Page.Leds = v);
+            OnCheck((object)chkAutoGame, v => S.AutoGamePages = v);
+            foreach (var n in GameProfile.Names) cbGame.Items.Add(n);
+            uiGame = S.ProfileGame;
+            Wpf.On((object)cbGame, "SelectionChanged", (s, e) =>
+            {
+                if (updating) return;
+                int gi = (int)cbGame.SelectedIndex;
+                if (gi < 0) return;
+                uiGame = GameProfile.Keys[gi];
+                S.SwitchProfile(uiGame);   // se il gioco non ha pagine proprie restano quelle predefinite
+                plugin.SetActivePage(S.ActivePage, false);
+                Changed();
+            });
+            Click("BtnGameCreate", () =>
+            {
+                if (uiGame.Length == 0) return;
+                S.CreateProfile(uiGame);
+                plugin.SetActivePage(S.ActivePage, false);
+                Changed();
+            });
+            Click("BtnGameDelete", () =>
+            {
+                if (uiGame.Length == 0 || !S.HasProfile(uiGame)) return;
+                S.DeleteProfile(uiGame);
+                plugin.SetActivePage(S.ActivePage, false);
+                Changed();
+            });
 
             Click("BtnNew", () => AddPage(false));
             Click("BtnDup", () => AddPage(true));
@@ -548,6 +585,17 @@ namespace FedeDashboard
             try
             {
                 var p = Page;
+                // gioco: quello scelto qui, oppure (se le pagine sono cambiate da sole) quello in uso
+                if (S.ProfileGame.Length > 0) uiGame = S.ProfileGame;
+                else if (S.HasProfile(uiGame) && uiGame.Length > 0) uiGame = "";
+                cbGame.SelectedIndex = Math.Max(0, Array.IndexOf(GameProfile.Keys, uiGame));
+                bool own = uiGame.Length > 0 && S.ProfileGame == uiGame;
+                gameInfo.Text = uiGame.Length == 0 ? "Pagine usate da tutti i giochi che non hanno pagine proprie."
+                              : (own ? "Stai modificando le pagine di " + GameProfile.NameOf(uiGame) + "."
+                                     : GameProfile.NameOf(uiGame) + " usa le pagine predefinite (quelle sotto). Premi \"Crea pagine per questo gioco\" per fargli le sue.");
+                ((dynamic)F("BtnGameCreate")).IsEnabled = uiGame.Length > 0 && !own;
+                ((dynamic)F("BtnGameDelete")).IsEnabled = own;
+                chkAutoGame.IsChecked = S.AutoGamePages;
                 cbPage.Items.Clear();
                 foreach (var pg in S.Pages) cbPage.Items.Add(pg.Name);
                 cbPage.SelectedIndex = S.ActivePage;
@@ -698,7 +746,7 @@ namespace FedeDashboard
             preview.Children.Clear();
             var p = Page;
             int f = p.EffectiveFrame;
-            if (p.Leds) FixedRect(new[] { 9, 5, 832, 16 }, "LED GIRI");
+            if (p.Leds) FixedRect(new[] { 9, 5, 832, 26 }, "LED GIRI");
             var c = Catalog.CenterRects[f];
             FixedRect(c[0], "DELTA");
             FixedRect(c[1], "MARCIA");

@@ -1321,7 +1321,7 @@ LED_N = 16
 def led_strip(x, y, w, h):
     """Fila di LED dei giri: verdi, gialli, rossi da meta' giri in su; al limitatore tutti blu lampeggianti."""
     it = []
-    d = min(h, (w - (LED_N - 1) * 6) / LED_N)
+    d = min(h, (w - (LED_N - 1) * 8) / LED_N)
     gap = (w - LED_N * d) / (LED_N - 1)
     for i in range(LED_N):
         col = "#FF00E676" if i < 6 else ("#FFFFD600" if i < 11 else "#FFFF1744")

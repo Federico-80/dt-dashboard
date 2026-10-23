@@ -20,6 +20,71 @@ namespace FedeDashboard
         /// <summary>Finestra di avviso in SimHub quando esce una nuova versione.</summary>
         public bool UpdatePopup { get; set; } = true;
 
+        // ---------------------------------------------------------------- pagine per gioco
+        /// <summary>Gioco di cui sono le pagine in uso (Pages): "" = pagine predefinite (tutti i giochi).</summary>
+        public string ProfileGame { get; set; } = "";
+        /// <summary>Pagine degli altri giochi (e quelle predefinite quando e' attivo un gioco).</summary>
+        public List<GameProfile> GameProfiles { get; set; } = new List<GameProfile>();
+        /// <summary>Quando parte un gioco con pagine proprie, usa quelle da solo.</summary>
+        public bool AutoGamePages { get; set; } = true;
+
+        public bool HasProfile(string key)
+        {
+            key = key ?? "";
+            if (key == ProfileGame || key.Length == 0) return true;
+            foreach (var g in GameProfiles) if (g != null && g.Game == key) return true;
+            return false;
+        }
+
+        GameProfile Stored(string key)
+        {
+            foreach (var g in GameProfiles) if (g != null && g.Game == key) return g;
+            return null;
+        }
+
+        /// <summary>Mette in uso le pagine del gioco (se non ne ha, quelle predefinite). true se e' cambiato qualcosa.</summary>
+        public bool SwitchProfile(string key)
+        {
+            key = key ?? "";
+            if (!HasProfile(key)) key = "";
+            if (key == ProfileGame) return false;
+            var old = Stored(ProfileGame);
+            if (old == null) { old = new GameProfile { Game = ProfileGame }; GameProfiles.Add(old); }
+            old.Pages = Pages; old.ActivePage = ActivePage;
+            var nw = Stored(key);
+            if (nw == null || nw.Pages == null || nw.Pages.Count == 0)
+            {
+                Pages = new List<PageSettings>(Catalog.DefaultPages());
+                ActivePage = 0;
+            }
+            else { Pages = nw.Pages; ActivePage = nw.ActivePage; }
+            if (nw != null) GameProfiles.Remove(nw);
+            ProfileGame = key;
+            if (ActivePage < 0 || ActivePage >= Pages.Count) ActivePage = 0;
+            return true;
+        }
+
+        /// <summary>Crea le pagine proprie del gioco (copia di quelle predefinite) e le mette in uso.</summary>
+        public void CreateProfile(string key)
+        {
+            if (string.IsNullOrEmpty(key) || HasProfile(key)) { SwitchProfile(key); return; }
+            List<PageSettings> src = ProfileGame.Length == 0 ? Pages : (Stored("") != null ? Stored("").Pages : null);
+            var copy = new List<PageSettings>();
+            if (src != null) foreach (var p in src) copy.Add(p.Clone(p.Name));
+            if (copy.Count == 0) copy.AddRange(Catalog.DefaultPages());
+            GameProfiles.Add(new GameProfile { Game = key, Pages = copy, ActivePage = 0 });
+            SwitchProfile(key);
+        }
+
+        /// <summary>Il gioco torna a usare le pagine predefinite (le sue vengono cancellate).</summary>
+        public void DeleteProfile(string key)
+        {
+            if (string.IsNullOrEmpty(key)) return;
+            if (ProfileGame == key) SwitchProfile("");
+            var g = Stored(key);
+            if (g != null) GameProfiles.Remove(g);
+        }
+
         /// <summary>Completa/ripara le impostazioni lette da file (canali nuovi, liste corte, indici fuori range).</summary>
         public void Normalize()
         {
@@ -42,6 +107,10 @@ namespace FedeDashboard
             if (Channels == null) Channels = new List<ChannelSettings>();
             if (Pages.Count == 0) Pages.AddRange(Catalog.DefaultPages());
             foreach (var p in Pages) p.Normalize();
+            if (GameProfiles == null) GameProfiles = new List<GameProfile>();
+            GameProfiles.RemoveAll(g => g == null || g.Pages == null || g.Pages.Count == 0 || (g.Game ?? "") == (ProfileGame ?? ""));
+            foreach (var g in GameProfiles) foreach (var p in g.Pages) p.Normalize();
+            if (ProfileGame == null) ProfileGame = "";
             if (ActivePage < 0 || ActivePage >= Pages.Count) ActivePage = 0;
             if (PageToastSeconds < 0) PageToastSeconds = 0;
 
@@ -173,6 +242,40 @@ namespace FedeDashboard
             var s = new FedeSettings();
             s.Normalize();
             return s;
+        }
+    }
+
+    /// <summary>Pagine salvate per un gioco.</summary>
+    public class GameProfile
+    {
+        public string Game { get; set; } = "";
+        public List<PageSettings> Pages { get; set; } = new List<PageSettings>();
+        public int ActivePage { get; set; }
+
+        public static readonly string[] Keys = { "", "LMU", "IRacing", "AC", "ACC", "ACE", "ACR", "RF2", "AMS2" };
+        public static readonly string[] Names = { "Tutti i giochi (predefinite)", "Le Mans Ultimate", "iRacing", "Assetto Corsa",
+                                                  "Assetto Corsa Competizione", "Assetto Corsa EVO", "Assetto Corsa Rally", "rFactor 2", "Automobilista 2" };
+
+        /// <summary>Gioco di SimHub (DataCorePlugin.CurrentGame) -> chiave delle pagine.</summary>
+        public static string KeyOf(string game)
+        {
+            string g = (game ?? "").ToLowerInvariant().Replace(" ", "");
+            if (g.Length == 0) return "";
+            if (g.Contains("lmu") || g.Contains("lemans")) return "LMU";
+            if (g.Contains("iracing")) return "IRacing";
+            if (g.Contains("competizione") || g == "acc") return "ACC";
+            if (g.Contains("assetto") && g.Contains("evo")) return "ACE";
+            if ((g.Contains("assetto") && g.Contains("rally")) || g == "acr" || g.Contains("acrally")) return "ACR";
+            if (g.Contains("assettocorsa") || g == "ac") return "AC";
+            if (g.Contains("rfactor2")) return "RF2";
+            if (g.Contains("automobilista2") || g.Contains("ams2")) return "AMS2";
+            return "";
+        }
+
+        public static string NameOf(string key)
+        {
+            int i = Array.IndexOf(Keys, key ?? "");
+            return i < 0 ? key : Names[i];
         }
     }
 

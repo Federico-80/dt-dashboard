@@ -255,7 +255,7 @@ FRAMES = [
 # barra doppia "intelligente": quando non serve rifornire la pagina usa la cornice con la sola riga di riquadri
 # stesse cornici con la fila di LED dei giri in alto (tutto il resto piu' in basso): indice + LED_OFFSET
 LED_OFFSET = len(FRAMES)
-LED_H = 16
+LED_H = 26
 FRAMES += [(f[0] + " + LED", f[1], f[2], True) for f in FRAMES]
 SINGLE_OF = {4: 6, 5: 7, 4 + LED_OFFSET: 6 + LED_OFFSET, 5 + LED_OFFSET: 7 + LED_OFFSET}
 
