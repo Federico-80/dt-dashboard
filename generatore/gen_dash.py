@@ -376,7 +376,7 @@ def session_items(w, h):
     ix, iw = 6, w - 12
     lh = clamp(round(h * 0.23), 10, 15)
     vh = min(h - lh - 8, 52)
-    vy = max(3, (h - vh - lh) / 2 - 1)        # numeri + etichette centrati in altezza
+    vy = max(2, (h - vh - lh) / 2 - 3)        # numeri + etichette centrati, un po' staccati dal bordo in basso
     ly = vy + vh
     wts = [1.05, 1.25, 1.05]
     ws = [iw * t / sum(wts) for t in wts]
@@ -416,7 +416,7 @@ def session_items(w, h):
     w2 = ws[2]; sp = x + w2 * 0.4
     it.append(text("Giro", x, vy, sp - x, vh, ch_val("Lap"), "4", vfs, WHITE, weight="Black", ha=2, va=2))
     tfs = max(8, int(vfs * 0.55))
-    it.append(text("Giri totali", sp + 1, vy, x + w2 - sp - 1, vh - vfs * 0.08, None, "/~27.1", tfs, SES_GREY, weight="Bold", ha=0, va=2,
+    it.append(text("Giri totali", sp + vfs * 0.12, vy, x + w2 - sp - 1, vh - vfs * 0.08, None, "/~27.1", tfs, SES_GREY, weight="Bold", ha=0, va=2,
                    bindings={"Text": js("var t = $prop('DTPlugin.GiriTotali');\r\nreturn (t == null || t === '') ? '' : '/' + t;")}))
     it.append(text("Giro etichetta", x, ly, w2, lh, None, "GIRO", lfs, GREY, weight="Medium"))
     return it
@@ -1019,12 +1019,13 @@ def tyres2_items(ix, iy, iw, ih):
                               bindings={"BackgroundColor": js("var c = $prop('DTPlugin.Strisce_%s_%d');\r\nreturn c ? c : '#FF3A3A3A';" % (k, j + 1))}))
             items[-1]["_pv"]["bg"] = TYRE_SAMPLE_COL[k]
         # percentuale di gomma rimasta, dentro la gomma (solo nel riquadro completo)
-        if not small and sw >= 26:
-            ph = clamp(sh * 0.22, 14, 26)
+        if not small and sw >= 22:
+            # percentuale di gomma rimasta: grande, su fondo nero pieno
+            ph = clamp(sh * 0.3, 16, 34)
             py = sy + (sh - ph) / 2
-            items.append(rect("Gomma %s usura fondo" % k, sx - 2, py, sw + 4, ph, bg="#C8000000", radius=4))
-            items.append(text("Gomma %s usura" % k, sx - 2, py, sw + 4, ph, ch_val("TyreW" + k), CH["TyreW" + k][7],
-                              fit(sw, ph, 4, 0.8), WHITE, weight="Black", pv_color=GREEN))
+            items.append(rect("Gomma %s usura fondo" % k, sx - 4, py, sw + 8, ph, bg="#F0000000", radius=4))
+            items.append(text("Gomma %s usura" % k, sx - 4, py, sw + 8, ph, ch_val("TyreW" + k), CH["TyreW" + k][7],
+                              fit(sw + 6, ph, 3.4, 0.92, 0.56), WHITE, weight="Black", pv_color=GREEN))
         tx = x + 4 if left_wheel else sx + sw + 4
         tw = w - sw - 14
         ah = h - lh - 6
@@ -1033,17 +1034,19 @@ def tyres2_items(ix, iy, iw, ih):
             items.append(text("Gomma %s temp" % k, tx, ay, tw, ah, ch_val("TyreT" + k), CH["TyreT" + k][7],
                               fit(tw, ah, 4, 0.8), WHITE, pv_color=TYRE_SAMPLE_COL[k]))
             continue
-        th = ah * 0.52
+        th = ah * 0.48
         items.append(text("Gomma %s temp" % k, tx, ay, tw, th, ch_val("TyreT" + k), CH["TyreT" + k][7],
-                          fit(tw - 4, th, 4, 0.85), WHITE, pv_color=TYRE_SAMPLE_COL[k]))
+                          fit(tw - 4, th, 4, 0.85), WHITE, ha=2 if left_wheel else 0, pv_color=TYRE_SAMPLE_COL[k]))
+        # pressione (P) e freno (F): piu' grandi, allineati verso la gomma
         rh2 = (ah - th) / 2.0
         for j, (cid, tag) in enumerate((("TyreP" + k, "P"), ("BrakeT" + k, "F"))):
             ly = ay + th + j * rh2
-            tagw = clamp(tw * 0.18, 9, 18)
+            tagw = clamp(tw * 0.16, 9, 16)
+            vfs2 = fit(tw - tagw - 2, rh2, 5, 0.88, 0.56)
             items.append(text("Gomma %s %s etichetta" % (k, tag), tx, ly, tagw, rh2, None, tag,
-                              clamp(int(rh2 * 0.5), 7, 14), GREY, weight="Medium", ha=0))
+                              clamp(int(vfs2 * 0.6), 7, 14), GREY, weight="Medium", ha=0))
             items.append(text("Gomma %s %s" % (k, tag), tx + tagw, ly, tw - tagw, rh2, ch_val(cid), CH[cid][7],
-                              fit(tw - tagw - 2, rh2, 5, 0.75), WHITE, ha=0, pv_color=GREEN if tag == "P" else YELLOW))
+                              vfs2, WHITE, ha=2, pv_color=GREEN if tag == "P" else YELLOW))
     for i, (k, prop, it) in enumerate(WHEELS):
         r, c = divmod(i, cols)
         items.append(tyre_state_overlay(k, ix + c * gw + 2, iy + r * gh + 2, gw - 4, gh - 4))

@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.88";
+        public const string VersionText = "1.89";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -1902,7 +1902,13 @@ namespace FedeDashboard
 
         object Special(string src, DateTime now)
         {
-            if (src.StartsWith("@gomma_", StringComparison.OrdinalIgnoreCase)) return TyreTemp(src.Substring(7).ToUpperInvariant());
+            if (src.StartsWith("@gomma_", StringComparison.OrdinalIgnoreCase))
+            {
+                // fuori dalla macchina LMU passa 0 kelvin (-273 gradi): niente valore
+                object tt = TyreTemp(src.Substring(7).ToUpperInvariant());
+                double tv = Num(tt);
+                return !double.IsNaN(tv) && tv < -100 ? null : tt;
+            }
             if (src.StartsWith("@press_", StringComparison.OrdinalIgnoreCase)) return TyrePressure(src.Substring(7).ToUpperInvariant());
             if (src.StartsWith("@raw:", StringComparison.OrdinalIgnoreCase)) return Raw(src.Substring(5).Trim());
             switch (src.ToLowerInvariant())
