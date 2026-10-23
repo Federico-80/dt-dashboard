@@ -58,6 +58,10 @@ def text(name, x, y, w, h, expr=None, sample="", size=14, color=WHITE, weight="B
         m = _re.fullmatch(r"\[DTPlugin\.(\w+?)(_Nome)?\]", expr)
         if m and m.group(1) in CH:
             b["Text"] = js("return %s('%s');" % ("fdn" if m.group(2) else "fd", m.group(1)))
+            if m.group(1) == "Pos" and not m.group(2):
+                # posizione con il totale delle auto: 11/25
+                b["Text"] = js("var p = fd('Pos'); var n = fd('Cars');\r\n"
+                               "return (p && p !== '-' && n && n !== '-' && n != '0') ? p + '/' + n : p;")
             if not m.group(2) and m.group(1) in COLOR_CHANNELS and "TextColor" not in b:
                 # colore blu/verde/rosso calcolato dal plugin in base alle soglie
                 b["TextColor"] = js("var c = $prop('DTPlugin.%s_Colore');\r\nreturn c ? c : '%s';" % (m.group(1), color))
@@ -315,19 +319,24 @@ def gap_side_items(side, x, y, w, h):
         lay["Bindings"] = vis
         return [lay]
 
-    # tutto centrato: distacco grande in alto, nome del pilota sotto, categoria piccola in fondo
+    # distacco grande in alto; sotto nome + categoria affiancati; in fondo il suo ultimo giro
     lh = clamp(round(h * 0.13), 9, 15) if h >= 90 else 0
     if lh:
         it.append(text("%s etichetta" % side, x, y, w, lh, None, label, int(lh * 0.8), GREY, weight="Medium"))
     ah = h - lh
-    vh, nh = ah * 0.50, ah * 0.27
-    bh = ah - vh - nh - 2
+    vh, nh = ah * 0.48, ah * 0.28
+    th_ = ah - vh - nh
     it.append(text("%s distacco" % side, x, y + lh, w, vh, None, CH[ch][7], fit(w - 6, vh, 5, 0.9), col, bindings=gap_b))
-    it.append(text("%s nome" % side, x + 2, y + lh + vh, w - 4, nh, None, nm, fit(w - 8, nh, 12, 0.8), WHITE, weight="Medium",
-                   bindings=name_b))
-    bhh = max(9, min(bh, 20))
-    bw_ = clamp(int(bhh * 0.7), 7, 14) * 4.2
-    it += badges(x + (w - bw_) / 2, y + lh + vh + nh + 1 + (bh - bhh) / 2, bhh, bw_)
+    ny = y + lh + vh
+    nfs = fit(w * 0.62, nh, 11, 0.8)
+    bhh = max(9, min(nh * 0.78, 18))
+    bw_ = clamp(int(bhh * 0.7), 7, 13) * 4.0
+    split = x + w * 0.66                     # nome a destra fino qui, categoria subito dopo
+    it.append(text("%s nome" % side, x + 2, ny, split - x - 4, nh, None, nm, nfs, WHITE, weight="Medium", ha=2,
+                   bindings={"Text": js("var n = $prop('%sNomeScheda');\r\nif (!n) { n = $prop('%sNome'); }\r\nreturn n ? n : '';" % (P_, P_))}))
+    it += badges(split + 2, ny + (nh - bhh) / 2, bhh, min(bw_, x + w - split - 4))
+    it.append(text("%s ultimo giro" % side, x, ny + nh, w, th_, None, "1:44.812", fit(w - 10, th_, 8, 0.8), GREY, weight="Medium",
+                   bindings={"Text": js("var t = $prop('%sUltimoGiro');\r\nreturn (t == null || t === '') ? '-' : t;" % P_)}))
     return it
 
 
@@ -1069,7 +1078,8 @@ def pit_box_items():
                    bindings={"TextColor": bgcol}))
     it.append(text("Box giri", W / 2 - 120, 368, 240, 46, "[DTPlugin.Rpm]", "1991", 32, WHITE, bindings=dict(tb)))
     # posizione a destra
-    it.append(text("Box posizione", W - 230, 228, 165, 64, "[DTPlugin.Pos]", "8", 50, WHITE, ha=2, va=2, bindings=dict(tb)))
+    it.append(text("Box posizione", W - 230, 228, 165, 64, None, "8", 50, WHITE, ha=2, va=2,
+                   bindings={"Text": js("return fd('Pos');"), "TextColor": tcol}))
     it.append(text("Box totale", W - 64, 246, 60, 40, None, "/25", 22, WHITE, ha=0, va=2,
                    bindings={"Text": js("return '/' + fd('Cars');"), "TextColor": tcol}))
     return it

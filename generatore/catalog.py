@@ -25,7 +25,7 @@ CHANNELS = [
     ("FuelPct",   "CARB. %",    GD + "FuelPercent",               "num",      0, "%", 4, "38%"),
     ("FuelPerLap","MEDIA",      "DataCorePlugin.Computed.Fuel_LitersPerLap",  "num", 2, "", 4, "2.69"),
     ("FuelLaps",  "GIRI CARB.", "@giri_carb",                 "num", 1, "", 4, "5.4"),
-    ("Pos",       "POS",        "@pos",                           "num",      0, "",  3, "11"),
+    ("Pos",       "POS",        "@pos",                           "num",      0, "",  5, "11/25"),
     ("Cars",      "AUTO",       "@auto",                          "num",      0, "",  3, "25"),
     ("Lap",       "GIRO",       GD + "CurrentLap",                "num",      0, "",  3, "7"),
     ("TotalLaps", "GIRI TOT.",  GD + "TotalLaps",                 "num",      0, "",  3, "24"),

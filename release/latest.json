@@ -1,5 +1,5 @@
 {
-  "version": "1.63",
-  "notes": "Nuove schede: Classifica generale e Classifica di classe.",
+  "version": "1.64",
+  "notes": "Distacchi: categoria accanto al nome e sotto l'ultimo giro del pilota. Posizione con il totale delle auto (es. 11/25).",
   "date": "2026-10-23"
 }

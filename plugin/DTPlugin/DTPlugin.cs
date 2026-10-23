@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.63";
+        public const string VersionText = "1.64";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -43,7 +43,7 @@ namespace FedeDashboard
         DateTime nextGapUpdate = DateTime.MinValue;
         double gapAhead = double.NaN, gapBehind = double.NaN;
         // schermata box: auto davanti [0] e dietro [1]
-        readonly string[] boxGapCard = { "-", "-" };
+        readonly string[] boxGapCard = { "-", "-" }, boxLast = { "-", "-" }, boxNameCard = { "", "" };
         readonly string[] boxName = { "", "" }, boxNum = { "", "" }, boxClass = { "", "" }, boxClassColor = { "#FFC62828", "#FFC62828" }, boxGap = { "", "" };
         volatile bool alertBox;
         DateTime pitLaneSince = DateTime.MaxValue;
@@ -262,6 +262,8 @@ namespace FedeDashboard
                 bridge.Attach("Box_" + sides[k] + "_ClasseColore", () => boxClassColor[k]);
                 bridge.Attach("Box_" + sides[k] + "_Distacco", () => boxGap[k]);
                 bridge.Attach("Box_" + sides[k] + "_DistaccoScheda", () => boxGapCard[k]);
+                bridge.Attach("Box_" + sides[k] + "_UltimoGiro", () => boxLast[k]);
+                bridge.Attach("Box_" + sides[k] + "_NomeScheda", () => boxNameCard[k]);
             }
             for (int z = 1; z <= 8; z++)
             {
@@ -1632,6 +1634,7 @@ namespace FedeDashboard
                 case "@pos": return TimingPosition();
                 case "@auto":
                     if (Settings.Timing.PositionMode != 0 && classCount > 0) return classCount;
+                    if (lmuCars > 0 && Raw("Scoring.mVehicles") != null) return lmuCars;   // LMU: auto in sessione
                     return bridge.GetPropertyValue("DataCorePlugin.GameData.OpponentsCount");
             }
             switch (src.ToLowerInvariant())
@@ -1982,8 +1985,10 @@ namespace FedeDashboard
 
         void SetBoxLmu(int k, LmuCar c, double gap, Dictionary<string, object> extra)
         {
-            if (c == null) { boxName[k] = ""; boxNum[k] = ""; boxClass[k] = ""; boxGap[k] = ""; boxGapCard[k] = "-"; return; }
+            if (c == null) { boxName[k] = ""; boxNum[k] = ""; boxClass[k] = ""; boxGap[k] = ""; boxGapCard[k] = "-"; boxLast[k] = "-"; boxNameCard[k] = ""; return; }
             boxName[k] = ShortName(c.Name);
+            boxNameCard[k] = Trunc(boxName[k], 12);
+            boxLast[k] = c.Last > 0 ? ValueFormatter.LapTime(c.Last) : "-";
             boxClass[k] = c.Cls;
             object o;
             if (extra.TryGetValue(c.Name, out o))
@@ -2030,10 +2035,12 @@ namespace FedeDashboard
 
         void SetBoxCar(int k, object o, double gap, int laps = 0)
         {
-            if (o == null) { boxName[k] = ""; boxNum[k] = ""; boxClass[k] = ""; boxGap[k] = ""; boxGapCard[k] = "-"; return; }
+            if (o == null) { boxName[k] = ""; boxNum[k] = ""; boxClass[k] = ""; boxGap[k] = ""; boxGapCard[k] = "-"; boxLast[k] = "-"; boxNameCard[k] = ""; return; }
             boxLaps[k] = laps;
             boxGapCard[k] = laps >= 1 ? "+" + laps + "L" : (double.IsNaN(gap) ? "-" : (k == 0 ? "-" : "+") + Math.Abs(gap).ToString("0.0", CultureInfo.InvariantCulture));
             boxName[k] = ShortName(Convert.ToString(GetMember(o, "Name") ?? ""));
+            boxNameCard[k] = Trunc(boxName[k], 12);
+            { double ll = Seconds(GetMember(o, "LastLapTime")); boxLast[k] = ll > 0 ? ValueFormatter.LapTime(ll) : "-"; }
             boxNum[k] = Convert.ToString(GetMember(o, "CarNumber") ?? "");
             boxClass[k] = Convert.ToString(GetMember(o, "CarClass") ?? "");
             string cc = Convert.ToString(GetMember(o, "CarClassColor") ?? "");
@@ -2045,6 +2052,13 @@ namespace FedeDashboard
         }
 
         /// <summary>"Sebastiano Gattuso" -> "S. Gattuso"</summary>
+        /// <summary>Accorcia un testo troppo lungo per il riquadro (con il punto finale).</summary>
+        static string Trunc(string s, int max)
+        {
+            if (string.IsNullOrEmpty(s) || s.Length <= max) return s ?? "";
+            return s.Substring(0, max - 1).TrimEnd() + ".";
+        }
+
         static string ShortName(string n)
         {
             n = (n ?? "").Trim();
