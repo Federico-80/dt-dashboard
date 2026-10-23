@@ -90,6 +90,15 @@ namespace FedeDashboard
         }
 
         /// <summary>Controlla l'ultima release su GitHub (in background).</summary>
+        /// <summary>Controllo chiesto con il pulsante: legge anche le API di GitHub (sempre aggiornate).</summary>
+        public void CheckAsync(string currentVersion, bool manual)
+        {
+            manualCheck = manual;
+            CheckAsync(currentVersion);
+        }
+
+        volatile bool manualCheck;
+
         public void CheckAsync(string currentVersion)
         {
             if (Busy) { Notify(); return; }
@@ -117,6 +126,24 @@ namespace FedeDashboard
                     dashAlt.Add(Api + DashAsset); dashAlt.Add(Raw + "main/release/" + DashAsset);
                 }
                 catch (WebException wex) { json = null; rawError = wex.Message; FedeLog.Write("Aggiornamenti (raw latest.json): " + wex.Message); }
+                // controllo a mano: il file normale puo' essere una copia vecchia di qualche minuto, guardo anche le API
+                if (json != null && manualCheck)
+                {
+                    manualCheck = false;
+                    try
+                    {
+                        string aj;
+                        using (var wc = Client()) { wc.Headers[HttpRequestHeader.Accept] = "application/vnd.github.raw"; aj = wc.DownloadString(Api + "latest.json"); }
+                        string av = Field(aj, "version").TrimStart('v', 'V');
+                        if (IsNewer(av, LatestVersion))
+                        {
+                            LatestVersion = av; Notes = Field(aj, "notes");
+                            dllUrl = Raw + "main/release/" + av + "/" + DllAsset;
+                            dashUrl = Raw + "main/release/" + av + "/" + DashAsset;
+                        }
+                    }
+                    catch (WebException wex) { FedeLog.Write("Aggiornamenti (API, controllo a mano): " + wex.Message); }
+                }
                 // 2) API di GitHub (limite di 60 richieste all'ora)
                 if (json == null)
                 {

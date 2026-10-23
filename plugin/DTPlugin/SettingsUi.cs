@@ -304,7 +304,7 @@ namespace FedeDashboard
             root = Root;
             F("VersionText").Text = "DT Plugin  v" + DTPlugin.VersionText;
             Click("BtnExport", ExportSettings);
-            Click("BtnCheckUpdate", () => { plugin.Updater.CheckAsync(DTPlugin.VersionText); ShowUpdate(true); });
+            Click("BtnCheckUpdate", () => { plugin.Updater.CheckAsync(DTPlugin.VersionText, true); ShowUpdate(true); });
             Click("BtnUpdate", () => plugin.Updater.InstallAsync());
             Click("BtnUnlock", TryUnlock);
             Wpf.On((object)F("LockCode"), "KeyDown", (s2, e2) => { try { if (((dynamic)e2).Key.ToString() == "Return") TryUnlock(); } catch { } });
