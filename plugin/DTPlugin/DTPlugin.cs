@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.77";
+        public const string VersionText = "1.78";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -47,6 +47,22 @@ namespace FedeDashboard
             if (id <= 4) return 2;
             if (id >= 10) return 4;
             return 3;
+        }
+
+        /// <summary>Stato della pista: 0 = testo, 1 = colore di fondo, 2 = colore del testo.</summary>
+        string TrackState(int what)
+        {
+            var tw = Find("TrackWet"); var rn = Find("Rain");
+            double wet = tw != null && tw.Text != ValueFormatter.Empty ? tw.Value : double.NaN;
+            double rain = rn != null && rn.Text != ValueFormatter.Empty ? rn.Value : double.NaN;
+            if (lmuRest != null && lmuRest.FreshInfo && !double.IsNaN(lmuRest.Wetness) && double.IsNaN(wet)) wet = lmuRest.Wetness * 100;
+            string t, bg, fg;
+            if (double.IsNaN(wet) && double.IsNaN(rain)) { t = ""; bg = "#FF2A2A2A"; fg = "#FF9E9E9E"; }
+            else if (rain > 1) { t = "PIOGGIA"; bg = "#FF0D47A1"; fg = "#FFFFFFFF"; }
+            else if (wet >= 30) { t = "BAGNATO"; bg = "#FF1E88E5"; fg = "#FFFFFFFF"; }
+            else if (wet >= 5) { t = "UMIDO"; bg = "#FF26C6DA"; fg = "#FF111111"; }
+            else { t = "ASCIUTTO"; bg = "#FFE0E0E0"; fg = "#FF111111"; }
+            return what == 0 ? t : (what == 1 ? bg : fg);
         }
 
         /// <summary>Danno sospensione (0-100%): dati condivisi di LMU, altrimenti server LMU.</summary>
@@ -366,6 +382,9 @@ namespace FedeDashboard
                 }
             }
             bridge.Attach("PosGain_Colore", () => posGainColor);
+            bridge.Attach("Pista_Stato", () => TrackState(0));
+            bridge.Attach("Pista_StatoColore", () => TrackState(1));
+            bridge.Attach("Pista_StatoTesto", () => TrackState(2));
             bridge.Attach("PosGain_Dir", () => posGainDir);
             bridge.Attach("Box_TempoCorsia", () => pitLaneSince == DateTime.MaxValue ? "" : ValueFormatter.LapTime(Math.Max(0, (DateTime.Now - pitLaneSince).TotalSeconds)));
             string[] sides = { "Avanti", "Dietro" };

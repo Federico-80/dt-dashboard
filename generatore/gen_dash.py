@@ -275,12 +275,29 @@ def iconrow_items(card, w, h):
         ents = ents[:2]          # riquadro troppo basso e stretto: solo temperature pista e aria
     n = len(ents)
     iw, ih = w - 8, h - 6
-    if ih < 50 or iw / max(ih, 1) > 6:
+    it = []
+    meteo = card.get("name") == "Meteo"
+    row = ih < 50 or iw / max(ih, 1) > 3.5
+    if meteo:
+        # stato della pista (ASCIUTTO / UMIDO / BAGNATO / PIOGGIA): a destra se in riga, sotto se a griglia
+        if row:
+            bw = clamp(w * 0.24, 52, 96); bh = min(ih - 6, 26)
+            bx, by = w - 4 - bw, 3 + (ih - bh) / 2
+            iw -= bw + 4
+        else:
+            bh = clamp(ih * 0.2, 16, 26); bw = clamp(w * 0.45, 70, 140)
+            bx, by = (w - bw) / 2, h - 4 - bh
+            ih -= bh + 4
+        it.append(rect("Pista stato fondo", bx, by, bw, bh, bg="#FFE0E0E0", radius=int(min(6, bh / 3)),
+                       bindings={"BackgroundColor": js("var c = $prop('DTPlugin.Pista_StatoColore');\r\nreturn c ? c : '#FFE0E0E0';")}))
+        it.append(text("Pista stato", bx, by, bw, bh, None, "ASCIUTTO", min(15, fit(bw - 8, bh, 8, 0.7)), "#FF111111", weight="Black",
+                       bindings={"Text": js("var t = $prop('DTPlugin.Pista_Stato');\r\nreturn t ? t : '-';"),
+                                 "TextColor": js("var c = $prop('DTPlugin.Pista_StatoTesto');\r\nreturn c ? c : '#FF111111';")}))
+    if row:
         cols, rows = n, 1
     else:
         cols, rows = best_grid(n, iw, ih, 6)
     cw, rh = iw / cols, ih / rows
-    it = []
     for i, (ico, c) in enumerate(ents):
         r, k = divmod(i, cols)
         x, y = 4 + k * cw, 3 + r * rh

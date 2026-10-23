@@ -1,5 +1,5 @@
 {
-  "version": "1.77",
-  "notes": "Sessione in stile dash da gara: 18:39 e 25/25 bianco/grigio, posizioni guadagnate accanto a POS.",
+  "version": "1.78",
+  "notes": "Meteo: stato della pista (asciutto, umido, bagnato, pioggia) accanto alle temperature.",
   "date": "2026-10-23"
 }
