@@ -1,5 +1,5 @@
 {
-  "version": "1.82",
-  "notes": "Strategia: trattini invece di ATTESA quando i dati non ci sono ancora.",
+  "version": "1.83",
+  "notes": "Barra doppia: riga di riquadri sopra più bassa, più spazio alle schede in alto.",
   "date": "2026-10-23"
 }

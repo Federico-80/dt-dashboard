@@ -232,7 +232,8 @@ M = 5        # margine
 G = 6        # spazio fra riquadri
 SB = 20      # larghezza barra laterale
 TB = 78      # altezza barra inferiore
-WB = 78      # altezza della riga larga sotto (barra doppia): come la riga di riquadri sopra
+WB = 78      # altezza della riga larga sotto (barra doppia)
+TB2 = 62     # altezza della riga di riquadri sopra, quando la barra e' doppia (piu' spazio alle schede in alto)
 CW = 172     # larghezza colonna centrale
 CX = (DASH_W - CW) // 2  # 339
 
@@ -269,7 +270,7 @@ CENTER_ROWS = 3
 
 def frame_geom(fi):
     _, sidebars, toolbar = FRAMES[fi]
-    bottom = DASH_H - M - ((TB + G + (WB + G if toolbar == 2 else 0)) if toolbar else 0)
+    bottom = DASH_H - M - (((TB2 + G + WB + G) if toolbar == 2 else (TB + G)) if toolbar else 0)
     xl0 = M + (SB + G if sidebars else 0)
     xl1 = CX - G
     xr0 = CX + CW + G
@@ -301,8 +302,9 @@ def toolbar_cells(fi, ti):
     w = (W - (n - 1) * G) // n
     lead = (W - (n * w + (n - 1) * G)) // 2
     double = FRAMES[fi][2] == 2
-    y = DASH_H - M - TB - ((WB + G) if double else 0)
-    cells = [(x0 + lead + i * (w + G), y, w, TB) for i in range(n)]
+    th = TB2 if double else TB
+    y = DASH_H - M - th - ((WB + G) if double else 0)
+    cells = [(x0 + lead + i * (w + G), y, w, th) for i in range(n)]
     if double:
         cells.append((x0, DASH_H - M - WB, W, WB))   # riquadro largo sotto (ultimo riquadro della barra)
     return cells
