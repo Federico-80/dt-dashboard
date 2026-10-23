@@ -177,6 +177,9 @@ namespace FedeDashboard
         public DateTime ForecastTime = DateTime.MinValue;
         public Func<string> SessionType;   // dal plugin: "PRACTICE" / "QUALIFY" / "RACE"
         bool cutsRead, probed;
+        int strategyLogs;
+        volatile string lastText;
+        public Func<string> PlayerName;
 
         public bool FreshRep { get { return Fresh(RepTime, 20); } }
         public bool FreshWear { get { return Fresh(WearTime, 30); } }
@@ -261,6 +264,7 @@ namespace FedeDashboard
                     using (var sr = new StreamReader(resp.GetResponseStream(), Encoding.UTF8))
                     {
                         string txt = sr.ReadToEnd();
+                        lastText = txt;
                         if (string.IsNullOrEmpty(txt)) return null;
                         return MiniJson.Parse(txt);
                     }
@@ -425,11 +429,19 @@ namespace FedeDashboard
                     FedeLog.Write("LMU servizi (" + paths.Count + "): " + string.Join(" ", keep));
                     break;
                 }
-                foreach (var ep in new[] { "/rest/strategy/overall", "/rest/strategy/usage", "/rest/strategy/fuel", "/rest/garage/UIScreen/Strategy" })
-                {
-                    var o = GetJson(ep);
-                    if (o != null) { var d = o as Dictionary<string, object>; FedeLog.Write("LMU " + ep + ": " + (d != null ? string.Join(",", d.Keys) : o.GetType().Name)); }
-                }
+            }
+            // strategia del menu di LMU: scrivo nel log com'e' fatta (alcune volte, per capirne i campi)
+            if (strategyLogs < 4 && (tick / 6) % 20 == 3)
+            {
+                strategyLogs++;
+                GetJson("/rest/strategy/overall");
+                string ov = lastText ?? "";
+                FedeLog.Write("LMU strategia overall: " + (ov.Length > 1500 ? ov.Substring(0, 1500) + "…" : ov));
+                GetJson("/rest/strategy/usage");
+                string us = lastText ?? "";
+                string me = PlayerName != null ? (PlayerName() ?? "") : "";
+                int at = me.Length > 0 ? us.IndexOf("\"" + me + "\"", StringComparison.Ordinal) : -1;
+                FedeLog.Write("LMU strategia usage (" + me + "): " + (at >= 0 ? us.Substring(at, Math.Min(900, us.Length - at)) : (us.Length > 600 ? us.Substring(0, 600) : us)));
             }
             if (!cutsRead)
             {

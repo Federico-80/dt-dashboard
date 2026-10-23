@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.71";
+        public const string VersionText = "1.72";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -32,7 +32,7 @@ namespace FedeDashboard
         public Access Access;
         LmuRest lmuRest;
         volatile bool lmuActive;
-        volatile string sessionTypeCache = "";
+        volatile string sessionTypeCache = "", playerNameCache = "";
 
         static readonly string[] SkyNames = { "Sereno", "Poco nuvoloso", "Nuvoloso", "Coperto", "Molto nuvoloso", "Pioviggine",
                                               "Pioggia leggera", "Coperto, pioggia", "Pioggia", "Pioggia forte", "Temporale" };
@@ -199,6 +199,7 @@ namespace FedeDashboard
                 Access = new Access(Settings.Access, SaveSettings);
                 lmuRest = new LmuRest(() => lmuActive);
                 lmuRest.SessionType = () => sessionTypeCache;
+                lmuRest.PlayerName = () => playerNameCache;
                 lmuRest.Start();
                 Access.Start();
                 Updater.Changed += OnUpdaterChanged;
@@ -674,6 +675,7 @@ namespace FedeDashboard
                 currentGame = Convert.ToString(bridge.GetPropertyValue("DataCorePlugin.CurrentGame") ?? "");
                 isIRacing = currentGame.Equals("IRacing", StringComparison.OrdinalIgnoreCase);
                 sessionTypeCache = Convert.ToString(bridge.GetPropertyValue("DataCorePlugin.GameData.SessionTypeName") ?? "");
+                if (playerNameCache.Length == 0 || now.Second == 0) playerNameCache = SectorTracker.Str(Raw("CurrentPlayer.mDriverName"));
                 lmuActive = AsBool(GetMember(data, "GameRunning")) && (currentGame.IndexOf("LMU", StringComparison.OrdinalIgnoreCase) >= 0 || Raw("Scoring.mVehicles") != null);
                 if (now >= nextGapUpdate)
                 {
@@ -1315,14 +1317,15 @@ namespace FedeDashboard
             // litri ed energia che servono ancora per arrivare alla fine (0 = bastano quelli a bordo)
             if (!double.IsNaN(fuel) && fuelPer > 0)
             {
-                double nl = fuelPer * lapsDrive - fuel;
-                d["Litri"] = nl > 0 ? Math.Ceiling(nl).ToString("0", CultureInfo.InvariantCulture) + " l" : "0 l";
+                // come LMU ("VE necessaria"): quanto serve per i giri alla fine, senza togliere quello a bordo
+                double nl = fuelPer * lapsFrac;
+                d["Litri"] = Math.Ceiling(nl).ToString("0", CultureInfo.InvariantCulture) + " l";
             }
             else d["Litri"] = "-";
             if (nrg)
             {
-                double ne = vePer * lapsDrive - ve;
-                d["EnergiaNec"] = ne > 0 ? Math.Ceiling(ne).ToString("0", CultureInfo.InvariantCulture) + " %" : "0 %";
+                double ne = vePer * lapsFrac;
+                d["EnergiaNec"] = Math.Ceiling(ne).ToString("0", CultureInfo.InvariantCulture) + " %";
             }
             else d["EnergiaNec"] = "-";
 

@@ -489,7 +489,7 @@ def strategy_items(w, h):
         if key == "Finestra":
             it.append(rect("Finestra fondo", x + 1, vy, cw - 2, vh, bg="#FFD50000", radius=3, bindings={
                 "BackgroundColor": js("var c = $prop('DTPlugin.Strat_FinestraColore');\r\nreturn c ? c : '#FF404040';")}))
-            vfs = fit(cw - 8, vh, 15, 0.62)
+            vfs = fit(cw - 12, vh, 18, 0.62)   # "BOX PROSSIMO GIRO" deve stare dentro
         else:
             vfs = fit(cw - 6, vh, max(4, len(sample)), 0.72)
         it.append(text("%s valore" % lab, x + 1, vy, cw - 2, vh, None, sample, vfs, WHITE, weight="Bold",

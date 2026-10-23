@@ -1,5 +1,5 @@
 {
-  "version": "1.71",
-  "notes": "Strategia come il menu di LMU: giri alla fine senza il giro in corso, consumi previsti dal gioco per litri ed energia necessari.",
+  "version": "1.72",
+  "notes": "Strategia: energia e litri necessari calcolati come LMU, testo della finestra che sta nel riquadro. Il log registra la strategia del menu di LMU.",
   "date": "2026-10-23"
 }
