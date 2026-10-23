@@ -807,7 +807,7 @@ def card_items(card, w, h):
         vb = {"TextColor": js(DELTA_COLOR_JS % c)} if kind == "delta" else None
         vcol = WHITE if kind != "delta" else GREEN
         if h >= 52:
-            lfs = clamp(int(min(h * 0.16, (w - 24) / (len(CH[c][1]) * 0.62))), 8, 15)
+            lfs = clamp(int(min(h * 0.22, (w - 24) / (len(CH[c][1]) * 0.62))), 9, 19)   # titolo sul bordo piu' grande
             lg = legend(items, w, h, CH[c][1], lfs, label_color(color), bind_text=js("return fdn('%s');" % c))
             lh = int(lg * 0.6)                    # il nome sta sul bordo: il valore usa quasi tutta l'altezza
             vfs = fit(w - 11, h - lh - 6, chars, 0.86)
@@ -840,7 +840,7 @@ def card_items(card, w, h):
     show_title = h >= 70 and w >= 90 and bool(card.get("title"))
     th = 0
     if show_title:
-        tfs = clamp(int(min(h * 0.07, (w - 24) / (len(title) * 0.62))), 8, 13)
+        tfs = clamp(int(min(h * 0.08, (w - 24) / (len(title) * 0.62))), 9, 15)
         th = int(legend(items, w, h, title, tfs, label_color(color)) * 0.75)
     ix, iy = 4, (th + 2 if show_title else 2)
     iw, ih = w - 8, h - iy - 3
@@ -1239,8 +1239,8 @@ def center_items(fi):
         "BackgroundColor": js("if ($prop('DTPlugin.PitLimiter_Valore') > 0) { return '#FF0D47A1'; }\r\n"
                               "if ($prop('DTPlugin.FuoriGiri') === true && %s) { return '#FFFF1744'; }\r\nreturn '#FF0B0B0B';" % BLINK)}))
     sx, sy, sw, sh = cg["speed"]
-    gfs = int(min((sy - y) * 0.9, 170))
-    it.append(text("Marcia", x, y + 2, w, sy - y, ch_val("Gear"), CH["Gear"][7], gfs, WHITE, weight="Black"))
+    gfs = int(min((sy - y) * 1.12, 200))       # marcia grande: usa quasi tutta l'altezza sopra la velocita'
+    it.append(text("Marcia", x, y - 16, w, sy - y + 30, ch_val("Gear"), CH["Gear"][7], gfs, WHITE, weight="Black"))
     it.append(hdiv("Divisore marcia velocità", x + w * 0.12, sy - 1, w * 0.76))
     it.append(text("Velocità", sx, sy, sw, sh, ch_val("Speed"), CH["Speed"][7], 32, WHITE, weight="Bold"))
     rty = sy + sh
