@@ -1103,10 +1103,13 @@ def center_items(fi):
     it.append(rect("Marcia fondo", x, y, w, h, bg=CARD_BG, border=FRAME, bw=CENTER_BW, radius=12, bindings={
         "BackgroundColor": js("if ($prop('DTPlugin.PitLimiter_Valore') > 0) { return '#FF0D47A1'; }\r\n"
                               "if ($prop('DTPlugin.FuoriGiri') === true && %s) { return '#FFFF1744'; }\r\nreturn '#FF0B0B0B';" % BLINK)}))
-    gfs = int(min(h * 0.62, 170))
-    it.append(text("Marcia", x, y + 2, w, h * 0.7, ch_val("Gear"), CH["Gear"][7], gfs, WHITE, weight="Black"))
-    rth = h * 0.14
-    it.append(text("Giri", x, min(y + h * 0.7, y + h - 22 - rth), w, rth, ch_val("Rpm"), CH["Rpm"][7], clamp(int(h * 0.09), 12, 20), GREY, weight="Medium"))
+    sx, sy, sw, sh = cg["speed"]
+    gfs = int(min((sy - y) * 0.9, 170))
+    it.append(text("Marcia", x, y + 2, w, sy - y, ch_val("Gear"), CH["Gear"][7], gfs, WHITE, weight="Black"))
+    it.append(text("Velocità", sx, sy, sw, sh, ch_val("Speed"), CH["Speed"][7], 32, WHITE, weight="Bold"))
+    rty = sy + sh
+    rth = max(14, (y + h - 16) - rty - 2)
+    it.append(text("Giri", x, rty, w, rth, ch_val("Rpm"), CH["Rpm"][7], clamp(int(rth * 0.75), 12, 18), GREY, weight="Medium"))
     bx, by, bw, bh = x + 12, y + h - 16, w - 24, 7
     v = "Math.max(0, Math.min(100, $prop('DTPlugin.RpmPct_Valore')))"
     rpm_bar = [rect("Giri barra fondo", bx, by, bw, bh, bg=TRACK, radius=3),
@@ -1146,8 +1149,6 @@ def center_items(fi):
             "Top": js("return %d - %s * %d / 100;" % (bb, v, BH))}, pv=dict(vfrac=0.86 if c == "Throttle" else 0.12)))
     pk = None  # barre gas/freno accanto alla marcia rimosse su richiesta
     x, y, w, h = cg["speed"]
-    it.append(rect("Velocità fondo", x, y, w, h, bg=CARD_BG, border=FRAME, bw=CENTER_BW, radius=10))
-    it.append(text("Velocità", x, y, w, h, ch_val("Speed"), CH["Speed"][7], 28, WHITE))
     it.append(flag_box(x, y, w, h))   # bandiere: sopra la velocita', sempre nello stesso posto
     for i, (x, y, w, h) in enumerate(cg["rows"]):
         it.append(widget("Riga centrale %d" % (i + 1), x, y, w, h, card_file(w, h), "Slot_C%d" % (i + 1)))

@@ -331,8 +331,11 @@ def center_geom(fi):
     speed_top = gear_top + gear_h + G
     rows_top = speed_top + speed_h + G
     rows = [(CX, rows_top + i * (row_h + G), CW, row_h) for i in range(CENTER_ROWS)]
-    return dict(delta=(CX, top, CW, delta_h), gear=(CX, gear_top, CW, gear_h),
-                speed=(CX, speed_top, CW, speed_h), rows=rows)
+    # la velocita' sta dentro il riquadro della marcia (un solo riquadro); "speed" e' la sua zona interna
+    box_h = gear_h + G + speed_h
+    sp_y = gear_top + int(box_h * 0.56)
+    return dict(delta=(CX, top, CW, delta_h), gear=(CX, gear_top, CW, box_h),
+                speed=(CX + 8, sp_y, CW - 16, speed_h), rows=rows)
 
 
 # ---------------------------------------------------------------- pagine predefinite
