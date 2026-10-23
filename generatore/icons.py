@@ -185,6 +185,16 @@ def sky(kind):
     return _done(im)
 
 
+def arrow(up):
+    im, d = _canvas(); u = S * K / 96.0
+    c = _rgba("#FF00E676" if up else "#FFFF1744")
+    if up:
+        d.polygon([(48 * u, 10 * u), (88 * u, 56 * u), (64 * u, 56 * u), (64 * u, 88 * u), (32 * u, 88 * u), (32 * u, 56 * u), (8 * u, 56 * u)], fill=c)
+    else:
+        d.polygon([(48 * u, 86 * u), (88 * u, 40 * u), (64 * u, 40 * u), (64 * u, 8 * u), (32 * u, 8 * u), (32 * u, 40 * u), (8 * u, 40 * u)], fill=c)
+    return _done(im)
+
+
 def all_icons():
     """nome -> PNG"""
     if not _CACHE:
@@ -201,6 +211,7 @@ def _build():
         "dt-ico-pista": _ico(ico_track), "dt-ico-aria": _ico(ico_air), "dt-ico-bagnato": _ico(ico_wet),
         "dt-ico-pioggia": _ico(ico_rain), "dt-ico-acqua": _ico(ico_water), "dt-ico-olio": _ico(ico_oil),
         "dt-bandiera-off": flag(GREY), "dt-bandiera-nera": flag("#FF000000"), "dt-bandiera-bianca": flag("#FFFFFFFF"),
+        "dt-freccia-su": arrow(True), "dt-freccia-giu": arrow(False),
         "dt-cielo-0": sky(0), "dt-cielo-1": sky(1), "dt-cielo-2": sky(2), "dt-cielo-3": sky(3), "dt-cielo-4": sky(4),
     }
 

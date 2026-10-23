@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.72";
+        public const string VersionText = "1.73";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -365,6 +365,8 @@ namespace FedeDashboard
                     bridge.Attach(rp + "Io", () => stdRows[q][rr].Me);
                 }
             }
+            bridge.Attach("PosGain_Colore", () => posGainColor);
+            bridge.Attach("PosGain_Dir", () => posGainDir);
             bridge.Attach("Box_TempoCorsia", () => pitLaneSince == DateTime.MaxValue ? "" : ValueFormatter.LapTime(Math.Max(0, (DateTime.Now - pitLaneSince).TotalSeconds)));
             string[] sides = { "Avanti", "Dietro" };
             for (int i = 0; i < 2; i++)
@@ -738,8 +740,14 @@ namespace FedeDashboard
             if (t.Contains("QUALI")) kind = "Q";
             else if (t.Contains("RACE") || t.Contains("GARA")) kind = "R";
             else if (t.Length > 0) kind = "P";
+            if (kind == "R" && simStartPos == 0 && AsInt(bridge.GetPropertyValue("DataCorePlugin.GameData.CurrentLap")) <= 1)
+            {
+                int sp = AsInt(TimingPosition());
+                if (sp > 0) simStartPos = sp;     // altri giochi: posizione al via
+            }
             if (kind == sessionKind) return;
             sessionKind = kind;
+            simStartPos = 0; startPosAll = 0; startPosClass = 0;
             if (kind.Length == 0) return;
             var pages = Settings.Pages;
             for (int i = 0; i < pages.Count; i++)
@@ -1228,7 +1236,9 @@ namespace FedeDashboard
             d["Attiva"] = "1";
             // Come LMU: calcola subito, appena c'e' un consumo per giro (stima dei plugin LMU o di SimHub) e un tempo sul giro.
             // Tempo sul giro: ultimo giro valido, altrimenti migliore + 0.5 s, altrimenti la media dei migliori giri della tua classe.
-            double avgLap = (best > 0 && last > 0 && last <= best * 1.15) ? last : (best > 0 ? best + 0.5 : ClassLapEstimate());
+            // tempo sul giro: prima quello stimato da LMU (lo stesso del menu strategia), poi ultimo giro / migliore / media della classe
+            double avgLap = lmuEstLap > 0 && lmuEstLap < 1800 ? lmuEstLap
+                : ((best > 0 && last > 0 && last <= best * 1.15) ? last : (best > 0 ? best + 0.5 : ClassLapEstimate()));
             bool haveCons = nrg || !double.IsNaN(fuelPer);
             if (!haveCons || !(avgLap > 0))
             {
@@ -1836,6 +1846,17 @@ namespace FedeDashboard
                 case "@delta": return TimingDelta();
                 case "@stimato": return TimingEstimated();
                 case "@pos": return TimingPosition();
+                case "@pos_guadagno":
+                    {
+                        int now0 = AsInt(TimingPosition());
+                        int start = Settings.Timing.PositionMode != 0 ? startPosClass : startPosAll;
+                        if (start <= 0 && simStartPos > 0) start = simStartPos;
+                        if (now0 <= 0 || start <= 0) return null;
+                        int g = start - now0;
+                        posGainColor = g > 0 ? "#FF00E676" : (g < 0 ? "#FFFF1744" : "#FF9E9E9E");
+                        posGainDir = Math.Sign(g);
+                        return Math.Abs(g).ToString(CultureInfo.InvariantCulture);
+                    }
                 case "@auto":
                     if (Settings.Timing.PositionMode != 0 && classCount > 0) return classCount;
                     if (lmuCars > 0 && Raw("Scoring.mVehicles") != null) return lmuCars;   // LMU: auto in sessione
@@ -2064,7 +2085,11 @@ namespace FedeDashboard
             }
         }
 
-        class LmuCar { public int Place; public double Tbl, Tbn, Lbn, Best, Last, Progress, LapsBehindLeader, Speed; public string Cls = "", Name = ""; public bool Player; }
+        class LmuCar { public int Place, Qual; public double Tbl, Tbn, Lbn, Best, Last, Progress, LapsBehindLeader, Speed, EstLap; public string Cls = "", Name = ""; public bool Player; }
+        volatile int startPosClass, startPosAll, simStartPos;
+        volatile string posGainColor = "#FF9E9E9E";
+        volatile int posGainDir;     // posizione di partenza (griglia) nella classe / assoluta
+        double lmuEstLap = double.NaN;               // tempo sul giro stimato da LMU per il giocatore
         double lmuTrackLen = double.NaN;
 
         static double VecLen(object vec)
@@ -2106,7 +2131,9 @@ namespace FedeDashboard
                     LapsBehindLeader = Num(SectorTracker.Get(v, "mLapsBehindLeader")),
                     Tbn = Num(SectorTracker.Get(v, "mTimeBehindNext")),
                     Lbn = Num(SectorTracker.Get(v, "mLapsBehindNext")),
-                    Speed = VecLen(SectorTracker.Get(v, "mLocalVel"))
+                    Speed = VecLen(SectorTracker.Get(v, "mLocalVel")),
+                    EstLap = Num(SectorTracker.Get(v, "mEstimatedLapTime")),
+                    Qual = AsInt(SectorTracker.Get(v, "mQualification"))
                 };
                 double laps = Num(SectorTracker.Get(v, "mTotalLaps")), dist = Num(SectorTracker.Get(v, "mLapDist"));
                 c.Progress = (double.IsNaN(laps) ? 0 : laps) + (trackLen > 0 && !double.IsNaN(dist) ? Math.Max(0, Math.Min(1, dist / trackLen)) : 0);
@@ -2117,6 +2144,15 @@ namespace FedeDashboard
             if (me == null || cars.Count == 0) return false;
             cars.Sort((a, b) => a.Place.CompareTo(b.Place));
             lmuPlace = me.Place; lmuCars = cars.Count;
+            lmuEstLap = me.EstLap > 0 ? me.EstLap : double.NaN;
+            // posizione di partenza: griglia di LMU (mQualification), assoluta e nella classe
+            if (me.Qual > 0)
+            {
+                startPosAll = me.Qual;
+                int cp = 1;
+                foreach (var c in cars) if (c != me && c.Cls == me.Cls && c.Qual > 0 && c.Qual < me.Qual) cp++;
+                startPosClass = cp;
+            }
             var same = cars.FindAll(c => c.Cls == me.Cls);
             classCount = same.Count;
             playerClassPos = same.IndexOf(me) + 1;

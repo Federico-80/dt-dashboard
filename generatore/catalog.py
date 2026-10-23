@@ -27,6 +27,7 @@ CHANNELS = [
     ("FuelLaps",  "GIRI CARB.", "@giri_carb",                 "num", 1, "", 4, "5.4"),
     ("Pos",       "POS",        "@pos",                           "num",      0, "",  5, "11/25"),
     ("Cars",      "AUTO",       "@auto",                          "num",      0, "",  3, "25"),
+    ("PosGain",   "POSIZIONI",  "@pos_guadagno",                  "text",     0, "",  3, "3"),
     ("Lap",       "GIRO",       GD + "CurrentLap",                "num",      0, "",  3, "7"),
     ("TotalLaps", "GIRI TOT.",  GD + "TotalLaps",                 "num",      0, "",  3, "24"),
     ("TimeLeft",  "TEMPO",      GD + "SessionTimeLeft",           "duration", 0, "",  7, "07:52"),
@@ -128,7 +129,7 @@ CARDS = [
     group("Temperature freni", "FRENI", [("BrakeT" + w[0], ORANGE) for w in WHEELS]),
     group("Tempi giro", "TEMPI GIRO", [("CurLap", BLUE), ("LastLap", GREEN), ("BestLap", PURPLE)]),
     group("Carburante", "CARBURANTE", [("Fuel", WHITE), ("FuelPerLap", WHITE), ("FuelLaps", WHITE)]),
-    group("Sessione", "SESSIONE", [("TimeLeft", WHITE), ("Pos", WHITE), ("Lap", WHITE), ("Clock", WHITE)]),
+    group("Sessione", "SESSIONE", [("TimeLeft", WHITE), ("Pos", WHITE), ("Lap", WHITE), ("PosGain", WHITE)]),
     dict(name="Distacchi", kind="gaps", title="DISTACCHI", sides=["Avanti", "Dietro"], color=FRAME),
     dict(name="Pedali", kind="bars", title="PEDALI",
          entries=[("Throttle", GREEN), ("Brake", RED), ("Clutch", CYAN)], color=FRAME),
@@ -196,7 +197,7 @@ CARD_INDEX = {c["name"]: i for i, c in enumerate(CARDS)}
 DAMAGE_ZONES = 8
 
 # canali con colore calcolato dal plugin (blu freddo -> verde ok -> rosso caldo): DTPlugin.<Id>_Colore
-COLOR_CHANNELS = ["TyreT" + w[0] for w in WHEELS] + ["TyreP" + w[0] for w in WHEELS] + ["BrakeT" + w[0] for w in WHEELS] + ["TyreW" + w[0] for w in WHEELS]
+COLOR_CHANNELS = ["PosGain"] + ["TyreT" + w[0] for w in WHEELS] + ["TyreP" + w[0] for w in WHEELS] + ["BrakeT" + w[0] for w in WHEELS] + ["TyreW" + w[0] for w in WHEELS]
 
 # categorie per la tavolozza del plugin (ordine = ordine di visualizzazione)
 CATEGORIES = [

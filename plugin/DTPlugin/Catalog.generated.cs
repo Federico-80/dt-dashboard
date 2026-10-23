@@ -33,6 +33,7 @@ namespace FedeDashboard
             new ChannelDef("FuelLaps", "GIRI CARB.", "@giri_carb", "num", 1, ""),
             new ChannelDef("Pos", "POS", "@pos", "num", 0, ""),
             new ChannelDef("Cars", "AUTO", "@auto", "num", 0, ""),
+            new ChannelDef("PosGain", "POSIZIONI", "@pos_guadagno", "text", 0, ""),
             new ChannelDef("Lap", "GIRO", "DataCorePlugin.GameData.CurrentLap", "num", 0, ""),
             new ChannelDef("TotalLaps", "GIRI TOT.", "DataCorePlugin.GameData.TotalLaps", "num", 0, ""),
             new ChannelDef("TimeLeft", "TEMPO", "DataCorePlugin.GameData.SessionTimeLeft", "duration", 0, ""),

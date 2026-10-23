@@ -515,11 +515,40 @@ def frame_rect(w, h, color):
     return rect("Cornice", 0, 0, w, h, bg=CARD_BG, border=color, bw=bw, radius=int(min(12, h / 4)))
 
 
+def pos_arrow(prefix, x, y, d):
+    """Freccia verde in su / rossa in giu' per le posizioni guadagnate o perse (DTPlugin.PosGain_Dir)."""
+    img = image(prefix + " freccia", x, y, d, d, "dt-freccia-su",
+                bind_js="return $prop('DTPlugin.PosGain_Dir') < 0 ? 'dt-freccia-giu' : 'dt-freccia-su';")
+    img["Bindings"]["Visible"] = js("var v = $prop('DTPlugin.PosGain_Dir');\r\nreturn v != null && v != 0;")
+    return img
+
+
 def entry_items(c, color, x, y, w, h, prefix, sub=None):
     """Una voce (etichetta + valore) dentro un riquadro di gruppo."""
     chars = CH[c][6]
     sample = CH[c][7]
     items = []
+    if c == "PosGain":
+        # numero di posizioni con la freccia accanto
+        if h >= 40 and w >= 40:
+            vh = h * 0.72
+            vfs = fit(w * 0.5, vh, 2, 0.95, 0.56)
+            ad = min(vh * 0.6, w * 0.3)
+            items.append(pos_arrow(prefix, x + w / 2 - ad - 2, y + vh - ad - vh * 0.08, ad))
+            items.append(text(prefix + " valore", x + w / 2 + 2, y, w / 2 - 2, vh, ch_val(c), sample, vfs, color, ha=0, va=2))
+            lfs = clamp(int(min((h - vh) * 0.5, (w - 4) / (len(CH[c][1]) * 0.6))), 7, 12)
+            items.append(text(prefix + " nome", x, y + vh, w, h - vh, ch_name(c), CH[c][1], lfs, GREY, weight="Normal", va=0))
+        else:
+            lw = w * 0.42
+            lfs = clamp(int(min(h * 0.42, lw / (max(len(CH[c][1]), 3) * 0.62))), 7, 13)
+            if w >= 60:
+                items.append(text(prefix + " nome", x + 4, y, lw, h, ch_name(c), CH[c][1], lfs, GREY, weight="Medium", ha=0))
+            ad = min(h * 0.62, (w - lw) * 0.35)
+            vx = x + (lw if w >= 60 else 0)
+            vw = x + w - 4 - vx
+            items.append(pos_arrow(prefix, vx + vw - ad - fit(vw - ad, h, 2, 0.72) * 1.3 - 4, y + (h - ad) / 2, ad))
+            items.append(text(prefix + " valore", vx, y, vw, h, ch_val(c), sample, fit(vw - ad, h, 2, 0.72), color, ha=2))
+        return items
     if h >= 40 and w >= 40:
         # numeri grandi, scritta sotto piccola e sottile
         vh = h * (0.72 if sub is None else 0.6)
@@ -1616,7 +1645,7 @@ def write_all():
     for fn, doc in files.items():
         body = json.dumps(strip(doc), ensure_ascii=False, separators=(",", ":"))
         used = [n for n in ICONS if ('"%s"' % n) in body or ("'%s'" % n) in body
-                 or (n.startswith("dt-dz") and "'dt-dz" in body) or (n.startswith("dt-cielo") and "'dt-cielo-'" in body)]      # zone danno scelte a runtime ('dt-dz3-' + livello)
+                 or (n.startswith("dt-dz") and "'dt-dz" in body) or (n.startswith("dt-cielo") and "'dt-cielo-'" in body) or (n.startswith("dt-freccia") and "'dt-freccia-" in body)]      # zone danno scelte a runtime ('dt-dz3-' + livello)
         if used:
             import struct
             def png_size(b):

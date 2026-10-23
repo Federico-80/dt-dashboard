@@ -1,5 +1,5 @@
 {
-  "version": "1.72",
-  "notes": "Strategia: energia e litri necessari calcolati come LMU, testo della finestra che sta nel riquadro. Il log registra la strategia del menu di LMU.",
+  "version": "1.73",
+  "notes": "Strategia con il tempo sul giro stimato da LMU (come il menu). Sessione: al posto dell'ora le posizioni guadagnate/perse con freccia.",
   "date": "2026-10-23"
 }
