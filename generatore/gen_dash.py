@@ -85,6 +85,15 @@ def image(name, x, y, w, h, img, bind_js=None):
 
 
 SECTOR_GREY = "#FF4A4A4A"
+DIV_COL = "#FF4A4A4A"     # divisori leggeri dentro le schede
+
+
+def vdiv(name, x, y, h):
+    return rect(name, round(x) - 1, y, 2, h, bg=DIV_COL)
+
+
+def hdiv(name, x, y, w):
+    return rect(name, x, round(y) - 1, w, 2, bg=DIV_COL)
 
 
 def sector_bars(x, y, w, h, gap=4):
@@ -310,6 +319,14 @@ def iconrow_items(card, w, h):
         x0 = x + max(1, (cw - est) / 2)
         it.append(image("Icona %s" % c, x0, y + (rh - sz) / 2, sz, sz, ico))
         it.append(text("Valore %s" % c, x0 + sz + 3, y, x + cw - (x0 + sz + 3), rh, ch_val(c), CH[c][7], vfs, WHITE, ha=0))
+    # divisori tra i dati (e prima dello stato della pista)
+    m = min(rh * 0.2, 7)
+    for k in range(1, cols):
+        it.append(vdiv("Divisore %d" % k, 4 + k * cw, 3 + m, ih - 2 * m))
+    for r in range(1, rows):
+        it.append(hdiv("Divisore riga %d" % r, 4 + iw * 0.06, 3 + r * rh, iw * 0.88))
+    if meteo and row:
+        it.append(vdiv("Divisore stato", bx - 2, 3 + m, ih - 2 * m))
     return it
 
 
@@ -380,16 +397,19 @@ def session_items(w, h):
     ly = vy + vh
     wts = [1.05, 1.25, 1.05]
     ws = [iw * t / sum(wts) for t in wts]
-    vfs = min(fit(ws[0] - 10, vh, 5, 0.8, 0.62), fit(ws[1] - 10, vh, 5, 0.8, 0.62), fit(ws[2] - 10, vh, 4.2, 0.8, 0.62))
+    vfs = min(fit(ws[0] - 14, vh, 5, 0.8, 0.62), fit(ws[1] - 14, vh, 5, 0.8, 0.62), fit(ws[2] - 14, vh, 4.2, 0.8, 0.62))
     lfs = clamp(int(lh * 0.82), 7, 12)
     x = ix
     # tempo: parte prima dei secondi bianca, ":ss" grigio
     w0 = ws[0]; sp = x + w0 * 0.56
-    t_js = "var t = fd('TimeLeft');\r\nif (!t || t === '-') { return %s; }\r\nvar i = t.lastIndexOf(':');\r\nreturn i < 0 ? %s : %s;"
+    # con le ore (1:29:30) si mostrano solo ore e minuti, altrimenti non ci sta
+    t_js = ("var t = fd('TimeLeft');\r\nif (!t || t === '-') { return %s; }\r\n"
+            "var p = ('' + t).split(':');\r\nif (p.length >= 3 && p[0] != '0' && p[0] != '00') { var h = '' + parseInt(p[0], 10); return %s; }\r\n"
+            "var i = t.lastIndexOf(':');\r\nreturn i < 0 ? %s : %s;")
     it.append(text("Tempo principale", x, vy, sp - x, vh, None, "18", vfs, WHITE, weight="Black", ha=2, va=2,
-                   bindings={"Text": js(t_js % ("'-'", "t", "t.substring(0, i)"))}))
+                   bindings={"Text": js(t_js % ("'-'", "h + 'h' + p[1]", "t", "t.substring(0, i)"))}))
     it.append(text("Tempo secondi", sp, vy, x + w0 - sp, vh, None, ":39", vfs, SES_GREY, weight="Bold", ha=0, va=2,
-                   bindings={"Text": js(t_js % ("''", "''", "t.substring(i)"))}))
+                   bindings={"Text": js(t_js % ("''", "''", "''", "t.substring(i)"))}))
     # sotto il tempo: il tipo di sessione (PROVE, QUALIFICA, GARA...)
     it.append(text("Tempo etichetta", x, ly, w0, lh, None, "GARA", lfs, WHITE, weight="Bold",
                    bindings={"Text": js("var t = $prop('DTPlugin.Sessione_Nome');\r\nreturn t ? t : 'TEMPO';")}))
@@ -421,6 +441,10 @@ def session_items(w, h):
     it.append(text("Giri totali", sp + vfs * 0.12, vy, x + w2 - sp - 1, vh - vfs * 0.08, None, "/~27.1", tfs, SES_GREY, weight="Bold", ha=0, va=2,
                    bindings={"Text": js("var t = $prop('DTPlugin.GiriTotali');\r\nreturn (t == null || t === '') ? '' : '/' + t;")}))
     it.append(text("Giro etichetta", x, ly, w2, lh, None, "GIRO", lfs, GREY, weight="Medium"))
+    # divisori tra tempo, posizione e giro
+    dy0, dy1 = vy + vh * 0.12, ly + lh
+    it.append(vdiv("Divisore 1", ix + ws[0], dy0, dy1 - dy0))
+    it.append(vdiv("Divisore 2", ix + ws[0] + ws[1], dy0, dy1 - dy0))
     return it
 
 
@@ -530,6 +554,11 @@ def gaps_items(card, w, h):
         else:
             rh = ih / n
             it += gap_side_items(sd, 4, iy + i * rh, iw, rh)
+    if n == 2:
+        if side_by_side:
+            it.append(vdiv("Divisore", 4 + iw / 2, iy + ih * 0.1, ih * 0.8))
+        else:
+            it.append(hdiv("Divisore", 4 + iw * 0.06, iy + ih / 2, iw * 0.88))
     return it
 
 
@@ -824,6 +853,12 @@ def card_items(card, w, h):
         for i, (c, col) in enumerate(ents):
             r, k = divmod(i, cols)
             items += entry_items(c, col, ix + k * cw, iy + r * rh, cw, rh, "%s %d" % (c, i), chars=chars if one else None)
+        # divisori leggeri tra le righe e tra le colonne
+        for r in range(1, rows):
+            items.append(hdiv("Divisore riga %d" % r, ix + iw * 0.06, iy + r * rh, iw * 0.88))
+        for k in range(1, cols):
+            m = min(rh * 0.15, 6)
+            items.append(vdiv("Divisore colonna %d" % k, ix + k * cw, iy + m, ih - 2 * m))
         return items
 
     if kind == "damage":
@@ -1172,6 +1207,7 @@ def center_items(fi):
     sx, sy, sw, sh = cg["speed"]
     gfs = int(min((sy - y) * 0.9, 170))
     it.append(text("Marcia", x, y + 2, w, sy - y, ch_val("Gear"), CH["Gear"][7], gfs, WHITE, weight="Black"))
+    it.append(hdiv("Divisore marcia velocità", x + w * 0.12, sy - 1, w * 0.76))
     it.append(text("Velocità", sx, sy, sw, sh, ch_val("Speed"), CH["Speed"][7], 32, WHITE, weight="Bold"))
     rty = sy + sh
     rth = max(14, (y + h - 16) - rty - 2)
