@@ -457,9 +457,8 @@ def gaps_items(card, w, h):
     return it
 
 
-STRAT_COLS = [("SOSTE", "Soste", 1.0, "1"), ("FINESTRA", "Finestra", 2.7, "GIRO 7 - GIRO 27"), ("RATIO", "Ratio", 1.0, "0.73"),
-              ("STINT", "Stint", 1.0, "40:38"), ("GIRI", "Giri", 0.95, "36.3"), ("NECESSARIA", "Necessaria", 1.15, "61 %"), ("|", None, 0.5, ""),
-              ("QUESTO", "Questo", 0.95, "-"), ("PROSSIMO", "Prossimo", 1.05, "-"), ("CHIUSURA", "Chiusura", 1.05, "27 %")]
+STRAT_COLS = [("SOSTE", "Soste", 0.8, "1"), ("FINESTRA", "Finestra", 2.6, "GIRO 7 - GIRO 27"), ("RATIO", "Ratio", 0.9, "0.73"),
+              ("GIRI ALLA FINE", "Giri", 1.25, "36.3"), ("LITRI NECESSARI", "Litri", 1.3, "42 l"), ("ENERGIA NECESSARIA", "EnergiaNec", 1.45, "61 %")]
 
 
 def strategy_items(w, h):
@@ -467,7 +466,7 @@ def strategy_items(w, h):
     if w >= 600:
         cols = STRAT_COLS
     elif w >= 280:
-        cols = [c for c in STRAT_COLS if c[1] in ("Soste", "Finestra", "Giri", "Necessaria")]
+        cols = [c for c in STRAT_COLS if c[1] in ("Soste", "Finestra", "Giri", "EnergiaNec")]
     else:
         cols = [c for c in STRAT_COLS if c[1] in ("Soste", "Finestra")]
     tot = sum(c[2] for c in cols)
@@ -926,7 +925,8 @@ def center_items(fi):
                               "if ($prop('DTPlugin.FuoriGiri') === true && %s) { return '#FFFF1744'; }\r\nreturn '#FF0B0B0B';" % BLINK)}))
     gfs = int(min(h * 0.62, 170))
     it.append(text("Marcia", x, y + 2, w, h * 0.7, ch_val("Gear"), CH["Gear"][7], gfs, WHITE, weight="Black"))
-    it.append(text("Giri", x, y + h * 0.7, w, h * 0.14, ch_val("Rpm"), CH["Rpm"][7], clamp(int(h * 0.09), 12, 20), GREY, weight="Medium"))
+    rth = h * 0.14
+    it.append(text("Giri", x, min(y + h * 0.7, y + h - 22 - rth), w, rth, ch_val("Rpm"), CH["Rpm"][7], clamp(int(h * 0.09), 12, 20), GREY, weight="Medium"))
     bx, by, bw, bh = x + 12, y + h - 16, w - 24, 7
     v = "Math.max(0, Math.min(100, $prop('DTPlugin.RpmPct_Valore')))"
     rpm_bar = [rect("Giri barra fondo", bx, by, bw, bh, bg=TRACK, radius=3),

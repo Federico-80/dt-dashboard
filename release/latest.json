@@ -1,5 +1,5 @@
 {
-  "version": "1.67",
-  "notes": "Nuovi dati da LMU: tempi di sosta stimati, previsioni meteo, danni sospensioni/aero/motore, usura freni, gomme nuove, track limits, batteria.",
+  "version": "1.68",
+  "notes": "Barra strategia alta come la riga sopra, con soste, finestra, ratio, giri alla fine, litri necessari ed energia necessaria.",
   "date": "2026-10-23"
 }

@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.67";
+        public const string VersionText = "1.68";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -287,7 +287,7 @@ namespace FedeDashboard
             bridge.Attach("Attesa_Modo", () => Settings.Idle.Mode);
             sectors = new SectorTracker(p => Raw(p), p => bridge.GetPropertyValue(p));
             for (int i = 0; i < 3; i++) { int si = i; bridge.Attach("Settore_" + (si + 1) + "_Colore", () => sectors.Color(si)); bridge.Attach("Settore_" + (si + 1) + "_Striscia", () => sectors.Strip(si)); }
-            foreach (var key in new[] { "Attiva", "Soste", "Finestra", "FinestraColore", "Ratio", "Stint", "Giri", "Necessaria", "Questo", "Prossimo", "Chiusura" })
+            foreach (var key in new[] { "Attiva", "Soste", "Finestra", "FinestraColore", "Ratio", "Stint", "Giri", "Necessaria", "Litri", "EnergiaNec", "Questo", "Prossimo", "Chiusura" })
             {
                 string kk = key;
                 bridge.Attach("Strat_" + kk, () => { string v; lock (strat) return strat.TryGetValue(kk, out v) ? v : (kk == "Attiva" ? "0" : "-"); });
@@ -1222,7 +1222,7 @@ namespace FedeDashboard
             bool haveCons = nrg || !double.IsNaN(fuelPer);
             if (!haveCons || !(avgLap > 0))
             {
-                foreach (var k in new[] { "Soste", "Finestra", "Ratio", "Stint", "Giri", "Necessaria", "Questo", "Prossimo", "Chiusura" }) d[k] = "ATTESA";
+                foreach (var k in new[] { "Soste", "Finestra", "Ratio", "Stint", "Giri", "Necessaria", "Litri", "EnergiaNec", "Questo", "Prossimo", "Chiusura" }) d[k] = "ATTESA";
                 d["FinestraColore"] = "#FF404040";
                 SetStrat(d); return;
             }
@@ -1300,6 +1300,19 @@ namespace FedeDashboard
             // quanto serve ancora per arrivare alla fine (come "61% VE necessaria" di LMU)
             double needTot = per * lapsFrac - (useVe ? ve : fuel);
             d["Necessaria"] = needTot > 0 ? Math.Ceiling(needTot).ToString("0", CultureInfo.InvariantCulture) + (useVe ? " %" : " l") : "0";
+            // litri ed energia che servono ancora per arrivare alla fine (0 = bastano quelli a bordo)
+            if (!double.IsNaN(fuel) && fuelPer > 0)
+            {
+                double nl = fuelPer * lapsFrac - fuel;
+                d["Litri"] = nl > 0 ? Math.Ceiling(nl).ToString("0", CultureInfo.InvariantCulture) + " l" : "0 l";
+            }
+            else d["Litri"] = "-";
+            if (nrg)
+            {
+                double ne = vePer * lapsFrac - ve;
+                d["EnergiaNec"] = ne > 0 ? Math.Ceiling(ne).ToString("0", CultureInfo.InvariantCulture) + " %" : "0 %";
+            }
+            else d["EnergiaNec"] = "-";
 
             Func<int, string> fillTo = pitLap =>
             {

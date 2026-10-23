@@ -230,7 +230,7 @@ M = 5        # margine
 G = 6        # spazio fra riquadri
 SB = 20      # larghezza barra laterale
 TB = 78      # altezza barra inferiore
-WB = 58      # altezza della riga larga sotto (barra doppia)
+WB = 78      # altezza della riga larga sotto (barra doppia): come la riga di riquadri sopra
 CW = 172     # larghezza colonna centrale
 CX = (DASH_W - CW) // 2  # 339
 
