@@ -377,9 +377,9 @@ def session_items(w, h):
     vh = min(h - lh - 8, 52)
     vy = max(3, (h - vh - lh) / 2 - 1)        # numeri + etichette centrati in altezza
     ly = vy + vh
-    wts = [1.15, 1.35, 0.7]
+    wts = [1.05, 1.25, 1.05]
     ws = [iw * t / sum(wts) for t in wts]
-    vfs = min(fit(ws[0] - 10, vh, 5, 0.8, 0.62), fit(ws[1] - 10, vh, 5, 0.8, 0.62), fit(ws[2] - 10, vh, 2, 0.8, 0.62))
+    vfs = min(fit(ws[0] - 10, vh, 5, 0.8, 0.62), fit(ws[1] - 10, vh, 5, 0.8, 0.62), fit(ws[2] - 10, vh, 4.2, 0.8, 0.62))
     lfs = clamp(int(lh * 0.82), 7, 12)
     x = ix
     # tempo: parte prima dei secondi bianca, ":ss" grigio
@@ -411,8 +411,12 @@ def session_items(w, h):
     it.append(text("Pos etichetta", sp + 3, ly, x + w1 - sp - 3, lh, None, "POS", lfs, GREY, weight="Medium", ha=0))
     x += w1
     # giri
-    w2 = ws[2]
-    it.append(text("Giro", x, vy, w2, vh, ch_val("Lap"), "4", vfs, WHITE, weight="Black", va=2))
+    # giro: numero bianco e, piu' piccoli in grigio, i giri totali stimati come LMU ("/~27.1")
+    w2 = ws[2]; sp = x + w2 * 0.4
+    it.append(text("Giro", x, vy, sp - x, vh, ch_val("Lap"), "4", vfs, WHITE, weight="Black", ha=2, va=2))
+    tfs = max(8, int(vfs * 0.55))
+    it.append(text("Giri totali", sp + 1, vy, x + w2 - sp - 1, vh - vfs * 0.08, None, "/~27.1", tfs, SES_GREY, weight="Bold", ha=0, va=2,
+                   bindings={"Text": js("var t = $prop('DTPlugin.GiriTotali');\r\nreturn (t == null || t === '') ? '' : '/' + t;")}))
     it.append(text("Giro etichetta", x, ly, w2, lh, None, "GIRO", lfs, GREY, weight="Medium"))
     return it
 

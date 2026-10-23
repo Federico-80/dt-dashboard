@@ -1,5 +1,5 @@
 {
-  "version": "1.86",
-  "notes": "Barra doppia intelligente: la riga della strategia compare solo quando in gara serve rifornire, altrimenti sparisce e le schede si ingrandiscono.",
+  "version": "1.87",
+  "notes": "Sessione: accanto al giro i giri totali stimati come LMU (es. 1 /~27.1).",
   "date": "2026-10-23"
 }

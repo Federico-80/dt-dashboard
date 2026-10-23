@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "1.86";
+        public const string VersionText = "1.87";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -47,6 +47,33 @@ namespace FedeDashboard
             if (id <= 4) return 2;
             if (id >= 10) return 4;
             return 3;
+        }
+
+        /// <summary>
+        /// Giri totali della sessione come LMU: gara a giri = giri totali; a tempo = "~27.1"
+        /// (giri gia' fatti + tempo rimasto / tempo sul giro stimato da LMU).
+        /// </summary>
+        string TotalLapsText()
+        {
+            try
+            {
+                int tot = AsInt(bridge.GetPropertyValue("DataCorePlugin.GameData.TotalLaps"));
+                double timeLeft = Seconds(bridge.GetPropertyValue("DataCorePlugin.GameData.SessionTimeLeft"));
+                bool timed = !double.IsNaN(timeLeft) && timeLeft > 0 && timeLeft < 360000;
+                if (!timed) return tot > 0 && tot < 10000 ? tot.ToString(CultureInfo.InvariantCulture) : "";
+                double best = Seconds(bridge.GetPropertyValue("DataCorePlugin.GameData.BestLapTime"));
+                double last = Seconds(bridge.GetPropertyValue("DataCorePlugin.GameData.LastLapTime"));
+                double lapT = lmuEstLap > 0 && lmuEstLap < 1800 ? lmuEstLap
+                    : ((best > 0 && last > 0 && last <= best * 1.15) ? last : (best > 0 ? best + 0.5 : ClassLapEstimate()));
+                if (!(lapT > 0)) return "";
+                int lap = AsInt(bridge.GetPropertyValue("DataCorePlugin.GameData.CurrentLap"));
+                double pos = Num(bridge.GetPropertyValue("DataCorePlugin.GameData.TrackPositionPercent"));
+                if (double.IsNaN(pos)) pos = 0;
+                pos = Math.Max(0, Math.Min(1, pos));
+                double total = Math.Max(0, lap - 1) + pos + timeLeft / lapT;
+                return "~" + total.ToString("0.0", CultureInfo.InvariantCulture);
+            }
+            catch { return ""; }
         }
 
         /// <summary>Stato della pista: 0 = testo, 1 = colore di fondo, 2 = colore del testo.</summary>
@@ -382,6 +409,7 @@ namespace FedeDashboard
                 }
             }
             bridge.Attach("PosGain_Colore", () => posGainColor);
+            bridge.Attach("GiriTotali", () => TotalLapsText());
             // barra doppia (strategia) solo in gara e quando serve almeno una sosta per rifornire
             bridge.Attach("BarraDoppia", () =>
             {
