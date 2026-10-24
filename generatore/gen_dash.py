@@ -1532,18 +1532,11 @@ def flag_box(x, y, w, h, square=False):
     tx = x + 6
     if square:
         # icona sopra, nome sotto, tutto centrato
-        # icona, nome e (con la gialla) il settore, tutto centrato
-        isz = min(h * 0.32, 44)
-        kids.append(image("Bandiera icona", x + (w - isz) / 2, y + h * 0.07, isz, isz, "dt-bandiera-nera",
-                          "var c = $prop('DTPlugin.Bandiera_TestoColore');\r\nreturn (c == '#FFFFFFFF') ? 'dt-bandiera-bianca' : 'dt-bandiera-nera';"))
-        ty = y + h * 0.07 + isz + 2
-        nh = h * 0.30
-        kids.append(text("Bandiera nome", x + 4, ty, w - 8, nh, "[DTPlugin.Bandiera_Testo]", "GIALLA",
-                         fit(w - 12, nh, 8, 0.85), "#FF000000", weight="Black", bindings={"TextColor": fg}))
-        sy2 = ty + nh
-        kids.append(text("Bandiera settore", x + 4, sy2, w - 8, y + h - sy2 - 3, None, "SETTORE 2",
-                         fit(w - 12, y + h - sy2 - 3, 10, 0.75), "#FF000000", weight="Bold",
-                         bindings={"Text": js("var t = $prop('DTPlugin.Bandiera_Settore');\r\nreturn t ? t : '';"), "TextColor": fg}))
+        # solo il settore della gialla, grande (il colore dice gia' che bandiera e'); senza settore il nome della bandiera
+        kids.append(text("Bandiera settore", x + 6, y + 4, w - 12, h - 8, None, "SETTORE 2",
+                         fit(w - 16, h - 8, 9, 0.5), "#FF000000", weight="Black",
+                         bindings={"Text": js("var t = $prop('DTPlugin.Bandiera_Settore');\r\nif (t) { return t.replace('SETTORI ', 'SETTORI\\n').replace('FULL COURSE YELLOW', 'FULL COURSE\\nYELLOW'); }\r\n"
+                                              "var n = $prop('DTPlugin.Bandiera_Testo');\r\nreturn n ? n : '';"), "TextColor": fg}))
         return layer("Bandiera", kids, None, ("Bandiera_Riquadro", 1), vis_js="return $prop('DTPlugin.Bandiera_Riquadro') === true;")
     if sz >= 18:
         kids.append(image("Bandiera icona", x + 6, y + 4, sz, sz, "dt-bandiera-nera",

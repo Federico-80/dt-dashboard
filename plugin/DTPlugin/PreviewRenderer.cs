@@ -55,7 +55,8 @@ namespace FedeDashboard
         List<object> alertTree;
         DateTime alertStamp;
 
-        void ClearOverrides() { layerVis.Clear(); textOver.Clear(); colorOver.Clear(); bgOver.Clear(); }
+        readonly HashSet<string> hidden = new HashSet<string>();
+        void ClearOverrides() { layerVis.Clear(); textOver.Clear(); colorOver.Clear(); bgOver.Clear(); hidden.Clear(); }
 
         static Dictionary<string, object> FindByName(List<object> items, string name, int depth = 0)
         {
@@ -85,7 +86,7 @@ namespace FedeDashboard
             try
             {
                 bool flagTile = a.Id == "Flag" && !a.FlagAsPopup;
-                if (flagTile) { layerVis["Bandiera"] = true; textOver["Bandiera nome"] = "GIALLA"; textOver["Bandiera settore"] = "SETTORE 2"; }
+                if (flagTile) { layerVis["Bandiera"] = true; textOver["Bandiera settore"] = "SETTORE 2"; }
                 if (!Draw(canvas, p, font)) return false;
                 if (flagTile) return true;
                 string path = Path.Combine(Folder, DashBuilder.DashName + ".djson.modello");
@@ -131,7 +132,14 @@ namespace FedeDashboard
                     colorOver["Avviso titolo"] = "#FF8EC5FF";
                     colorOver["Avviso valore solo"] = fg;
                 }
-                else if (a.Id == "Flag") title = "GIALLA";
+                else if (a.Id == "Flag")
+                {
+                    // come in pista: titolo dell'avviso e, grande, il nome della bandiera
+                    layerVis["Valore solo"] = true;
+                    textOver["Avviso valore solo"] = "GIALLA";
+                    colorOver["Avviso valore solo"] = fg;
+                    hidden.Add("Avviso freccia sinistra"); hidden.Add("Avviso freccia destra");
+                }
                 else if (a.Id != "Damage" && ids.Count > 0)
                 {
                     layerVis["Valori " + ids.Count] = true;
@@ -237,6 +245,7 @@ namespace FedeDashboard
                 string nm = Str(it, "Name");
                 // riquadro delta: quello predefinito o la scheda scelta, secondo la pagina
                 bool forced;
+                if (hidden.Contains(nm)) continue;
                 if (layerVis.TryGetValue(nm, out forced))
                 {
                     if (!forced) continue;     // anteprima avvisi: livelli accesi/spenti a mano

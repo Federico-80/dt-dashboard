@@ -1,5 +1,5 @@
 {
-  "version": "2.18",
-  "notes": "2.18: anteprima degli avvisi nel plugin, schema danni con margini e macchina piu' piccola, avvisi di lato piu' piccoli",
+  "version": "2.19",
+  "notes": "2.19: bandiera sopra la velocita' con solo il settore; anteprima bandiera corretta nel plugin",
   "date": "2026-10-24"
 }
