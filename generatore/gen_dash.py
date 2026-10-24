@@ -638,7 +638,7 @@ CARD_BW = 2        # bordo delle schede ai lati e in basso
 
 
 def center_card_sizes():
-    return {(int(round(w)), int(round(h))) for fi in range(len(FRAMES)) for (x, y, w, h) in center_geom(fi)["rows"]}
+    return {(int(round(w)), int(round(h))) for fi in range(len(FRAMES)) for (x, y, w, h) in center_geom(fi)["rows"] + [center_geom(fi)["delta"]]}
 
 
 def legend(items, w, h, label, lfs, color, bind_text=None):
@@ -1341,11 +1341,15 @@ def center_items(fi):
     if frame_led(fi):
         it.append(layer("LED giri", led_strip(M + 4, M, DASH_W - 2 * M - 8, LED_H)))
     x, y, w, h = cg["delta"]
-    it.append(rect("Delta fondo", x, y, w, h, bg="#FF161616", radius=8))
+    # riquadro in alto al centro: il delta (predefinito) oppure una scheda scelta nel plugin (DTPlugin.Slot_D)
+    dl = [rect("Delta fondo", x, y, w, h, bg="#FF161616", radius=8)]
     sbh = 5
-    it.append(text("Delta", x, y + 1, w, h - sbh - 5, ch_val("Delta"), CH["Delta"][7], fit(w - 16, h - sbh - 6, 6, 0.92, 0.6), GREEN,
+    dl.append(text("Delta", x, y + 1, w, h - sbh - 5, ch_val("Delta"), CH["Delta"][7], fit(w - 16, h - sbh - 6, 6, 0.92, 0.6), GREEN,
                    bindings={"TextColor": js(DELTA_COLOR_JS % "Delta")}))
-    it += sector_bars(x + 6, y + h - sbh - 4, w - 12, sbh, gap=3)
+    dl += sector_bars(x + 6, y + h - sbh - 4, w - 12, sbh, gap=3)
+    it.append(layer("Delta predefinito", dl, None, ("Slot_D", 0), vis_js="var v = $prop('DTPlugin.Slot_D');\r\nreturn v == null || v == 0;"))
+    it.append(layer("Delta scelto", [widget("Riquadro delta", x, y, w, h, card_file(w, h), "Slot_D")], None, None,
+                    vis_js="var v = $prop('DTPlugin.Slot_D');\r\nreturn v != null && v != 0;"))
     x, y, w, h = cg["gear"]
     it.append(rect("Marcia fondo", x, y, w, h, bg=CARD_BG, border=FRAME, bw=CENTER_BW, radius=12, bindings={
         "BackgroundColor": js("if ($prop('DTPlugin.PitLimiter_Valore') > 0) { return '#FF0D47A1'; }\r\n"
@@ -1607,12 +1611,12 @@ def alert_layer():
     variants = []
     for vi, (x, y, w, h) in enumerate(ALERT_VARIANTS):
         full = vi == 0
-        bg = rect("Avviso sfondo", x, y, w, h, bg="#FF0D47A1", border=None if full else WHITE, bw=3, radius=0 if full else 16,
+        bg = rect("Avviso sfondo", x, y, w, h, bg="#FF0D47A1", border=None, bw=0, radius=0,   # squadrato, senza bordo
                   bindings={"BackgroundColor": js("var c = $prop('DTPlugin.Avviso_Sfondo');\r\nreturn c ? c : '#FF000000';")},
                   border_bind=None if full else tcol)
         th = round(h * (0.17 if not full else 0.15))
         kids = [bg, text("Avviso titolo", x + 10, y + h * 0.03, w - 20, th, "[DTPlugin.Avviso_Titolo]", "PIT LIMITER",
-                         int(fit(w - 20, th, 12, 0.8) * 0.7), WHITE, weight="Bold",
+                         int(fit(w - 20, th, 12, 0.8) * 0.62), WHITE, weight="Medium",
                          bindings={"TextColor": js("var c = $prop('DTPlugin.Avviso_TitoloColore');\r\nreturn c ? c : '#FFFFFFFF';")})]
         iy = y + h * 0.03 + th
         ih = y + h - iy - h * 0.05
@@ -1628,12 +1632,12 @@ def alert_layer():
                 r, k = divmod(i, cols)
                 cx, cy = ix + k * cw, iy + r * rh
                 vh = rh * 0.70
-                vfs = fit(cw - 10, vh, 7 if n > 1 else 6, 0.85, cap=260)
+                vfs = int(fit(cw - 10, vh, 7 if n > 1 else 6, 0.85, cap=260) * 0.85)   # numeri meno grossi
                 items.append(text("Avviso valore %d" % (i + 1), cx, cy, cw, vh, "[DTPlugin.Avviso_V%d]" % (i + 1),
-                                  ["86", "1:44.760", "2.71", "5.4"][i], vfs, WHITE, va=2, bindings={"TextColor": tcol}))
+                                  ["86", "1:44.760", "2.71", "5.4"][i], vfs, WHITE, weight="Medium", va=2, bindings={"TextColor": tcol}))
                 lfs = clamp(int(min(rh * 0.22, (cw - 6) / (12 * 0.62))), 8, 34)
                 items.append(text("Avviso nome %d" % (i + 1), cx, cy + vh, cw, rh - vh, "[DTPlugin.Avviso_L%d]" % (i + 1),
-                                  ["KM/H", "ULTIMO", "CONSUMO", "GIRI CARB."][i], lfs, WHITE, weight="Medium", va=0,
+                                  ["KM/H", "ULTIMO", "CONSUMO", "GIRI CARB."][i], lfs, WHITE, weight="Normal", va=0,
                                   bindings={"TextColor": tcol}))
             if n == 1:
                 # un solo valore senza scritta sotto (cambio valori): il valore usa tutto lo spazio
@@ -1641,7 +1645,7 @@ def alert_layer():
                 ad = min(ih * 0.42, iw * 0.13)
                 vw = iw - 2 * (ad + iw * 0.05)
                 solo = [text("Avviso valore solo", ix + (iw - vw) / 2, iy, vw, ih, "[DTPlugin.Avviso_V1]", "52.5",
-                             fit(vw - 10, ih * 0.85, 5, 0.85, cap=260), WHITE, bindings={"TextColor": tcol})]
+                             int(fit(vw - 10, ih * 0.85, 5, 0.85, cap=260) * 0.85), WHITE, weight="Medium", bindings={"TextColor": tcol})]
                 img_js = "return $prop('DTPlugin.Avviso_Freccia') < 0 ? 'dt-cambio-giu' : 'dt-cambio-su';"
                 for side, ax in (("sinistra", ix + iw * 0.03), ("destra", ix + iw - iw * 0.03 - ad)):
                     arr = image("Avviso freccia %s" % side, ax, iy + (ih - ad) / 2, ad, ad, "dt-cambio-su", img_js)
@@ -2032,8 +2036,38 @@ function fdn(id) {
 
 
 # ------------------------------------------------------------------ salvataggio
+def _static_preview(o):
+    """Valori fissi = quelli d'esempio dell'anteprima (testi, colori, livello delle barre, livelli nascosti).
+    A dash attiva contano i collegamenti (Bindings), quindi servono solo all'anteprima del plugin e all'editor di SimHub."""
+    pv = o.get("_pv")
+    if not pv:
+        return o
+    o = dict(o)
+    b = o.get("Bindings") or {}
+    k = pv.get("kind")
+    if k == "text":
+        if not o.get("Text") and pv.get("text"):
+            o["Text"] = pv["text"]
+        if pv.get("color") and "TextColor" in b:
+            o["TextColor"] = pv["color"]
+    elif k == "rect":
+        if pv.get("bg") and "BackgroundColor" in b:
+            o["BackgroundColor"] = pv["bg"]
+        if "vfrac" in pv and "Height" in b:
+            nh = o["Height"] * pv["vfrac"]
+            o["Top"] = float(round(o["Top"] + o["Height"] - nh)); o["Height"] = float(round(nh))
+        if "hfrac" in pv and "Width" in b:
+            o["Width"] = float(round(o["Width"] * pv["hfrac"]))
+    elif k == "layer":
+        vis = pv.get("vis")
+        if vis and vis[1] != 0 and vis[0] != "Pagina" and "Visible" in b:
+            o["Visible"] = False
+    return o
+
+
 def strip(o):
     if isinstance(o, dict):
+        o = _static_preview(o)
         return {k: strip(v) for k, v in o.items() if k != "_pv"}
     if isinstance(o, list):
         return [strip(v) for v in o]

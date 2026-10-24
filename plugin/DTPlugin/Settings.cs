@@ -298,6 +298,8 @@ namespace FedeDashboard
         public bool ShowInputs { get; set; }
         /// <summary>Nasconde le barre verticali (giri o pedali) ai lati della marcia.</summary>
         public bool HideSideBars { get; set; }
+        /// <summary>Riquadro in alto al centro: 0 = delta (predefinito), altrimenti la scheda scelta.</summary>
+        public int CenterTop { get; set; }
         /// <summary>Fila di LED dei giri in alto: tutta la pagina scende un po'.</summary>
         public bool Leds { get; set; }
         /// <summary>Cornice usata davvero nella dash (con i LED: la variante + Catalog.LedOffset).</summary>
@@ -326,7 +328,7 @@ namespace FedeDashboard
                 SidebarLeft = SidebarLeft, SidebarRight = SidebarRight,
                 Left = new List<int>(Left), Right = new List<int>(Right),
                 Bottom = new List<int>(Bottom), Center = new List<int>(Center),
-                AutoPractice = AutoPractice, AutoQualify = AutoQualify, AutoRace = AutoRace, ShowInputs = ShowInputs, HideSideBars = HideSideBars, Leds = Leds
+                AutoPractice = AutoPractice, AutoQualify = AutoQualify, AutoRace = AutoRace, ShowInputs = ShowInputs, HideSideBars = HideSideBars, Leds = Leds, CenterTop = CenterTop
             };
         }
 

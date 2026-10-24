@@ -16,7 +16,7 @@ namespace FedeDashboard
     /// </summary>
     public class DashBuilder
     {
-        const string DashName = "DT Dashboard";
+        public const string DashName = "DT Dashboard";
         string lastSignature = "";
         DateTime nextCheck = DateTime.MinValue;
         volatile bool working;
@@ -148,8 +148,11 @@ namespace FedeDashboard
         public static bool IsCenterCardFile(string name)
         {
             foreach (var fr in Catalog.CenterRects)
-                for (int i = 3; i < fr.Length; i++)
+                for (int i = 0; i < fr.Length; i++)
+                {
+                    if (i == 1 || i == 2) continue;   // marcia e velocita' non sono schede
                     if (name.StartsWith("Schede_" + fr[i][2] + "x" + fr[i][3] + ".", StringComparison.OrdinalIgnoreCase)) return true;
+                }
             return false;
         }
 

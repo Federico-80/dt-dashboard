@@ -285,6 +285,8 @@ namespace FedeDashboard
         readonly ObservableCollection<ChannelRow> rows = new ObservableCollection<ChannelRow>();
         public readonly object Root;
         string uiGame = "";
+        readonly PreviewRenderer previewRenderer = new PreviewRenderer();
+        bool realPreview, previewErrorLogged;
         readonly dynamic root, tabs, cbPage, tbName, chkP, chkQ, chkR, chkInputs, chkNoBars, chkLeds, cbGame, gameInfo, chkAutoGame, frameButtons, toolbarButtons,
                          gridLButtons, gridRButtons, preview, pickerPanel, grid, timer, alertsPanel, tyresPanel, idlePanel, idlePreview;
         dynamic tyreLive;
@@ -633,8 +635,11 @@ namespace FedeDashboard
             for (int i = 0; i < FrameShort.Length; i++)
             {
                 int idx = i;
-                dynamic b = Wpf.Xaml("<Button {NS} Content='" + Wpf.Esc(FrameShort[i]) + "' Padding='10,3' Margin='0,0,4,0' ToolTip='" +
-                                     Wpf.Esc(Catalog.Frames[i]) + "'" + BtnColors(p.Frame == i) + "/>");
+                // disegnino della cornice (come le griglie dei lati) + nome sotto
+                int tb = Math.Min(p.Toolbar, Catalog.Toolbars.Length - 1);
+                dynamic b = Wpf.Xaml("<Button {NS} Padding='4' Margin='0,0,4,4' ToolTip='" + Wpf.Esc(Catalog.Frames[i]) + "'" + BtnColors(p.Frame == i) + ">" +
+                                     "<StackPanel>" + MiniLayout(i + (p.Leds ? Catalog.LedOffset : 0), tb, p.Frame == i, false) +
+                                     "<TextBlock Text='" + Wpf.Esc(FrameShort[i]) + "' FontSize='10.5' HorizontalAlignment='Center' Margin='0,3,0,0'/></StackPanel></Button>");
                 Wpf.On((object)b, "Click", (s, e) => { Page.Frame = idx; Changed(); });
                 frameButtons.Children.Add(b);
             }
@@ -645,8 +650,10 @@ namespace FedeDashboard
             {
                 int idx = i;
                 string label = Catalog.Toolbars[i].Split(' ')[0];
-                dynamic b = Wpf.Xaml("<Button {NS} Content='" + Wpf.Esc(label) + "' Width='34' Padding='0,3' Margin='0,0,4,0' ToolTip='" +
-                                     Wpf.Esc(Catalog.Toolbars[i]) + "'" + BtnColors(hasToolbar && p.Toolbar == i) + "/>");
+                bool sel = hasToolbar && p.Toolbar == i;
+                dynamic b = Wpf.Xaml("<Button {NS} Padding='4' Margin='0,0,4,4' ToolTip='" + Wpf.Esc(Catalog.Toolbars[i]) + "'" + BtnColors(sel) + ">" +
+                                     "<StackPanel>" + MiniLayout(p.EffectiveFrame, i, sel, true) +
+                                     "<TextBlock Text='" + Wpf.Esc(label) + "' FontSize='10.5' HorizontalAlignment='Center' Margin='0,3,0,0'/></StackPanel></Button>");
                 b.IsEnabled = hasToolbar;
                 Wpf.On((object)b, "Click", (s, e) => { Page.Toolbar = idx; Changed(); });
                 toolbarButtons.Children.Add(b);
@@ -654,6 +661,36 @@ namespace FedeDashboard
 
             FillGridButtons((object)gridLButtons, p.GridLeft, v => Page.GridLeft = v);
             FillGridButtons((object)gridRButtons, p.GridRight, v => Page.GridRight = v);
+        }
+
+        /// <summary>Disegnino della pagina (64x36): centro, lati, barre laterali e riquadri in basso. onlyBottom = evidenzia la barra in basso.</summary>
+        static string MiniLayout(int f, int tb, bool selected, bool onlyBottom)
+        {
+            const double k = 64.0 / 850.0;
+            string on = selected ? "#FFFFFFFF" : "#FFB0B0B0", dim = selected ? "#80FFFFFF" : "#FF5A5A5A";
+            var sb = new StringBuilder("<Canvas Width='64' Height='36' HorizontalAlignment='Center' Background='#FF101010'>");
+            Action<int[], string> box = (r, col) =>
+            {
+                double x = r[0] * k, y = r[1] * k, w = Math.Max(1, r[2] * k - 0.6), h = Math.Max(1, r[3] * k - 0.6);
+                sb.Append("<Border Canvas.Left='" + Wpf.N(x) + "' Canvas.Top='" + Wpf.N(y) + "' Width='" + Wpf.N(w) + "' Height='" + Wpf.N(h) +
+                          "' CornerRadius='1' Background='" + col + "'/>");
+            };
+            try
+            {
+                string side = onlyBottom ? dim : on;
+                var c = Catalog.CenterRects[f];
+                for (int i = 0; i < c.Length; i++) if (i != 2) box(c[i], side);
+                var g = Catalog.GridRects[f][Catalog.Grids.Length - 1];   // "Unico": tutta la zona dei lati
+                foreach (var r in g[0]) box(r, side);
+                foreach (var r in g[1]) box(r, side);
+                if (Catalog.FrameHasSidebars[f]) foreach (var r in Catalog.SidebarRects[f]) box(r, side);
+                if (Catalog.FrameHasToolbar[f] && tb >= 0 && tb < Catalog.ToolbarRects[f].Length)
+                    foreach (var r in Catalog.ToolbarRects[f][tb]) box(r, on);
+                if (f >= Catalog.LedOffset) box(new[] { 9, 5, 832, 26 }, side);
+            }
+            catch { }
+            sb.Append("</Canvas>");
+            return sb.ToString();
         }
 
         void FillGridButtons(object panelObj, int selected, Action<int> setter)
@@ -703,6 +740,7 @@ namespace FedeDashboard
         {
             if (kind == "SL") return Page.SidebarLeft;
             if (kind == "SR") return Page.SidebarRight;
+            if (kind == "D") return Page.CenterTop;
             var l = ListFor(kind);
             return (l != null && index >= 0 && index < l.Count) ? l[index] : 0;
         }
@@ -710,6 +748,7 @@ namespace FedeDashboard
         void SetSlot(string kind, int index, int value)
         {
             if (kind == "SL") { Page.SidebarLeft = value; return; }
+            if (kind == "D") { Page.CenterTop = value; return; }
             if (kind == "SR") { Page.SidebarRight = value; return; }
             var l = ListFor(kind);
             if (l != null && index >= 0 && index < l.Count) l[index] = value;
@@ -722,6 +761,7 @@ namespace FedeDashboard
                 case "L": return "S" + (index + 1);
                 case "R": return "D" + (index + 1);
                 case "C": return "C" + (index + 1);
+                case "D": return "Delta";
                 case "T": return "B" + (index + 1);
                 case "SL": return "Barra sx";
                 default: return "Barra dx";
@@ -735,6 +775,7 @@ namespace FedeDashboard
                 case "L": return "Lato sinistro";
                 case "R": return "Lato destro";
                 case "C": return "Centro";
+                case "D": return "Centro in alto (vuoto = delta)";
                 case "T": return "Barra inferiore";
                 default: return "Barra laterale";
             }
@@ -746,11 +787,21 @@ namespace FedeDashboard
             preview.Children.Clear();
             var p = Page;
             int f = p.EffectiveFrame;
-            if (p.Leds) FixedRect(new[] { 9, 5, 832, 26 }, "LED GIRI");
+            // anteprima vera (schede disegnate come sulla dash); se non riesce, i riquadri con il nome
+            realPreview = false;
+            try { realPreview = previewRenderer.Draw((object)preview, p, S.Font); }
+            catch (Exception ex) { if (!previewErrorLogged) { previewErrorLogged = true; FedeLog.Error("anteprima vera", ex); } preview.Children.Clear(); realPreview = false; }
+            if (!realPreview)
+            {
+                if (p.Leds) FixedRect(new[] { 9, 5, 832, 26 }, "LED GIRI");
+            }
             var c = Catalog.CenterRects[f];
-            FixedRect(c[0], "DELTA");
-            FixedRect(c[1], "MARCIA");
-            FixedRect(c[2], "VELOCITÀ");
+            if (!realPreview)
+            {
+                FixedRect(c[1], "MARCIA");
+                FixedRect(c[2], "VELOCITÀ");
+            }
+            SlotRect(c[0], "D", 0);
             for (int i = 0; i < Catalog.CenterRows; i++) SlotRect(c[3 + i], "C", i);
 
             var left = Catalog.GridRects[f][p.GridLeft][0];
@@ -794,9 +845,18 @@ namespace FedeDashboard
             string border = selected ? Accent : (value == 0 ? "#FF464646" : "#FFBDBDBD");
             string bg = bar ? (value == 0 ? "#FF121212" : "#FF00E676") : (value == 0 ? "#FF0E0E0E" : "#FF1E1E1E");
             string inner = "";
-            if (!bar)
+            if (realPreview)
             {
-                string text = value == 0 ? "+" : names[value];
+                // sopra la scheda disegnata: solo il bordo di selezione (trasparente ma cliccabile); "+" sui riquadri vuoti
+                border = selected ? Accent : "#00000000";
+                bg = value == 0 ? "#FF0E0E0E" : "#01000000";
+                if (kind == "D" && value == 0) bg = "#01000000";   // delta predefinito: e' gia' disegnato sotto
+                else if (value == 0 && !bar)
+                    inner = "<TextBlock Text='+' Foreground='Gray' HorizontalAlignment='Center' VerticalAlignment='Center' FontSize='22' IsHitTestVisible='False'/>";
+            }
+            else if (!bar)
+            {
+                string text = value == 0 ? (kind == "D" ? "DELTA" : "+") : names[value];
                 double fs = Math.Max(11, Math.Min(22, r[3] / 4.0));
                 inner = "<TextBlock Text='" + Wpf.Esc(text) + "' Foreground='" + (value == 0 ? "Gray" : "White") +
                         "' TextWrapping='Wrap' TextAlignment='Center' HorizontalAlignment='Center' VerticalAlignment='Center' FontSize='" +
@@ -892,18 +952,70 @@ namespace FedeDashboard
             pickerPanel.Children.Add(Wpf.Xaml("<TextBlock {NS} FontSize='16' FontWeight='Bold' Foreground='White' Text='" +
                                               Wpf.Esc(Tag(selKind, selIndex) + " · " + AreaName(selKind)) + "'/>"));
             pickerPanel.Children.Add(Wpf.Xaml("<TextBlock {NS} Foreground='#FFBDBDBD' Margin='0,0,0,8' Text='" +
-                                              Wpf.Esc("Attuale: " + names[current]) + "'/>"));
-            dynamic clear = Wpf.Xaml("<Button {NS} Content='Svuota riquadro' HorizontalAlignment='Left' Padding='10,3' Margin='0,0,0,8'/>");
+                                              Wpf.Esc("Attuale: " + (selKind == "D" && current == 0 ? "Delta (predefinito)" : names[current])) + "'/>"));
+            dynamic clear = Wpf.Xaml("<Button {NS} Content='" + (selKind == "D" ? "Torna al delta" : "Svuota riquadro") + "' HorizontalAlignment='Left' Padding='10,3' Margin='0,0,0,8'/>");
             Wpf.On((object)clear, "Click", (s, e) => { SetSlot(selKind, selIndex, 0); Changed(); });
             pickerPanel.Children.Add(clear);
+
+            // cerca: filtra le schede mentre scrivi (nome o categoria)
+            dynamic search = Wpf.Xaml("<TextBox {NS} Margin='0,0,0,6' Padding='4,3' ToolTip='Cerca una scheda'/>");
+            search.Text = pickerSearch;
+            dynamic hint = Wpf.Xaml("<TextBlock {NS} Text='Cerca...' Foreground='#FF7A7A7A' Margin='7,-27,0,10' IsHitTestVisible='False'/>");
+            hint.Visibility = Wpf.Visibility(pickerSearch.Length == 0);
+            pickerItems.Clear(); pickerGroups.Clear();
+            Wpf.On((object)search, "TextChanged", (s, e) =>
+            {
+                pickerSearch = (string)search.Text ?? "";
+                hint.Visibility = Wpf.Visibility(pickerSearch.Length == 0);
+                FilterPicker();
+            });
+            pickerPanel.Children.Add(search);
+            pickerPanel.Children.Add(hint);
 
             if (bar)
             {
                 AddCategory("Barre", Range(1, Catalog.Bars.Length), Catalog.Bars, current);
+                FilterPicker();
                 return;
             }
             for (int c = 0; c < Catalog.Categories.Length; c++)
                 AddCategory(Catalog.Categories[c], Catalog.CategoryCards[c], Catalog.Cards, current);
+            FilterPicker();
+        }
+
+        string pickerSearch = "";
+        readonly List<object[]> pickerItems = new List<object[]>();    // { pulsante, testo da cercare, gruppo }
+        readonly List<object[]> pickerGroups = new List<object[]>();   // { titolo, contenitore, titolo categoria }
+
+        static string Fold(string t)
+        {
+            t = (t ?? "").ToLowerInvariant();
+            return t.Replace("à", "a").Replace("è", "e").Replace("é", "e").Replace("ì", "i").Replace("ò", "o").Replace("ù", "u");
+        }
+
+        void FilterPicker()
+        {
+            string q = Fold(pickerSearch.Trim());
+            var shown = new Dictionary<object, int>();
+            foreach (var it in pickerItems)
+            {
+                bool ok = q.Length == 0;
+                if (!ok)
+                {
+                    ok = true;
+                    foreach (var w in q.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries))
+                        if (((string)it[1]).IndexOf(w, StringComparison.Ordinal) < 0) { ok = false; break; }
+                }
+                ((dynamic)it[0]).Visibility = Wpf.Visibility(ok);
+                int n; shown.TryGetValue(it[2], out n); shown[it[2]] = n + (ok ? 1 : 0);
+            }
+            foreach (var g in pickerGroups)
+            {
+                int n; shown.TryGetValue(g[1], out n);
+                bool vis = n > 0;
+                ((dynamic)g[0]).Visibility = Wpf.Visibility(vis);
+                ((dynamic)g[1]).Visibility = Wpf.Visibility(vis);
+            }
         }
 
         static int[] Range(int from, int to)
@@ -915,8 +1027,10 @@ namespace FedeDashboard
 
         void AddCategory(string title, int[] items, string[] names, int current)
         {
-            pickerPanel.Children.Add(Wpf.Xaml("<TextBlock {NS} Text='" + Wpf.Esc(title) + "' Foreground='White' FontWeight='SemiBold' Margin='0,10,0,4'/>"));
+            dynamic head = Wpf.Xaml("<TextBlock {NS} Text='" + Wpf.Esc(title) + "' Foreground='White' FontWeight='SemiBold' Margin='0,10,0,4'/>");
+            pickerPanel.Children.Add(head);
             dynamic wrap = Wpf.Xaml("<WrapPanel {NS}/>");
+            object wrapObj = wrap;
             foreach (var item in items)
             {
                 int v = item;
@@ -924,8 +1038,10 @@ namespace FedeDashboard
                                      BtnColors(v == current) + "/>");
                 Wpf.On((object)b, "Click", (s, e) => { SetSlot(selKind, selIndex, v); Changed(); });
                 wrap.Children.Add(b);
+                pickerItems.Add(new object[] { (object)b, Fold(names[v] + " " + title), wrapObj });
             }
             pickerPanel.Children.Add(wrap);
+            pickerGroups.Add(new object[] { (object)head, wrapObj });
         }
 
         // ---------------------------------------------------------------- mattoncini grafici
