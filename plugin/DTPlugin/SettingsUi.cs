@@ -121,47 +121,42 @@ namespace FedeDashboard
             </WrapPanel>
 
             <Grid Margin='0,18,0,0'><Grid.ColumnDefinitions><ColumnDefinition Width='Auto'/><ColumnDefinition Width='*'/></Grid.ColumnDefinitions><TextBlock Text='LAYOUT' FontWeight='Bold' FontSize='14' Foreground='White'/><Border Grid.Column='1' Height='1' Background='#FF4A4A4A' VerticalAlignment='Center' Margin='12,0,0,0'/></Grid>
-            <Grid Margin='24,0,0,0'>
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition Width='150'/>
-                <ColumnDefinition Width='*'/>
-              </Grid.ColumnDefinitions>
-              <Grid.RowDefinitions>
-                <RowDefinition Height='Auto'/>
-                <RowDefinition Height='Auto'/>
-                <RowDefinition Height='Auto'/>
-                <RowDefinition Height='Auto'/>
-                <RowDefinition Height='Auto'/>
-                <RowDefinition Height='Auto'/>
-              </Grid.RowDefinitions>
-              <TextBlock Grid.Row='0' Text='Barre' VerticalAlignment='Center' Foreground='#FF9A9A9A'/>
-              <WrapPanel Grid.Row='0' Grid.Column='1' x:Name='FrameButtons' Margin='0,3'/>
-              <TextBlock Grid.Row='1' Text='Riquadri in basso' VerticalAlignment='Center' Foreground='#FF9A9A9A'/>
-              <WrapPanel Grid.Row='1' Grid.Column='1' x:Name='ToolbarButtons' Margin='0,3'/>
-              <TextBlock Grid.Row='2' Text='Centro' VerticalAlignment='Center' Foreground='#FF9A9A9A'/>
-              <WrapPanel Grid.Row='2' Grid.Column='1' x:Name='CenterButtons' Margin='0,3'/>
-              <TextBlock Grid.Row='3' Text='LED dei giri' VerticalAlignment='Center' Foreground='#FF9A9A9A'/>
-              <WrapPanel Grid.Row='3' Grid.Column='1' x:Name='LedButtons' Margin='0,3'/>
-              <TextBlock Grid.Row='4' Text='Griglie dei lati' VerticalAlignment='Top' Margin='0,8,0,0' Foreground='#FF9A9A9A'/>
-              <Grid Grid.Row='4' Grid.Column='1' Margin='0,6,0,0'>
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width='Auto'/>
-                  <ColumnDefinition Width='Auto'/>
-                </Grid.ColumnDefinitions>
-                <StackPanel Margin='0,0,28,0'>
-                  <TextBlock Text='Sinistra' FontSize='11.5' Foreground='#FF9A9A9A' Margin='0,0,0,4'/>
+            <StackPanel Margin='24,0,0,0'>
+              <!-- in fila: barre, riquadri in basso, centro e LED -->
+              <WrapPanel>
+                <StackPanel Margin='0,0,26,8'>
+                  <TextBlock Text='Barre' FontSize='11.5' Foreground='#FF9A9A9A' Margin='0,0,0,4'/>
+                  <WrapPanel x:Name='FrameButtons' MaxWidth='560'/>
+                </StackPanel>
+                <StackPanel Margin='0,0,26,8'>
+                  <TextBlock Text='Riquadri in basso' FontSize='11.5' Foreground='#FF9A9A9A' Margin='0,0,0,4'/>
+                  <WrapPanel x:Name='ToolbarButtons' MaxWidth='420'/>
+                </StackPanel>
+                <StackPanel Margin='0,0,26,8'>
+                  <TextBlock Text='Centro' FontSize='11.5' Foreground='#FF9A9A9A' Margin='0,0,0,4'/>
+                  <WrapPanel x:Name='CenterButtons'/>
+                </StackPanel>
+                <StackPanel Margin='0,0,26,8'>
+                  <TextBlock Text='LED dei giri' FontSize='11.5' Foreground='#FF9A9A9A' Margin='0,0,0,4'/>
+                  <WrapPanel x:Name='LedButtons'/>
+                </StackPanel>
+              </WrapPanel>
+              <!-- sotto: griglie dei lati e le altre opzioni -->
+              <WrapPanel Margin='0,6,0,0'>
+                <StackPanel Margin='0,0,28,8'>
+                  <TextBlock Text='Griglia lato sinistro' FontSize='11.5' Foreground='#FF9A9A9A' Margin='0,0,0,4'/>
                   <WrapPanel x:Name='GridLButtons' MaxWidth='560'/>
                 </StackPanel>
-                <StackPanel Grid.Column='1'>
-                  <TextBlock Text='Destra' FontSize='11.5' Foreground='#FF9A9A9A' Margin='0,0,0,4'/>
+                <StackPanel Margin='0,0,28,8'>
+                  <TextBlock Text='Griglia lato destro' FontSize='11.5' Foreground='#FF9A9A9A' Margin='0,0,0,4'/>
                   <WrapPanel x:Name='GridRButtons' MaxWidth='560'/>
                 </StackPanel>
-              </Grid>
-              <StackPanel Grid.Row='5' Grid.Column='1' Margin='0,8,0,0'>
+              </WrapPanel>
+              <StackPanel Margin='0,4,0,0'>
                 <CheckBox x:Name='ChkInputs' Content='Ai lati della marcia: acceleratore e freno (invece della barra dei giri)'/>
                 <CheckBox x:Name='ChkNoBars' Content='Nascondi le barre ai lati della marcia' Margin='0,6,0,0'/>
               </StackPanel>
-            </Grid>
+            </StackPanel>
             <Grid Margin='0,18,0,0'><Grid.ColumnDefinitions><ColumnDefinition Width='Auto'/><ColumnDefinition Width='*'/></Grid.ColumnDefinitions><TextBlock Text='ANTEPRIMA E SCHEDE' FontWeight='Bold' FontSize='14' Foreground='White'/><Border Grid.Column='1' Height='1' Background='#FF4A4A4A' VerticalAlignment='Center' Margin='12,0,0,0'/></Grid>
           </StackPanel>
           <Grid>

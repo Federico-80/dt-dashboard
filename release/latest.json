@@ -1,5 +1,5 @@
 {
-  "version": "2.16",
-  "notes": "2.16: si accende solo TC (non TC Cut e TC Slip)",
+  "version": "2.17",
+  "notes": "2.17: sezione layout del plugin piu' compatta (barre, riquadri, centro e LED affiancati)",
   "date": "2026-10-24"
 }
