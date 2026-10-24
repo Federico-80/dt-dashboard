@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "2.17";
+        public const string VersionText = "2.18";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -1213,7 +1213,7 @@ namespace FedeDashboard
             if (!alertActive) return 0;
             double t = (DateTime.Now - alertSince).TotalSeconds / 0.25;
             if (t >= 1 || t < 0) return 0;
-            return Math.Round((1 - t) * (1 - t) * 425);
+            return Math.Round((1 - t) * (1 - t) * 330);
         }
 
         string FlagSector()

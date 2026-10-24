@@ -1145,13 +1145,16 @@ def damage_items(bx, by, bw, bh):
     """Danni come l'icona di LMU: auto vista dall'alto (muso in alto) disegnata a linee, 4 gomme azzurre con accanto
     la striscia del freno (verde -> rosso con l'usura), frecce delle sospensioni, musetto e alettone colorati col danno.
     Se c'e' spazio, ai lati lo stato di ogni angolo (OK / LIEVE / ... / PERSA) e dell'aerodinamica."""
-    ch = bh * 0.94
+    # margine intorno e macchina un po' piu' piccola (le scritte non toccano i bordi)
+    px_, py_ = bw * 0.06, bh * 0.07
+    bx, by, bw, bh = bx + px_, by + py_, bw - 2 * px_, bh - 2 * py_
+    ch = bh * 0.84
     cw = ch * 0.62
     if cw > bw * 0.9:
         cw = bw * 0.9
         ch = cw / 0.62
     lw = (bw - cw) / 2.0 - 10
-    labels = lw >= 46 and ch >= 120
+    labels = lw >= 46 and ch >= 95
     x0, y0 = bx + (bw - cw) / 2.0, by + (bh - ch) / 2.0
     lw_ = max(2, round(ch * 0.018))                      # spessore delle linee
     tw, th = cw * 0.2, ch * 0.2                          # gomme

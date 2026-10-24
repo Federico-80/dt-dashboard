@@ -1500,7 +1500,38 @@ namespace FedeDashboard
                 }
                 body.Children.Add(r);
             }
+            AddAlertPreview(card, body, a);
             return card;
+        }
+
+        /// <summary>Anteprima dell'avviso a destra delle sue impostazioni (sopra la pagina attiva).</summary>
+        void AddAlertPreview(dynamic card, dynamic body, AlertSettings a)
+        {
+            try
+            {
+                dynamic stack = card.Child;
+                stack.Children.Remove(body);
+                dynamic g = Wpf.Xaml("<Grid {NS}><Grid.ColumnDefinitions><ColumnDefinition Width='*'/><ColumnDefinition Width='Auto'/></Grid.ColumnDefinitions></Grid>");
+                g.Children.Add(body);
+                dynamic pb = Wpf.Xaml("<Border {NS} Grid.Column='1' Margin='16,0,0,0' VerticalAlignment='Top' CornerRadius='6' Background='#FF000000' BorderBrush='#FF3E3E3E' BorderThickness='1' Padding='3'>" +
+                                      "<StackPanel><Viewbox Width='340' Stretch='Uniform'><Canvas Width='850' Height='480' Background='Black' ClipToBounds='True'/></Viewbox>" +
+                                      "<TextBlock Text='Anteprima (pagina attiva, valori di esempio)' FontSize='10.5' Foreground='#FF7A7A7A' HorizontalAlignment='Center' Margin='0,3,0,0'/></StackPanel></Border>");
+                dynamic canvas = pb.Child.Children[0].Child;
+                Func<string, string> lbl = id =>
+                {
+                    foreach (var rt in plugin.Runtime) if (rt.Def.Id == id) return rt.Settings.Label;
+                    return id;
+                };
+                bool ok = previewRenderer.DrawAlert((object)canvas, Page, S.Font, a, lbl);
+                if (!ok) { g.Children.Remove(body); stack.Children.Add(body); return; }   // file della dash non trovati: niente anteprima
+                g.Children.Add(pb);
+                stack.Children.Add(g);
+            }
+            catch (Exception ex)
+            {
+                FedeLog.Error("anteprima avviso", ex);
+                try { dynamic stack = card.Child; if (!stack.Children.Contains(body)) stack.Children.Add(body); } catch { }
+            }
         }
 
         // ---------------------------------------------------------------- tempi e posizioni

@@ -1,5 +1,5 @@
 {
-  "version": "2.17",
-  "notes": "2.17: sezione layout del plugin piu' compatta (barre, riquadri, centro e LED affiancati)",
+  "version": "2.18",
+  "notes": "2.18: anteprima degli avvisi nel plugin, schema danni con margini e macchina piu' piccola, avvisi di lato piu' piccoli",
   "date": "2026-10-24"
 }

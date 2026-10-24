@@ -47,6 +47,117 @@ namespace FedeDashboard
             brushConv = Activator.CreateInstance(Wpf.T("System.Windows.Media.BrushConverter"));
         }
 
+        // anteprima avvisi: livelli forzati, testi, colori e sfondi sostituiti (per nome dell'elemento)
+        readonly Dictionary<string, bool> layerVis = new Dictionary<string, bool>();
+        readonly Dictionary<string, string> textOver = new Dictionary<string, string>();
+        readonly Dictionary<string, string> colorOver = new Dictionary<string, string>();
+        readonly Dictionary<string, string> bgOver = new Dictionary<string, string>();
+        List<object> alertTree;
+        DateTime alertStamp;
+
+        void ClearOverrides() { layerVis.Clear(); textOver.Clear(); colorOver.Clear(); bgOver.Clear(); }
+
+        static Dictionary<string, object> FindByName(List<object> items, string name, int depth = 0)
+        {
+            if (items == null || depth > 8) return null;
+            foreach (var o in items)
+            {
+                var d = o as Dictionary<string, object>;
+                if (d == null) continue;
+                if (Str(d, "Name") == name) return d;
+                var r = FindByName(Get(d, "Childrens") as List<object>, name, depth + 1);
+                if (r != null) return r;
+            }
+            return null;
+        }
+
+        static string Sample(string id)
+        {
+            foreach (var c in Catalog.Channels) if (c.Id == id) return string.IsNullOrEmpty(c.Sample) ? "-" : c.Sample;
+            return "-";
+        }
+
+        /// <summary>Anteprima di un avviso sopra la pagina, con le impostazioni attuali (colori, titolo, valori, grandezza, posizione).</summary>
+        public bool DrawAlert(object canvas, PageSettings p, FontSettings font, AlertSettings a, Func<string, string> label)
+        {
+            InitTypes();
+            ClearOverrides();
+            try
+            {
+                bool flagTile = a.Id == "Flag" && !a.FlagAsPopup;
+                if (flagTile) { layerVis["Bandiera"] = true; textOver["Bandiera nome"] = "GIALLA"; textOver["Bandiera settore"] = "SETTORE 2"; }
+                if (!Draw(canvas, p, font)) return false;
+                if (flagTile) return true;
+                string path = Path.Combine(Folder, DashBuilder.DashName + ".djson.modello");
+                if (!File.Exists(path)) return true;
+                var stamp = File.GetLastWriteTimeUtc(path);
+                if (alertTree == null || stamp != alertStamp)
+                {
+                    var root = MiniJson.Parse(File.ReadAllText(path, Encoding.UTF8).TrimStart('\uFEFF')) as Dictionary<string, object>;
+                    var sc = root != null ? Get(root, "Screens") as List<object> : null;
+                    var all = new List<object>();
+                    if (sc != null) foreach (var x in sc) { var sd = x as Dictionary<string, object>; if (sd != null && Get(sd, "Items") is List<object>) all.AddRange((List<object>)Get(sd, "Items")); }
+                    alertTree = all; alertStamp = stamp;
+                }
+                string mainFile = Path.Combine(Folder, DashBuilder.DashName + ".djson");
+                if (a.Id == "Pit" && !a.SimpleLayout)
+                {
+                    var box = FindByName(alertTree, "Schermata box");
+                    if (box != null)
+                    {
+                        bgOver["Box sfondo"] = WithOpacity(a.Background, a.Opacity);
+                        DrawItems(canvas, Get(box, "Childrens") as List<object>, 0, 0, p, mainFile, 0);
+                    }
+                    return true;
+                }
+                var v = FindByName(alertTree, "Variante " + a.Variant);
+                if (v == null) return true;
+                string fg = DTPlugin.NormalizeColor(a.TextColor, "#FFFFFFFF");
+                string bg = WithOpacity(a.Background, a.Opacity);
+                if (a.Id == "Flag" && a.UseFlagColor) { bg = "#FFFFD600"; fg = "#FF000000"; }
+                bgOver["Avviso sfondo"] = bg;
+                for (int n = 1; n <= 4; n++) layerVis["Valori " + n] = false;
+                layerVis["Valore solo"] = false;
+                layerVis["Schema danni"] = a.Id == "Damage";
+                string title = a.Title ?? "";
+                var ids = new List<string>();
+                foreach (var c in a.Channels) if (ids.Count < 4 && !string.IsNullOrEmpty(c)) ids.Add(c);
+                if (a.Id == "Change")
+                {
+                    string id = ids.Count > 0 ? ids[0] : "BB";
+                    title = label(id);
+                    layerVis["Valore solo"] = true;
+                    textOver["Avviso valore solo"] = Sample(id);
+                    colorOver["Avviso titolo"] = "#FF8EC5FF";
+                    colorOver["Avviso valore solo"] = fg;
+                }
+                else if (a.Id == "Flag") title = "GIALLA";
+                else if (a.Id != "Damage" && ids.Count > 0)
+                {
+                    layerVis["Valori " + ids.Count] = true;
+                    for (int i = 0; i < ids.Count; i++)
+                    {
+                        textOver["Avviso valore " + (i + 1)] = Sample(ids[i]);
+                        textOver["Avviso nome " + (i + 1)] = label(ids[i]);
+                        colorOver["Avviso valore " + (i + 1)] = fg;
+                        colorOver["Avviso nome " + (i + 1)] = fg;
+                    }
+                }
+                textOver["Avviso titolo"] = title;
+                if (!colorOver.ContainsKey("Avviso titolo")) colorOver["Avviso titolo"] = fg;
+                DrawItems(canvas, Get(v, "Childrens") as List<object>, 0, 0, p, mainFile, 0);
+                return true;
+            }
+            finally { ClearOverrides(); }
+        }
+
+        static string WithOpacity(string c, int opacity)
+        {
+            c = DTPlugin.NormalizeColor(c, "#FF000000");
+            int al = (int)Math.Round(Math.Max(0, Math.Min(100, opacity)) * 2.55);
+            return "#" + al.ToString("X2") + c.Substring(3);
+        }
+
         /// <summary>Disegna la pagina nel Canvas (850x480). false se i file della dash non ci sono.</summary>
         public bool Draw(object canvas, PageSettings p, FontSettings font)
         {
@@ -125,7 +236,12 @@ namespace FedeDashboard
                 string type = Str(it, "$type");
                 string nm = Str(it, "Name");
                 // riquadro delta: quello predefinito o la scheda scelta, secondo la pagina
-                if (nm == "Delta predefinito" || nm == "Delta scelto")
+                bool forced;
+                if (layerVis.TryGetValue(nm, out forced))
+                {
+                    if (!forced) continue;     // anteprima avvisi: livelli accesi/spenti a mano
+                }
+                else if (nm == "Delta predefinito" || nm == "Delta scelto")
                 {
                     if ((nm == "Delta predefinito") != (p.CenterTop == 0)) continue;
                 }
@@ -200,7 +316,9 @@ namespace FedeDashboard
             dynamic b = Activator.CreateInstance(tBorder);
             b.Width = Math.Max(0, Num(it, "Width"));
             b.Height = Math.Max(0, Num(it, "Height"));
-            object bg = Brush(Str(it, "BackgroundColor"));
+            string bgs;
+            if (!bgOver.TryGetValue(Str(it, "Name"), out bgs)) bgs = Str(it, "BackgroundColor");
+            object bg = Brush(bgs);
             if (bg != null) b.Background = (dynamic)bg;
             var bs = Get(it, "BorderStyle") as Dictionary<string, object>;
             if (bs != null)
@@ -221,6 +339,8 @@ namespace FedeDashboard
         object MakeText(Dictionary<string, object> it)
         {
             string txt = Str(it, "Text");
+            string ov;
+            if (textOver.TryGetValue(Str(it, "Name"), out ov)) txt = ov;
             dynamic g = Activator.CreateInstance(tGrid);
             g.Width = Math.Max(0, Num(it, "Width"));
             g.Height = Math.Max(0, Num(it, "Height"));
@@ -232,7 +352,9 @@ namespace FedeDashboard
             string fam = Str(it, "Font");
             try { t.FontFamily = (dynamic)Activator.CreateInstance(tFontFamily, (fam.Length > 0 ? fam + ", " : "") + "Roboto, Segoe UI"); } catch { }
             try { t.FontWeight = (dynamic)weightConv.GetType().GetMethod("ConvertFromString", new[] { typeof(string) }).Invoke(weightConv, new object[] { Str(it, "FontWeight").Length > 0 ? Str(it, "FontWeight") : "Normal" }); } catch { }
-            object fg = Brush(Str(it, "TextColor"));
+            string fgs;
+            if (!colorOver.TryGetValue(Str(it, "Name"), out fgs)) fgs = Str(it, "TextColor");
+            object fg = Brush(fgs);
             if (fg != null) t.Foreground = (dynamic)fg;
             int ha = (int)Num(it, "HorizontalAlignment", 1), va = (int)Num(it, "VerticalAlignment", 1);
             t.TextAlignment = (dynamic)Enum.Parse(tTextAlign, ha == 0 ? "Left" : (ha == 2 ? "Right" : "Center"));
