@@ -940,7 +940,7 @@ def card_items(card, w, h):
 
     if kind in ("single", "delta"):
         c = card["ch"]
-        aid = {"TC": "TC", "TCCut": "TC", "TCSlip": "TC", "ABS": "ABS"}.get(c)
+        aid = {"TC": "TC", "ABS": "ABS"}.get(c)   # solo TC e ABS si accendono (TC Cut e TC Slip no)
         if aid:
             glow = "#FF0091EA" if aid == "TC" else "#FFFFAB00"
             items.append(layer("%s attivo" % aid, [rect("%s attivo fondo" % aid, 2, 2, w - 4, h - 4, bg=glow, radius=int(min(10, h / 4)))],
