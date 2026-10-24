@@ -1,5 +1,5 @@
 {
-  "version": "2.21",
-  "notes": "2.21: anteprima con barre ai lati della marcia corretta, tolta la linea prima di ASC",
+  "version": "2.22",
+  "notes": "2.22: tolta la barra doppia; nuovo avviso Strategia gara di lato a ogni giro (anche con tasto); tasti del volante assegnabili dal plugin per strategia e cambio pagina",
   "date": "2026-10-24"
 }

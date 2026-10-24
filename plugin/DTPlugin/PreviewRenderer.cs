@@ -120,6 +120,7 @@ namespace FedeDashboard
                 for (int n = 1; n <= 4; n++) layerVis["Valori " + n] = false;
                 layerVis["Valore solo"] = false;
                 layerVis["Schema danni"] = a.Id == "Damage";
+                layerVis["Strategia"] = a.Id == "Strategy";
                 string title = a.Title ?? "";
                 var ids = new List<string>();
                 foreach (var c in a.Channels) if (ids.Count < 4 && !string.IsNullOrEmpty(c)) ids.Add(c);
@@ -140,7 +141,7 @@ namespace FedeDashboard
                     colorOver["Avviso valore solo"] = fg;
                     hidden.Add("Avviso freccia sinistra"); hidden.Add("Avviso freccia destra");
                 }
-                else if (a.Id != "Damage" && ids.Count > 0)
+                else if (a.Id != "Damage" && a.Id != "Strategy" && ids.Count > 0)
                 {
                     layerVis["Valori " + ids.Count] = true;
                     for (int i = 0; i < ids.Count; i++)

@@ -8,6 +8,8 @@ namespace FedeDashboard
     {
         public int Version { get; set; } = 1;
         public int ActivePage { get; set; } = 0;
+        public KeyBinding PageNextKey { get; set; }   // tasti del volante assegnati dal plugin per cambiare pagina
+        public KeyBinding PagePrevKey { get; set; }
         public double PageToastSeconds { get; set; } = 1.5;
         public List<PageSettings> Pages { get; set; } = new List<PageSettings>();
         public List<ChannelSettings> Channels { get; set; } = new List<ChannelSettings>();
@@ -255,6 +257,15 @@ namespace FedeDashboard
         }
     }
 
+    /// <summary>Un tasto del volante / button box (vid:pid della periferica + numero tasto).</summary>
+    public class KeyBinding
+    {
+        public string Device { get; set; }
+        public string Name { get; set; }
+        public int Button { get; set; }
+        public bool Is(string dev, int button) { return !string.IsNullOrEmpty(Device) && Device == dev && Button == button; }
+    }
+
     /// <summary>Pagine salvate per un gioco.</summary>
     public class GameProfile
     {
@@ -321,6 +332,8 @@ namespace FedeDashboard
         {
             if (string.IsNullOrWhiteSpace(Name)) Name = "Pagina";
             Frame = Clamp(Frame, Catalog.LedOffset);
+            if (Frame == 4) Frame = 0;          // barra doppia tolta: diventa la cornice normale
+            else if (Frame >= 5) Frame = 1;
             CenterLayout = Clamp(CenterLayout, Catalog.CenterLayouts.Length);
             GridLeft = Clamp(GridLeft, Catalog.Grids.Length);
             GridRight = Clamp(GridRight, Catalog.Grids.Length);
@@ -379,7 +392,7 @@ namespace FedeDashboard
     /// <summary>Un avviso a schermo: box/limitatore, cambio valori o fine giro.</summary>
     public class AlertSettings
     {
-        public static readonly string[] Kinds = { "Pit", "Damage", "Flag", "Change", "Lap" };
+        public static readonly string[] Kinds = { "Pit", "Damage", "Flag", "Change", "Lap", "Strategy" };
         public const int MaxValues = 4;
 
         public string Id { get; set; }
@@ -394,6 +407,10 @@ namespace FedeDashboard
         public bool UseFlagColor { get; set; } // solo Flag: sfondo del colore della bandiera
         public bool FlagAsPopup { get; set; }  // solo Flag: false = nel riquadro in alto a destra, true = avviso a schermo
         public bool SimpleLayout { get; set; } // solo Pit: false = schermata box completa (avversari, tempo in corsia)
+        public bool NoAutoLap { get; set; }
+        public string KeyDevice { get; set; }  // solo Strategy: tasto del volante assegnato dal plugin (vid:pid, vuoto = nessuno)
+        public string KeyDeviceName { get; set; }
+        public int KeyButton { get; set; }    // solo Strategy: true = non esce da sola a ogni giro, solo col tasto
         public string Title { get; set; }
         public List<string> Channels { get; set; } = new List<string>();
 
@@ -414,6 +431,9 @@ namespace FedeDashboard
                     return new AlertSettings { Id = id, Enabled = true, Size = 0, Position = 0, Background = "#FF000000", Opacity = 100,
                         TextColor = "#FFFFFFFF", Seconds = 1.5, Title = "",
                         Channels = new List<string> { "TC", "TCCut", "ABS", "BB", "Map" } };
+                case "Strategy":
+                    return new AlertSettings { Id = id, Enabled = true, Size = 3, Position = 1, Background = "#FF000000", Opacity = 95,
+                        TextColor = "#FFFFFFFF", Seconds = 6, Title = "STRATEGIA", Channels = new List<string>() };
                 default:
                     return new AlertSettings { Id = "Lap", Enabled = true, Size = 3, Position = 1, Background = "#FF000000", Opacity = 95,
                         TextColor = "#FFFFFFFF", Seconds = 4, Title = "GIRO",

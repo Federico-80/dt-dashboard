@@ -119,6 +119,7 @@ namespace FedeDashboard
               <CheckBox x:Name='ChkQ' Content='Qualifica' Margin='0,0,18,0'/>
               <CheckBox x:Name='ChkR' Content='Gara' Margin='0,0,18,0'/>
             </WrapPanel>
+            <StackPanel x:Name='PageKeys' Margin='24,8,0,0'/>
 
             <Grid Margin='0,18,0,0'><Grid.ColumnDefinitions><ColumnDefinition Width='Auto'/><ColumnDefinition Width='*'/></Grid.ColumnDefinitions><TextBlock Text='LAYOUT' FontWeight='Bold' FontSize='14' Foreground='White'/><Border Grid.Column='1' Height='1' Background='#FF4A4A4A' VerticalAlignment='Center' Margin='12,0,0,0'/></Grid>
             <StackPanel Margin='24,0,0,0'>
@@ -243,7 +244,7 @@ namespace FedeDashboard
   </DockPanel>
 </UserControl>";
 
-        static readonly string[] FrameShort = { "Entrambe", "Solo in basso", "Solo laterali", "Nessuna", "Doppia + laterali", "Doppia in basso" };
+        static readonly string[] FrameShort = { "Entrambe", "Solo in basso", "Solo laterali", "Nessuna" };
 
         const string ValuesInfoText =
             "Ogni riga è un valore che le schede possono mostrare. Puoi cambiare l'etichetta (il testo sopra il numero), " +
@@ -264,9 +265,11 @@ namespace FedeDashboard
             "ATTIVA DA SOLA IN\n" +
             "Spunta Prove / Qualifica / Gara e quella pagina si apre automaticamente quando entri in quel tipo di sessione.\n\n" +
             "TASTI DEL VOLANTE\n" +
-            "SimHub > Controlli ed eventi > Nuova mappatura > scegli l'azione:\n" +
+            "Sotto il nome della pagina: clic su \"Pagina dopo\" o \"Pagina prima\" e premi il tasto sul volante o sulla button box. " +
+            "Oppure da SimHub > Controlli ed eventi > Nuova mappatura > scegli l'azione:\n" +
             "   DTPlugin.PaginaSuccessiva / DTPlugin.PaginaPrecedente\n" +
             "   DTPlugin.VaiAPagina1 ... VaiAPagina6\n" +
+            "   DTPlugin.MostraStrategia (avviso strategia gara)\n" +
             "e premi il tasto da usare. Al cambio pagina la dashboard mostra per un attimo il nome della pagina.\n\n" +
             "CORNICE E GRIGLIE\n" +
             "Cornice = se ci sono le barre laterali verticali e/o la barra in basso. Ogni lato (sinistro/destro) ha la sua griglia " +
@@ -288,7 +291,7 @@ namespace FedeDashboard
         readonly PreviewRenderer previewRenderer = new PreviewRenderer();
         bool realPreview, previewErrorLogged;
         readonly dynamic root, tabs, cbPage, tbName, chkP, chkQ, chkR, chkInputs, chkNoBars, cbGame, gameInfo, chkAutoGame, centerButtons, ledButtons, frameButtons, toolbarButtons,
-                         gridLButtons, gridRButtons, preview, pickerPanel, grid, timer, alertsPanel, tyresPanel, idlePanel, idlePreview;
+                         gridLButtons, gridRButtons, preview, pickerPanel, grid, timer, alertsPanel, pageKeys, tyresPanel, idlePanel, idlePreview;
         dynamic tyreLive;
         bool updating;
 
@@ -394,6 +397,7 @@ namespace FedeDashboard
             pickerPanel = F("PickerPanel");
             grid = F("Grid");
             alertsPanel = F("AlertsPanel");
+            pageKeys = F("PageKeys");
             tyresPanel = F("TyresPanel");
             idlePanel = F("IdlePanel");
             idlePreview = F("IdlePreview");
@@ -581,11 +585,56 @@ namespace FedeDashboard
             root.Dispatcher.BeginInvoke(new Action(RefreshAll));
         }
 
+        string learningKey;   // quale tasto pagina si sta assegnando ("next" / "prev"), null = nessuno
+
+        void BuildPageKeys()
+        {
+            try
+            {
+                pageKeys.Children.Clear();
+                dynamic r = Wpf.Xaml("<WrapPanel {NS} Margin='0,0,0,4'/>");
+                r.Children.Add(Wpf.Xaml("<TextBlock {NS} Text='Tasti volante per cambiare pagina' VerticalAlignment='Center' Foreground='#FF9A9A9A' Margin='0,0,12,0'/>"));
+                AddKey((object)r, "next", "Pagina dopo", () => S.PageNextKey, k => S.PageNextKey = k);
+                AddKey((object)r, "prev", "Pagina prima", () => S.PagePrevKey, k => S.PagePrevKey = k);
+                pageKeys.Children.Add(r);
+            }
+            catch (Exception ex) { FedeLog.Error("tasti pagina", ex); }
+        }
+
+        void AddKey(object rowObj, string id, string what, Func<KeyBinding> get, Action<KeyBinding> set)
+        {
+            dynamic row = rowObj;
+            var k = get();
+            bool learning = learningKey == id && plugin.LearnButton != null;
+            string txt = learning ? what + ": premi il tasto..." : what + ": " + (k == null || string.IsNullOrEmpty(k.Device) ? "nessuno" : "tasto " + k.Button);
+            dynamic b = Seg(txt, learning, true, () =>
+            {
+                if (learning) { plugin.LearnButton = null; learningKey = null; }
+                else
+                {
+                    learningKey = id;
+                    plugin.LearnButton = (dev, name, btn) =>
+                    {
+                        set(new KeyBinding { Device = dev, Name = name, Button = btn });
+                        learningKey = null;
+                        Save();
+                        root.Dispatcher.BeginInvoke(new Action(BuildPageKeys));
+                    };
+                }
+                BuildPageKeys();
+            });
+            if (k != null && !string.IsNullOrEmpty(k.Device)) b.ToolTip = (k.Name ?? "") + " - tasto " + k.Button + " (clic per cambiarlo)";
+            row.Children.Add(b);
+            if (k != null && !string.IsNullOrEmpty(k.Device) && !learning)
+                row.Children.Add(Seg("x", false, true, () => { set(null); Save(); BuildPageKeys(); }));
+        }
+
         void RefreshAll()
         {
             updating = true;
             try
             {
+                BuildPageKeys();
                 var p = Page;
                 // gioco: quello scelto qui, oppure (se le pagine sono cambiate da sole) quello in uso
                 if (S.ProfileGame.Length > 0) uiGame = S.ProfileGame;
@@ -1352,6 +1401,8 @@ namespace FedeDashboard
         }
 
         // ---------------------------------------------------------------- avvisi
+        AlertSettings learningAlert;
+
         void AlertChanged()
         {
             Save();
@@ -1374,11 +1425,12 @@ namespace FedeDashboard
         dynamic AlertCard(AlertSettings a)
         {
             string title = a.Id == "Pit" ? "Box / limitatore" : a.Id == "Damage" ? "Danni" : a.Id == "Flag" ? "Bandiere"
-                         : a.Id == "Change" ? "Cambio valori" : "Fine giro";
+                         : a.Id == "Change" ? "Cambio valori" : a.Id == "Strategy" ? "Strategia gara" : "Fine giro";
             string sub = a.Id == "Pit" ? "Resta acceso finché il limitatore è inserito."
                        : a.Id == "Damage" ? "Quando subisci un danno mostra lo schema della macchina con le zone colpite (giallo lieve, arancio medio, rosso grave) e le gomme forate o perse."
                        : a.Id == "Flag" ? "Bandiera gialla, blu, nera, bianca, arancio (meatball); verde e scacchi solo per qualche secondo. Resta accesa finché la bandiera è esposta."
                        : a.Id == "Change" ? "Quando cambi BB, TC, ABS, mappa... mostra il nuovo valore per qualche secondo."
+                       : a.Id == "Strategy" ? "Solo in gara: a ogni giro, dopo l'avviso di fine giro, mostra soste, finestra box, ratio, giri alla fine, litri ed energia necessari."
                        : "A ogni giro completato mostra i valori che scegli.";
             dynamic right, body;
             dynamic card = Card(title, sub, out right, out body);
@@ -1452,7 +1504,31 @@ namespace FedeDashboard
                 body.Children.Add(r);
             }
 
-            if (a.Id == "Damage" || a.Id == "Flag")
+            if (a.Id == "Strategy")
+            {
+                r = LRow("Quando");
+                r.Children.Add(Seg("A ogni giro + tasto", !a.NoAutoLap, true, () => { a.NoAutoLap = false; AlertChanged(); }));
+                r.Children.Add(Seg("Solo col tasto", a.NoAutoLap, true, () => { a.NoAutoLap = true; AlertChanged(); }));
+                body.Children.Add(r);
+                r = LRow("Tasto volante");
+                bool learning = plugin.LearnButton != null && learningAlert == a;
+                string keyTxt = learning ? "Premi ora il tasto sul volante o sulla button box..."
+                              : string.IsNullOrEmpty(a.KeyDevice) ? "Nessun tasto" : (a.KeyDeviceName ?? "Volante") + " - tasto " + a.KeyButton;
+                r.Children.Add(Small(keyTxt));
+                r.Children.Add(Seg(learning ? "Annulla" : "Assegna tasto", learning, true, () =>
+                {
+                    if (plugin.LearnButton != null) { plugin.LearnButton = null; learningAlert = null; AlertChanged(); return; }
+                    learningAlert = a;
+                    plugin.LearnButton = (dev, name, btn) => { a.KeyDevice = dev; a.KeyDeviceName = name; a.KeyButton = btn; learningAlert = null; AlertChanged(); };
+                    AlertChanged();
+                }));
+                if (!string.IsNullOrEmpty(a.KeyDevice) && !learning)
+                    r.Children.Add(Seg("Togli", false, true, () => { a.KeyDevice = null; a.KeyDeviceName = null; a.KeyButton = 0; AlertChanged(); }));
+                body.Children.Add(r);
+                body.Children.Add(Help("Premi \"Assegna tasto\" e poi il tasto che vuoi usare: la strategia esce subito (anche fuori gara), ripremendolo si chiude. " +
+                    "In alternativa: SimHub > Controlli ed eventi > azione DTPlugin.MostraStrategia.", "0,-2,0,8"));
+            }
+            else if (a.Id == "Damage" || a.Id == "Flag")
             {
                 if (a.Id == "Damage")
                     body.Children.Add(Help("Lo schema danni si può anche mettere fisso in un riquadro: scheda \"Danni (schema auto)\" in Pagine e layout.", "0,4,0,0"));

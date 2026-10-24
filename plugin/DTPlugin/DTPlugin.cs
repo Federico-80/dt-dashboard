@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "2.21";
+        public const string VersionText = "2.22";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -255,7 +255,8 @@ namespace FedeDashboard
         DateTime damageUntil = DateTime.MinValue, flagTransientUntil = DateTime.MinValue;
         string transientFlag = "";
         bool lastGreen, lastChequered;
-        volatile bool alertDamage;
+        volatile bool alertDamage, alertStrategy;
+        DateTime stratFrom = DateTime.MinValue, stratUntil = DateTime.MinValue;
         volatile bool engineOff, overRev;
         DateTime tcActiveUntil = DateTime.MinValue, absActiveUntil = DateTime.MinValue;
         volatile int engineState, lightsState, wiperState;
@@ -414,6 +415,7 @@ namespace FedeDashboard
             bridge.Attach("Attesa_StemmaTestoColore", () => NormalizeColor(Settings.Idle.BadgeTextColor, "#FFFFFFFF"));
             bridge.Attach("Attesa_StemmaNumero", () => Settings.Idle.BadgeShowNumber && !string.IsNullOrEmpty(Settings.Idle.Number));
             bridge.Attach("Avviso_Danni", () => alertDamage);
+            bridge.Attach("Avviso_Strategia", () => alertStrategy);
             for (int i = 0; i < 8; i++) { int zi = i; bridge.Attach("Danno_Z" + (zi + 1) + "_Livello", () => dent[zi]); }
             foreach (var key in new[] { "FL", "FR", "RL", "RR", "Aero" })
             {
@@ -531,6 +533,10 @@ namespace FedeDashboard
             // Azioni da collegare ai tasti (SimHub > Controlli ed eventi)
             bridge.AddAction("PaginaSuccessiva", () => ChangePage(1));
             bridge.AddAction("PaginaPrecedente", () => ChangePage(-1));
+            bridge.AddAction("MostraStrategia", ToggleStrategy);
+            // tasto assegnato direttamente dal plugin
+            WheelButtons.Pressed += OnWheelButton;
+            WheelButtons.Start();
             for (int i = 0; i < 6; i++)
             {
                 int idx = i;
@@ -615,6 +621,7 @@ namespace FedeDashboard
         {
             try { if (updateTimer != null) updateTimer.Dispose(); } catch { }
             try { if (lmuRest != null) lmuRest.Stop(); } catch { }
+            try { WheelButtons.Pressed -= OnWheelButton; WheelButtons.Stop(); } catch { }
             SaveSettings();
             FedeLog.Write("Chiusura");
         }
@@ -1273,7 +1280,7 @@ namespace FedeDashboard
             alertVariant = a.Variant;
             alertBg = a.UseFlagColor ? WithOpacity(bg, a.Opacity) : WithOpacity(a.Background, a.Opacity);
             alertFg = a.UseFlagColor ? fg : NormalizeColor(a.TextColor, "#FFFFFFFF");
-            alertDamage = false;
+            alertDamage = false; alertStrategy = false;
             MarkActive();
         }
 
@@ -1285,7 +1292,46 @@ namespace FedeDashboard
             alertVariant = a.Variant;
             alertBg = WithOpacity(a.Background, a.Opacity);
             alertFg = NormalizeColor(a.TextColor, "#FFFFFFFF");
-            alertDamage = true;
+            alertDamage = true; alertStrategy = false;
+            MarkActive();
+        }
+
+        /// <summary>Chi aspetta il prossimo tasto premuto (assegnazione dal plugin), null = nessuno.</summary>
+        public volatile Action<string, string, int> LearnButton;
+
+        void OnWheelButton(string dev, string name, int button)
+        {
+            var learn = LearnButton;
+            if (learn != null) { LearnButton = null; learn(dev, name, button); return; }
+            var pn = Settings.PageNextKey; var pp = Settings.PagePrevKey;
+            if (pn != null && pn.Is(dev, button)) { ChangePage(1); return; }
+            if (pp != null && pp.Is(dev, button)) { ChangePage(-1); return; }
+            var sa = Alert("Strategy");
+            if (!string.IsNullOrEmpty(sa.KeyDevice) && sa.KeyDevice == dev && sa.KeyButton == button) ToggleStrategy();
+        }
+
+        /// <summary>Tasto del volante: mostra la strategia subito (se e' gia' a schermo la chiude).</summary>
+        void ToggleStrategy()
+        {
+            var now = DateTime.Now;
+            if (now >= stratFrom && now < stratUntil) { stratUntil = now; return; }
+            var sa = Alert("Strategy");
+            lapUntil = now;   // chiude l'avviso di fine giro, la strategia esce subito
+            stratFrom = now;
+            stratUntil = now.AddSeconds(Math.Max(0.5, sa.Seconds));
+        }
+
+        /// <summary>Strategia gara a lato: soste, finestra box, ratio, giri alla fine, litri, energia.</summary>
+        void ShowStrategy(AlertSettings a)
+        {
+            alertTitle = a.Title ?? ""; alertArrow = 0; alertTitleColor = null;
+            for (int i = 0; i < AlertSettings.MaxValues; i++) { alertV[i] = ""; alertL[i] = ""; }
+            alertN = 0;   // nessun gruppo di valori: si vede solo lo strato Strategia
+            alertVariant = a.Variant;
+            alertBg = WithOpacity(a.Background, a.Opacity);
+            alertFg = NormalizeColor(a.TextColor, "#FFFFFFFF");
+            alertTitleColor = alertFg;
+            alertDamage = false; alertStrategy = true;
             MarkActive();
         }
 
@@ -1684,6 +1730,14 @@ namespace FedeDashboard
                 lapFromLine = true;
                 lapClean = !laneNow;
                 if (lap.Enabled && settled) lapUntil = now.AddSeconds(Math.Max(0.5, lap.Seconds));
+                // strategia: ad ogni giro in gara, subito dopo l'avviso di fine giro
+                var sa = Alert("Strategy");
+                string stOn; lock (strat) strat.TryGetValue("Attiva", out stOn);
+                if (sa.Enabled && !sa.NoAutoLap && settled && stOn == "1")
+                {
+                    stratFrom = lap.Enabled ? now.AddSeconds(Math.Max(0.5, lap.Seconds)) : now;
+                    stratUntil = stratFrom.AddSeconds(Math.Max(0.5, sa.Seconds));
+                }
             }
             else if (lapNo != lastLapNumber)
             {
@@ -1730,7 +1784,8 @@ namespace FedeDashboard
             if (now < testUntil)
             {
                 if (testKind == "Damage") ShowDamage(dmg);
-                else if (testKind == "Flag") { if (flg.FlagAsPopup) ShowFlag(flg, "Yellow"); else { alertActive = false; alertDamage = false; } }
+                else if (testKind == "Strategy") ShowStrategy(Alert("Strategy"));
+                else if (testKind == "Flag") { if (flg.FlagAsPopup) ShowFlag(flg, "Yellow"); else { alertActive = false; alertDamage = false; alertStrategy = false; } }
                 else
                 {
                     if (testKind == "Change") changeDir = (now.Second % 2 == 0) ? 1 : -1;   // prova: su e giu' alternati
@@ -1742,7 +1797,8 @@ namespace FedeDashboard
             else if (flg.Enabled && flg.FlagAsPopup && flag.Length > 0 && running) ShowFlag(flg, flag);
             else if (now < changeUntil) ShowAlert(chg, changeId, null);
             else if (now < lapUntil) ShowAlert(lap, null, null);
-            else { alertActive = false; alertDamage = false; }
+            else if (now >= stratFrom && now < stratUntil) ShowStrategy(Alert("Strategy"));
+            else { alertActive = false; alertDamage = false; alertStrategy = false; }
             // bandiera nel riquadro in alto a destra
             string bf = (now < testUntil && testKind == "Flag") ? "Yellow" : (running ? flag : "");
             if (flg.Enabled && !flg.FlagAsPopup && bf.Length > 0)
@@ -1788,7 +1844,7 @@ namespace FedeDashboard
             alertBg = WithOpacity(a.Background, a.Opacity);
             alertFg = NormalizeColor(a.TextColor, "#FFFFFFFF");
             if (alertTitleColor == null) alertTitleColor = alertFg;
-            alertDamage = false;
+            alertDamage = false; alertStrategy = false;
             MarkActive();
         }
 

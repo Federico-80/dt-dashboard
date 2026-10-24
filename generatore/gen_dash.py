@@ -721,6 +721,51 @@ def strategy_items(w, h):
     return it
 
 
+def strat_alert_items(x, y, w, h):
+    """Strategia gara nell'avviso (di lato a ogni giro): finestra box larga in alto, sotto gli altri valori
+    (nome sopra, valore grande sotto)."""
+    C = {c[1]: c for c in STRAT_COLS}
+    SHORT = {"GIRI ALLA FINE": "GIRI FINE", "LITRI NECESSARI": "LITRI", "ENERGIA NECESSARIA": "ENERGIA"}
+    if w > h * 1.6:
+        rows = [["Finestra"], ["Soste", "Ratio", "Giri", "Litri", "EnergiaNec"]]
+    else:
+        rows = [["Finestra"], ["Soste", "Ratio", "Giri"], ["Litri", "EnergiaNec"]]
+    gap = 6
+    rh = (h - gap * (len(rows) - 1)) / len(rows)
+    lh = rh * 0.30
+    # stessa grandezza per tutti i nomi
+    lfs = 22
+    for keys in rows:
+        cw = (w - gap * (len(keys) - 1)) / len(keys)
+        for k in keys:
+            lab = SHORT.get(C[k][0], C[k][0])
+            lfs = min(lfs, clamp(int(min(lh * 0.62, (cw - 8) / (len(lab) * 0.62))), 8, 22))
+    vfs_all = 60
+    for keys in rows[1:]:
+        cw = (w - gap * (len(keys) - 1)) / len(keys)
+        vfs_all = min(vfs_all, fit(cw - 10, rh - lh - 4, 4, 0.75, cap=48))
+    it = []
+    for r, keys in enumerate(rows):
+        cw = (w - gap * (len(keys) - 1)) / len(keys)
+        cy = y + r * (rh + gap)
+        for k_, key in enumerate(keys):
+            lab, _, _, sample = C[key]
+            lab = SHORT.get(lab, lab)
+            cx = x + k_ * (cw + gap)
+            it.append(rect("Strat %s fondo" % lab, cx, cy, cw, rh, bg="#FF1C1C1C", radius=0))
+            it.append(text("Strat %s nome" % lab, cx, cy + 2, cw, lh, None, lab, lfs, "#FFBDBDBD", weight="Medium"))
+            vy, vh = cy + lh, rh - lh - 5
+            if key == "Finestra":
+                it.append(rect("Strat finestra colore", cx + 5, vy, cw - 10, vh, bg="#FFD50000", radius=0, bindings={
+                    "BackgroundColor": js("var c = $prop('DTPlugin.Strat_FinestraColore');\r\nreturn c ? c : '#FF404040';")}))
+                vfs = fit(cw - 20, vh, 17, 0.62, cap=34)   # "BOX PROSSIMO GIRO" deve stare dentro
+            else:
+                vfs = vfs_all
+            it.append(text("Strat %s valore" % lab, cx + 5, vy, cw - 10, vh, None, sample, vfs, WHITE, weight="Medium",
+                           bindings={"Text": js("var v = $prop('DTPlugin.Strat_%s');\r\nreturn (v == null || v === '') ? '-' : v;" % key)}))
+    return it
+
+
 CENTER_BW = 0      # bordo dei riquadri della parte centrale (il DT Plugin lo puo' cambiare)
 CARD_BW = 2        # bordo delle schede ai lati e in basso
 
@@ -1771,6 +1816,8 @@ def alert_layer():
         kids += nl
         kids.append(layer("Schema danni", damage_items(ix, iy, iw, ih), None, ("Avviso_Danni", 1),
                           vis_js="return $prop('DTPlugin.Avviso_Danni') === true;"))
+        kids.append(layer("Strategia", strat_alert_items(ix, iy, iw, ih), None, ("Avviso_Strategia", 1),
+                          vis_js="return $prop('DTPlugin.Avviso_Strategia') === true;"))
         if vi in (7, 8):
             _slide(kids, -1 if vi == 7 else 1)
         variants.append(layer("Variante %d" % vi, kids, None, ("Avviso_Variante", vi),
