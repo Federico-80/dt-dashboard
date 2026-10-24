@@ -281,7 +281,7 @@ def gauge_items(card, w, h, items_ref=None):
 def iconrow_items(card, w, h):
     """Icona + valore per ogni dato (meteo: pista, aria, pista bagnata, pioggia; motore: acqua, olio)."""
     ents = list(card["entries"])
-    if len(ents) == 4 and h < 50 and w < 260:
+    if len(ents) == 4 and (w < 200 or (h < 50 and w < 260)):
         ents = ents[:2]          # riquadro troppo basso e stretto: solo temperature pista e aria
     n = len(ents)
     iw, ih = w - 8, h - 6
@@ -308,25 +308,28 @@ def iconrow_items(card, w, h):
     else:
         cols, rows = best_grid(n, iw, ih, 6)
     cw, rh = iw / cols, ih / rows
+    # stessa grandezza per tutti i valori (prima "0%" veniva piu' grande di "38°")
+    chars = max(max(len(CH[c][7]) for _, c in ents), 3)
+    sz = min(rh * 0.5, cw * 0.26)
+    vfs = fit(cw - sz - 14, rh, chars, 0.62 if row else 0.74, wfrac=0.58)
+    sz = min(sz, vfs * 0.95)
     for i, (ico, c) in enumerate(ents):
         r, k = divmod(i, cols)
         x, y = 4 + k * cw, 3 + r * rh
-        sz = min(rh * 0.64, cw * 0.3)
-        tw = cw - sz - 8
-        vfs = fit(tw, rh, len(CH[c][7]), 0.74, wfrac=0.58)
         # icona e valore affiancati e centrati nella cella
-        est = sz + 3 + vfs * 0.58 * len(CH[c][7])
-        x0 = x + max(1, (cw - est) / 2)
+        est = sz + 4 + vfs * 0.6 * len(CH[c][7])
+        x0 = x + max(4, (cw - est) / 2)
         it.append(image("Icona %s" % c, x0, y + (rh - sz) / 2, sz, sz, ico))
-        it.append(text("Valore %s" % c, x0 + sz + 3, y, x + cw - (x0 + sz + 3), rh, ch_val(c), CH[c][7], vfs, WHITE, ha=0))
-    # divisori tra i dati (e prima dello stato della pista)
-    m = min(rh * 0.2, 7)
+        it.append(text("Valore %s" % c, x0 + sz + 4, y, max(10, x + cw - (x0 + sz + 4) - 2), rh, ch_val(c), CH[c][7], vfs, WHITE, ha=0))
+    # divisori tra i dati (e prima dello stato della pista): bassi, centrati
+    dh = min(ih * 0.5, vfs * 1.25) if row else min(rh * 0.6, vfs * 1.3)
     for k in range(1, cols):
-        it.append(vdiv("Divisore %d" % k, 4 + k * cw, 3 + m, ih - 2 * m))
+        for r in range(rows):
+            it.append(vdiv("Divisore %d %d" % (k, r), 4 + k * cw, 3 + r * rh + (rh - dh) / 2, dh))
     for r in range(1, rows):
         it.append(hdiv("Divisore riga %d" % r, 4 + iw * 0.06, 3 + r * rh, iw * 0.88))
     if meteo and row:
-        it.append(vdiv("Divisore stato", bx - 2, 3 + m, ih - 2 * m))
+        it.append(vdiv("Divisore stato", bx - 3, 3 + (ih - dh) / 2, dh))
     return it
 
 
@@ -346,6 +349,7 @@ def gap_side_items(side, x, y, w, h):
         bh = min(bh, 24)
         fs = clamp(int(bh * 0.7), 7, 16)
         cw = min(maxw, fs * 4.2)
+        fs = max(7, min(fs, int((cw - 4) / (3 * 0.66))))   # la classe (es. GT3, LMP2) deve stare nel riquadrino
         vis = {"Visible": js("var n = $prop('%sClasse');\r\nreturn n != null && n !== '';" % P_)}
         g = [rect("%s classe fondo" % side, bx, by, cw, bh, bg="#FFC62828", radius=3,
                   bindings={"BackgroundColor": js("var c = $prop('%sClasseColore');\r\nreturn c ? c : '#FFC62828';" % P_)}),
@@ -355,6 +359,18 @@ def gap_side_items(side, x, y, w, h):
         return [lay]
 
     # distacco grande in alto; sotto nome + categoria affiancati; in fondo il suo ultimo giro
+    if h < 44 and w >= 120:
+        # riquadro basso (righe centrali): distacco a sinistra, nome e categoria a destra, su una riga
+        gw = w * 0.38
+        it.append(text("%s distacco" % side, x + 4, y, gw - 4, h, None, CH[ch][7], fit(gw - 8, h, 5, 0.78), col, ha=0, bindings=gap_b))
+        bhh = min(h * 0.5, 16)
+        bfs = clamp(int(bhh * 0.7), 7, 12)
+        bwd = min(bfs * 4.0, w * 0.2)
+        nx, nw = x + gw, w - gw - bwd - 10
+        it.append(text("%s nome" % side, nx, y, nw, h, None, nm, max(7, int(min(h * 0.42, nw / (11 * 0.56)))), WHITE, weight="Medium", ha=2,
+                       bindings={"Text": js("var n = $prop('%sNomeScheda');\r\nif (!n) { n = $prop('%sNome'); }\r\nreturn n ? n : '';" % (P_, P_))}))
+        it += badges(x + w - bwd - 4, y + (h - bhh) / 2, bhh, bwd)
+        return it
     lh = clamp(round(h * 0.13), 9, 15) if h >= 90 else 0
     if lh:
         it.append(text("%s etichetta" % side, x, y, w, lh, None, label, int(lh * 0.8), GREY, weight="Medium"))
@@ -418,13 +434,15 @@ def session_items(w, h):
     it = []
     ix, iw = 6, w - 12
     lh = clamp(round(h * 0.23), 10, 15)
-    vh = min(h - lh - 8, 52)
+    vh = min(h - lh - 8, max(52, h * 0.45))       # riquadri alti: numeri piu' grandi
     vy = max(2, (h - vh - lh) / 2 - 3)        # numeri + etichette centrati, un po' staccati dal bordo in basso
     ly = vy + vh
     wts = [1.05, 1.25, 1.05]
     ws = [iw * t / sum(wts) for t in wts]
-    vfs = min(fit(ws[0] - 14, vh, 5, 0.8, 0.62), fit(ws[1] - 14, vh, 5, 0.8, 0.62), fit(ws[2] - 14, vh, 4.2, 0.8, 0.62))
-    lfs = clamp(int(lh * 0.82), 7, 12)
+    pad = min(14, min(ws) * 0.12)
+    vfs = min(fit(ws[0] - pad, vh, 5, 0.8, 0.62), fit(ws[1] - pad, vh, 5, 0.8, 0.62), fit(ws[2] - pad, vh, 4.2, 0.8, 0.62))
+    # scritte sotto: ci devono stare nel loro blocco (QUALIFICA, "(3) POS")
+    lfs = clamp(int(min(lh * 0.82, min(ws) / (9 * 0.62))), 7, 12)
     # numeri + scritte centrati in altezza sulla parte visibile (cifre alte ~0.72 del carattere)
     gh = vfs * 0.72
     top_vis = (h - (gh + 6 + lfs)) / 2.0
@@ -485,6 +503,9 @@ def forecast_items(card, w, h):
     n = len(idx)
     iy, ih = th + 4, h - th - 8
     cw = (w - 8) / n
+    # riquadro alto: le colonne restano compatte e centrate in altezza (non sparse fino in fondo)
+    hb = min(ih, cw * 2.7 + 16)
+    iy, ih = iy + (ih - hb) / 2, hb
     lh = clamp(ih * 0.16, 9, 16)
     rest = ih - lh
     full = rest >= 70
@@ -522,7 +543,8 @@ def standings_items(card, w, h):
     it = []
     if show_title:
         it.append(text("Titolo", 6, 3, w - 12, th, None, card["title"], int(th * 0.75), GREY, weight="Medium"))
-    iy, ih = th + 4, h - th - 8
+    px = clamp(round(w * 0.045), 10, 18)          # margine ai lati (prima era troppo attaccato al bordo)
+    iy, ih = th + 7, h - th - 14
     k = int(clamp(ih // 22, 1, 15))
     rh = ih / k
     fs = clamp(int(rh * 0.62), 8, 18)
@@ -530,8 +552,8 @@ def standings_items(card, w, h):
     show_cls = sc == "G" and w >= 200
     cw_ = clamp(w * 0.15, 26, 46) if show_cls else 0
     gw = clamp(w * 0.24, 36, 80)
-    nx = 6 + pw + (cw_ + 4 if show_cls else 2)
-    nw = w - nx - gw - 8
+    nx = px + pw + (cw_ + 6 if show_cls else 4)
+    nw = w - nx - gw - px - 4
     for r in range(k):
         y = iy + r * rh
         pre = ("var n = $prop('%sN'); if (!n) { n = 0; }\r\nvar io = $prop('%sIo'); if (!io) { io = 0; }\r\n"
@@ -539,24 +561,26 @@ def standings_items(card, w, h):
         fld = lambda f: pre + "if (a > n) { return ''; }\r\nvar v = $prop('%s' + a + '_%s');\r\nreturn v == null ? '' : v;" % (P_, f)
         sp = STD_SAMPLE[r] if r < len(STD_SAMPLE) else (str(5 + r), "GT3", "Pilota %d" % (r + 1), "+1L", False)
         me_js = pre + "return a <= n && $prop('%s' + a + '_Io') === true;" % P_
-        hl = rect("Riga %d evidenza" % (r + 1), 3, y + 1, w - 6, rh - 2, bg="#FF2E3B3A", radius=4)
+        hl = rect("Riga %d evidenza" % (r + 1), px - 5, y + 1, w - 2 * (px - 5), rh - 2, bg="#FF2E3B3A", radius=4)
         hl["Bindings"] = {"Visible": js(me_js)}
         hl["Visible"] = sp[4]
         it.append(hl)
-        it.append(text("Riga %d posizione" % (r + 1), 6, y, pw, rh, None, sp[0], fs, WHITE, weight="Black", ha=0,
+        it.append(text("Riga %d posizione" % (r + 1), px, y, pw, rh, None, sp[0], fs, WHITE, weight="Black", ha=0,
                        bindings={"Text": js(fld("Pos"))}))
         if show_cls:
             bh = min(rh - 6, 18)
-            g = [rect("Riga %d classe fondo" % (r + 1), 6 + pw, y + (rh - bh) / 2, cw_, bh, bg="#FFC62828", radius=3,
+            g = [rect("Riga %d classe fondo" % (r + 1), px + pw, y + (rh - bh) / 2, cw_, bh, bg="#FFC62828", radius=3,
                       bindings={"BackgroundColor": js(pre + "var c = (a <= n) ? $prop('%s' + a + '_ClasseColore') : null;\r\nreturn c ? c : '#FFC62828';" % P_)}),
-                 text("Riga %d classe" % (r + 1), 6 + pw, y + (rh - bh) / 2, cw_, bh, None, sp[1], clamp(int(bh * 0.62), 7, 12), WHITE,
+                 text("Riga %d classe" % (r + 1), px + pw, y + (rh - bh) / 2, cw_, bh, None, sp[1], clamp(int(bh * 0.62), 7, 12), WHITE,
                       weight="Black", bindings={"Text": js(fld("Classe"))})]
             cl = layer("Riga %d categoria" % (r + 1), g)
             cl["Bindings"] = {"Visible": js(pre + "return a <= n && ('' + $prop('%s' + a + '_Classe')) !== '';" % P_)}
             it.append(cl)
-        it.append(text("Riga %d nome" % (r + 1), nx, y, nw, rh, None, sp[2], fs, WHITE, weight="Medium", ha=0,
+        nfs = int(min(fs, nw / (12 * 0.56)))          # nome: ci deve stare (il plugin lo accorcia a 12 lettere)
+        it.append(text("Riga %d nome" % (r + 1), nx, y, nw, rh, None, sp[2], max(7, nfs), WHITE, weight="Medium", ha=0,
                        bindings={"Text": js(fld("Nome"))}))
-        it.append(text("Riga %d distacco" % (r + 1), w - gw - 6, y, gw, rh, None, sp[3], fs, WHITE, ha=2,
+        dfs = int(min(fs, gw / (6 * 0.6)))
+        it.append(text("Riga %d distacco" % (r + 1), w - gw - px, y, gw, rh, None, sp[3], max(7, dfs), WHITE, ha=2,
                        bindings={"Text": js(fld("Distacco")),
                                  "TextColor": js(pre + "var g = (a <= n) ? ('' + $prop('%s' + a + '_Distacco')) : '';\r\n"
                                                  "return g.charAt(0) == '-' ? '#FF00E676' : (g.charAt(0) == '+' ? '#FFFF5252' : '#FFFFFFFF');" % P_)}))
@@ -606,6 +630,18 @@ def strategy_items(w, h):
     vy, vh = 3 + hh + 2, h - hh - 8
     it = []
     x = ix
+    SHORT = {"GIRI ALLA FINE": "GIRI FINE", "LITRI NECESSARI": "LITRI", "ENERGIA NECESSARIA": "ENERGIA"}
+
+    def lab_of(lab, cw):
+        return SHORT[lab] if (len(lab) * 7 * 0.62 > cw - 6 and lab in SHORT) else lab
+    # stessa grandezza per tutte le intestazioni (la piu' piccola che ci sta)
+    lab_fs = 15
+    for (lab, key, wt, sample) in cols:
+        if key is None:
+            continue
+        cw = iw * wt / tot
+        l2 = lab_of(lab, cw)
+        lab_fs = min(lab_fs, clamp(int(min(hh * 0.68, (cw - 6) / (len(l2) * 0.62))), 7, 15))
     for (lab, key, wt, sample) in cols:
         cw = iw * wt / tot
         if key is None:   # etichetta verticale "RIEMPI A"
@@ -614,8 +650,9 @@ def strategy_items(w, h):
             it.append(text("Riempi a", x, 3, cw, h - 6, None, "RIEMPI\nA", fs, GREY, weight="Bold"))
             x += cw
             continue
+        lab = lab_of(lab, cw)                   # colonna stretta: scritta corta
         it.append(rect("%s intestazione" % lab, x + 1, 3, cw - 2, hh, bg="#FF2A2A2A", radius=3))
-        it.append(text("%s etichetta" % lab, x + 1, 3, cw - 2, hh, None, lab, clamp(int(min(hh * 0.68, (cw - 6) / (len(lab) * 0.62))), 7, 15),
+        it.append(text("%s etichetta" % lab, x + 1, 3, cw - 2, hh, None, lab, lab_fs,
                        "#FFBDBDBD", weight="Bold"))
         if key == "Finestra":
             it.append(rect("Finestra fondo", x + 1, vy, cw - 2, vh, bg="#FFD50000", radius=3, bindings={
@@ -726,12 +763,12 @@ def lap_times_items(ents, ix, iy, iw, ih):
     return it
 
 
-def entry_items(c, color, x, y, w, h, prefix, sub=None, chars=None, vfs=None):
+def entry_items(c, color, x, y, w, h, prefix, sub=None, chars=None, vfs=None, lfs=None):
     """Una voce (etichetta + valore) dentro un riquadro di gruppo."""
     forced = vfs
     same = chars is not None          # riga unica: stessa grandezza per tutti i numeri
-    chars = chars or CH[c][6]
     sample = CH[c][7]
+    chars = chars or max(CH[c][6], len(sample))
     items = []
     if c == "PosGain":
         # numero di posizioni con la freccia accanto
@@ -758,28 +795,47 @@ def entry_items(c, color, x, y, w, h, prefix, sub=None, chars=None, vfs=None):
         # numeri grandi, scritta sotto piccola e sottile
         vh = h * (0.745 if sub is None else 0.61)
         vfs = forced or (fit(w - 5, vh, chars, 0.97, 0.56) if sub is None else fit(w - 5, vh, chars, 0.87))
-        items.append(text(prefix + " valore", x, y, w, vh, ch_val(c), sample, vfs, color, va=2))
-        lh = h - vh
         if sub is None:
-            lfs = clamp(int(min(lh * 0.55, (w - 4) / (len(CH[c][1]) * 0.6))), 7, 11)
-            items.append(text(prefix + " nome", x, y + vh - 1, w, lh, ch_name(c), CH[c][1], lfs, GREY, weight="Normal", va=0))
+            # numero + scritta sotto, centrati insieme in altezza
+            lfs = lfs or entry_label_size(c, w, h)
+            gh = vfs * 0.72
+            gap = max(3, h * 0.04)
+            blk = gh + gap + lfs * 0.8
+            top = y + max(1, (h - blk) / 2)
+            vbox = vfs * 1.25
+            items.append(text(prefix + " valore", x, top + gh + vfs * 0.21 - vbox, w, vbox, ch_val(c), sample, vfs, color, va=2))
+            items.append(text(prefix + " nome", x, top + gh + gap - lfs * 0.15, w, lfs * 1.4, ch_name(c), CH[c][1], lfs, GREY, weight="Normal", va=0))
         else:
+            # numero grande + valore sotto (es. pressione e temperatura), centrati insieme in altezza
+            lh = h - vh
             sfs = clamp(int(min(lh * 0.6, (w - 4) / (CH[sub][6] * 0.6))), 8, 22)
-            items.append(text(prefix + " sotto", x, y + vh, w, lh, ch_val(sub), CH[sub][7], sfs, ORANGE, weight="Medium", va=0))
+            gh, sgh = vfs * 0.72, sfs * 0.72
+            gap = max(4, h * 0.05)
+            top = y + max(1, (h - (gh + gap + sgh)) / 2)
+            vbox = vfs * 1.25
+            items.append(text(prefix + " valore", x, top + gh + vfs * 0.21 - vbox, w, vbox, ch_val(c), sample, vfs, color, va=2))
+            items.append(text(prefix + " sotto", x, top + gh + gap - sfs * 0.15, w, sfs * 1.4, ch_val(sub), CH[sub][7], sfs, ORANGE, weight="Medium", va=0))
     else:
         lw = w * 0.39
-        lfs = clamp(int(min(h * 0.41, lw / (max(len(CH[c][1]), 3) * 0.61))), 7, 13)
+        lfs = lfs or clamp(int(min(h * 0.41, lw / (max(len(CH[c][1]), 3) * 0.61))), 7, 13)
         if w >= 84:
             items.append(text(prefix + " nome", x + 4, y, lw, h, ch_name(c), CH[c][1], lfs, GREY, weight="Medium", ha=0))
             vfs = forced or fit(w - lw - 5, h, chars, 0.78)
             items.append(text(prefix + " valore", x + lw, y, w - lw - 4, h, ch_val(c), sample, vfs, color, ha=2))
         else:
-            vfs = fit(w - 3, h, chars, 0.78)
+            vfs = forced or fit(w - 8, h, chars, 0.78)
             items.append(text(prefix + " valore", x, y, w, h, ch_val(c), sample, vfs, color))
     return items
 
 
+def entry_label_size(c, w, h):
+    lh = h * 0.255
+    return clamp(int(min(lh * 0.55, (w - 4) / (len(CH[c][1]) * 0.6))), 7, 11)
+
+
 def best_grid(k, w, h, chars):
+    if h < 44 and k <= 5:
+        return k, 1          # riquadro basso (righe centrali): tutti i valori in fila, si leggono meglio
     best = None
     for cols in range(1, k + 1):
         rows = math.ceil(k / cols)
@@ -836,7 +892,7 @@ def card_items(card, w, h):
             glow = "#FF0091EA" if aid == "TC" else "#FFFFAB00"
             items.append(layer("%s attivo" % aid, [rect("%s attivo fondo" % aid, 2, 2, w - 4, h - 4, bg=glow, radius=int(min(10, h / 4)))],
                                None, ("Attivo_" + aid, 1), vis_js="return $prop('DTPlugin.Attivo_%s') === true && %s;" % (aid, BLINK)))
-        chars, sample = CH[c][6], CH[c][7]
+        chars, sample = max(CH[c][6], len(CH[c][7])), CH[c][7]
         vb = {"TextColor": js(DELTA_COLOR_JS % c)} if kind == "delta" else None
         vcol = WHITE if kind != "delta" else GREEN
         if h >= 52:
@@ -906,24 +962,26 @@ def card_items(card, w, h):
             return items
         if card["name"] == "Tempi giro" and cols == 1 and rh >= 40 and cw >= 40:
             return items + lap_times_items(ents, ix, iy, iw, ih)
+        # stessa grandezza per tutti i numeri e per tutte le scritte della scheda
+        same_v = same_l = None
+        if rh < 40 and cw < 84 and not one:
+            # solo valori in fila: tutti della stessa grandezza
+            same_v = min(fit(cw - 8, rh, max(CH[c][6], len(CH[c][7])), 0.78) for c, _ in ents)
+        if rh < 40 and cw >= 84 and not one:
+            # righe basse (nome a sinistra, valore a destra): stessa grandezza per tutti i valori
+            same_v = min(fit(cw - cw * 0.39 - 5, rh, max(CH[c][6], len(CH[c][7])), 0.78) for c, _ in ents)
+            same_l = min(clamp(int(min(rh * 0.41, cw * 0.39 / (max(len(CH[c][1]), 3) * 0.61))), 7, 13) for c, _ in ents)
+        if rh >= 40 and cw >= 40:
+            same_v = min(fit(cw - 5, rh * 0.745, max(CH[c][6], len(CH[c][7])) if not one else chars, 0.97, 0.56) for c, _ in ents)
+            same_l = min(entry_label_size(c, cw, rh) for c, _ in ents)
         for i, (c, col) in enumerate(ents):
             r, k = divmod(i, cols)
-            items += entry_items(c, col, ix + k * cw, iy + r * rh, cw, rh, "%s %d" % (c, i), chars=chars if one else None)
+            items += entry_items(c, col, ix + k * cw, iy + r * rh, cw, rh, "%s %d" % (c, i), chars=chars if one else None,
+                                 vfs=same_v, lfs=same_l)
         # divisori leggeri tra le righe e tra le colonne
         for r in range(1, rows):
-            if rh >= 40 and cw >= 40 and cols == 1:
-                # la linea passa a meta' della scritta sotto il numero (PREVISTO, ULTIMO), interrotta dalla scritta
-                c = ents[r - 1][0]
-                vh = rh * 0.745
-                lfs = clamp(int(min((rh - vh) * 0.55, (cw - 4) / (len(CH[c][1]) * 0.6))), 7, 11)
-                ly = iy + (r - 1) * rh + vh - 1 + lfs * 0.62
-                half = len(CH[c][1]) * lfs * 0.38 + 8
-                cxm = ix + iw / 2
-                x0, x1 = ix + iw * 0.06, ix + iw * 0.94
-                items.append(hdiv("Divisore riga %d sx" % r, x0, ly, cxm - half - x0))
-                items.append(hdiv("Divisore riga %d dx" % r, cxm + half, ly, x1 - cxm - half))
-            else:
-                items.append(hdiv("Divisore riga %d" % r, ix + iw * 0.06, iy + r * rh, iw * 0.88))
+            # numeri e scritte sono centrati nella loro riga: il confine e' a meta' dello spazio libero
+            items.append(hdiv("Divisore riga %d" % r, ix + iw * 0.06, iy + r * rh, iw * 0.88))
         for k in range(1, cols):
             m = min(rh * 0.15, 6)
             items.append(vdiv("Divisore colonna %d" % k, ix + k * cw, iy + m, ih - 2 * m))
@@ -1184,7 +1242,7 @@ def tyres3_items(ix, iy, iw, ih):
                               bindings={"BackgroundColor": js("var c = $prop('DTPlugin.Strisce_%s_%d');\r\nreturn c ? c : '#FF3A3A3A';" % (k, j + 1))}))
             items[-1]["_pv"]["bg"] = TYRE_SAMPLE_COL[k]
         sw = (cw - tw) / 2 - 8                         # spazio ai lati della striscia
-        sfs = int(fit(sw - 2, dh * 0.5, 5, 0.9, 0.58) * 0.95)
+        sfs = int(fit(sw - 2, dh * 0.5, 5, 0.9, 0.62) * 0.95)
         ox = x0 + 4 if left else tx + tw + 4           # lato esterno della macchina
         nx = tx + tw + 4 if left else x0 + 4           # lato interno
         oha, nha = (2, 0) if left else (0, 2)          # tutto allineato verso la striscia

@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "2.13";
+        public const string VersionText = "2.14";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -2301,7 +2301,7 @@ namespace FedeDashboard
                 FillStandings(sc, list.Count, mi, r =>
                 {
                     var c = list[r];
-                    var row = new StdRow { Pos = (sc == 0 ? c.Place : r + 1).ToString(CultureInfo.InvariantCulture), Name = ShortName(c.Name), Cls = c.Cls, Me = c == me };
+                    var row = new StdRow { Pos = (sc == 0 ? c.Place : r + 1).ToString(CultureInfo.InvariantCulture), Name = Cut(ShortName(c.Name), 13), Cls = c.Cls, Me = c == me };
                     object o;
                     if (extra.TryGetValue(c.Name, out o)) row.ClsColor = NormalizeColor(Convert.ToString(GetMember(o, "CarClassColor") ?? ""), "#FFC62828");
                     if (c == me) { row.Gap = ""; return row; }
@@ -2340,7 +2340,7 @@ namespace FedeDashboard
                     var row = new StdRow
                     {
                         Pos = (sc == 0 ? AsInt(GetMember(o, "Position")) : r + 1).ToString(CultureInfo.InvariantCulture),
-                        Name = ShortName(Convert.ToString(GetMember(o, "Name") ?? "")),
+                        Name = Cut(ShortName(Convert.ToString(GetMember(o, "Name") ?? "")), 13),
                         Cls = Convert.ToString(GetMember(o, "CarClass") ?? ""),
                         ClsColor = NormalizeColor(Convert.ToString(GetMember(o, "CarClassColor") ?? ""), "#FFC62828"),
                         Me = me
@@ -2592,6 +2592,13 @@ namespace FedeDashboard
         {
             if (string.IsNullOrEmpty(s) || s.Length <= max) return s ?? "";
             return s.Substring(0, max - 1).TrimEnd() + ".";
+        }
+
+        /// <summary>Taglia il nome per le classifiche (ci deve stare nella riga).</summary>
+        static string Cut(string n, int max)
+        {
+            n = n ?? "";
+            return n.Length <= max ? n : n.Substring(0, max - 1).TrimEnd() + ".";
         }
 
         static string ShortName(string n)

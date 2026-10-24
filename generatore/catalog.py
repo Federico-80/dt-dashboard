@@ -75,10 +75,10 @@ CHANNELS += [
 ]
 # dati del server interno di LMU (sosta, danni, freni, gomme nuove, track limits, batteria, cielo)
 CHANNELS += [
-    ("RepDamage", "RIPARAZIONE",  "@rip_danni",   "num", 1, "s", 6, "12.5s"),
+    ("RepDamage", "DANNI",  "@rip_danni",   "num", 1, "s", 6, "12.5s"),
     ("RepBrakes", "FRENI",        "@rip_freni",   "num", 1, "s", 6, "0.0s"),
     ("RepTyres",  "GOMME",        "@rip_gomme",   "num", 1, "s", 6, "8.0s"),
-    ("RepFuel",   "RIFORNIMENTO", "@rip_carb",    "num", 1, "s", 6, "21.4s"),
+    ("RepFuel",   "CARB.", "@rip_carb",    "num", 1, "s", 6, "21.4s"),
     ("RepTotal",  "SOSTA",        "@rip_totale",  "num", 1, "s", 6, "41.9s"),
 ]
 _su = {"FL": "0%", "FR": "0%", "RL": "12%", "RR": "0%"}

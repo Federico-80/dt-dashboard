@@ -234,6 +234,16 @@ namespace FedeDashboard
                 foreach (var a in Alerts) if (a != null && (a.Id == "Damage" || a.Id == "Lap")) { a.Size = 3; a.Position = 1; }
                 Version = 11;
             }
+            if (Version < 12)
+            {
+                // scritte corte per la scheda Sosta (prima non ci stavano)
+                foreach (var c in Channels)
+                {
+                    if (c.Id == "RepDamage" && c.Label == "RIPARAZIONE") c.Label = "DANNI";
+                    if (c.Id == "RepFuel" && c.Label == "RIFORNIMENTO") c.Label = "CARB.";
+                }
+                Version = 12;
+            }
 
         }
 

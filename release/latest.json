@@ -1,5 +1,5 @@
 {
-  "version": "2.13",
-  "notes": "2.13: centro da 2 a 5 blocchi, icone a blocchi per barre/riquadri/centro/LED",
+  "version": "2.14",
+  "notes": "2.14: controllo di tutte le schede (centrate, stesse grandezze, testi che stanno nei riquadri), classifiche con margini, meteo in riga sistemato",
   "date": "2026-10-24"
 }
