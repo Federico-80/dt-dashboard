@@ -1,5 +1,5 @@
 {
-  "version": "2.19",
-  "notes": "2.19: bandiera sopra la velocita' con solo il settore; anteprima bandiera corretta nel plugin",
+  "version": "2.20",
+  "notes": "2.20: LED dei giri a rettangoli (20 led, spenti scuri del loro colore)",
   "date": "2026-10-24"
 }

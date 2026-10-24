@@ -1429,22 +1429,28 @@ def bar_file(w, h):
 
 
 # ------------------------------------------------------------------ schermata principale
-LED_N = 16
+LED_N = 20
 
 
 def led_strip(x, y, w, h):
-    """Fila di LED dei giri: verdi, gialli, rossi da meta' giri in su; al limitatore tutti blu lampeggianti."""
+    """Fila di LED dei giri a rettangoli (come le barre dei volanti): verdi, gialli, rossi; spenti restano scuri del loro colore.
+    Al limitatore tutti blu lampeggianti."""
     it = []
-    d = min(h, (w - (LED_N - 1) * 8) / LED_N)
-    gap = (w - LED_N * d) / (LED_N - 1)
+    gap = 4
+    d = (w - (LED_N - 1) * gap) / LED_N
     for i in range(LED_N):
-        col = "#FF00E676" if i < 6 else ("#FFFFD600" if i < 11 else "#FFFF1744")
-        thr = 60 + i * (95 - 60) / (LED_N - 1)   # % giri a cui si accende
-        cj = ("var p = $prop('DTPlugin.RpmPct_Valore');\r\nif (p == null) { return '#FF1E1E1E'; }\r\n"
-              "if (p >= 97) { return %s ? '#FF2979FF' : '#FF1E1E1E'; }\r\n"
-              "return p >= %.1f ? '%s' : '#FF1E1E1E';" % (BLINK, thr, col))
-        it.append(rect("LED %d" % (i + 1), x + i * (d + gap), y + (h - d) / 2, d, d, bg=col if i < 10 else "#FF1E1E1E",
-                       radius=int(d // 2), bindings={"BackgroundColor": js(cj)}))
+        if i < 11:
+            col, off = "#FF00E676", "#FF0E2A1A"
+        elif i < 16:
+            col, off = "#FFFFD600", "#FF2E2A08"
+        else:
+            col, off = "#FFFF1744", "#FF2E0C12"
+        thr = 55 + i * (96 - 55) / (LED_N - 1)   # % giri a cui si accende
+        cj = ("var p = $prop('DTPlugin.RpmPct_Valore');\r\nif (p == null) { return '%s'; }\r\n"
+              "if (p >= 97) { return %s ? '#FF2979FF' : '%s'; }\r\n"
+              "return p >= %.1f ? '%s' : '%s';" % (off, BLINK, off, thr, col, off))
+        it.append(rect("LED %d" % (i + 1), x + i * (d + gap), y, d, h, bg=col if i < 15 else off,
+                       radius=int(min(4, d / 4)), bindings={"BackgroundColor": js(cj)}))
     return it
 
 
