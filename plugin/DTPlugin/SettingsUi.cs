@@ -983,8 +983,9 @@ namespace FedeDashboard
             {
                 if (!pressed) return;
                 pressed = false;
-                selKind = kind; selIndex = index;   // clic semplice: seleziona e mostra la tavolozza
+                selKind = kind; selIndex = index;   // clic semplice: seleziona, mostra la tavolozza e il menu li' dove hai cliccato
                 root.Dispatcher.BeginInvoke(new Action(RefreshAll));
+                root.Dispatcher.BeginInvoke(new Action(() => OpenSlotMenu(kind, index)));
             });
             Wpf.On(target, "MouseRightButtonUp", (s, e) =>
             {
@@ -1011,6 +1012,54 @@ namespace FedeDashboard
                 Changed();
             });
             preview.Children.Add(b);
+        }
+
+        /// <summary>Menu sul riquadro cliccato: categorie con le schede (o le barre), la scheda attuale spuntata.</summary>
+        void OpenSlotMenu(string kind, int index)
+        {
+            try
+            {
+                bool bar = IsBar(kind);
+                int current = GetSlot(kind, index);
+                string[] names = bar ? Catalog.Bars : Catalog.Cards;
+                dynamic menu = Wpf.Xaml("<ContextMenu {NS} MaxHeight='560'/>");
+                dynamic head = Wpf.Xaml("<MenuItem {NS} IsEnabled='False' FontWeight='Bold'/>");
+                head.Header = Tag(kind, index) + " · " + AreaName(kind);
+                menu.Items.Add(head);
+                dynamic clear = Wpf.Xaml("<MenuItem {NS}/>");
+                clear.Header = kind == "D" ? "Torna al delta" : "Svuota riquadro";
+                Wpf.On((object)clear, "Click", (s, e) => { SetSlot(kind, index, 0); Changed(); });
+                menu.Items.Add(clear);
+                menu.Items.Add(Wpf.Xaml("<Separator {NS}/>"));
+                Func<int, object> item = v =>
+                {
+                    dynamic mi = Wpf.Xaml("<MenuItem {NS}/>");
+                    mi.Header = names[v];
+                    mi.IsChecked = v == current;
+                    Wpf.On((object)mi, "Click", (s, e) => { SetSlot(kind, index, v); Changed(); });
+                    return mi;
+                };
+                if (bar)
+                {
+                    for (int v = 1; v < names.Length; v++) menu.Items.Add((dynamic)item(v));
+                }
+                else
+                {
+                    for (int c = 0; c < Catalog.Categories.Length; c++)
+                    {
+                        dynamic sub = Wpf.Xaml("<MenuItem {NS}/>");
+                        sub.Header = Catalog.Categories[c];
+                        bool has = false;
+                        foreach (var v in Catalog.CategoryCards[c]) { if (v == current) has = true; sub.Items.Add((dynamic)item(v)); }
+                        if (has) sub.FontWeight = Wpf.Xaml("<TextBlock {NS} FontWeight='Bold'/>").FontWeight;
+                        menu.Items.Add(sub);
+                    }
+                }
+                menu.PlacementTarget = preview;
+                menu.Placement = (dynamic)Enum.Parse(Wpf.T("System.Windows.Controls.Primitives.PlacementMode"), "MousePoint");
+                menu.IsOpen = true;
+            }
+            catch (Exception ex) { FedeLog.Error("menu del riquadro", ex); }
         }
 
         static void StartDrag(object source, string data)

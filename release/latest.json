@@ -1,5 +1,5 @@
 {
-  "version": "2.14",
-  "notes": "2.14: controllo di tutte le schede (centrate, stesse grandezze, testi che stanno nei riquadri), classifiche con margini, meteo in riga sistemato",
+  "version": "2.15",
+  "notes": "2.15: sessione in verticale nei riquadri alti, menu di scelta cliccando sul riquadro",
   "date": "2026-10-24"
 }

@@ -431,6 +431,8 @@ def centered_pair(prefix, bx, bw, y, h, a_js, b_js, a_sample, b_sample, fa, fb, 
 def session_items(w, h):
     """Sessione come le dash da gara: 18:39 (minuti bianchi, secondi grigi), 25/25 (posizione bianca, totale grigio), giri.
     Sotto in piccolo le etichette; accanto a POS le posizioni guadagnate (verde) o perse (rossa). Ogni blocco sempre centrato."""
+    if h >= 100 and w / float(h) < 1.6:
+        return session_items_vertical(w, h)       # riquadro alto e stretto: tempo, posizione e giro uno sotto l'altro
     it = []
     ix, iw = 6, w - 12
     lh = clamp(round(h * 0.23), 10, 15)
@@ -489,6 +491,57 @@ def session_items(w, h):
     dy0, dy1 = top_vis - 5, top_vis + gh + 6 + lfs + 5
     it.append(vdiv("Divisore 1", ix + ws[0], dy0, dy1 - dy0))
     it.append(vdiv("Divisore 2", ix + ws[0] + ws[1], dy0, dy1 - dy0))
+    return it
+
+
+def session_items_vertical(w, h):
+    """Sessione in verticale: tempo (con PROVE/QUALIFICA/GARA), posizione (con posizioni guadagnate) e giro, uno sotto l'altro."""
+    it = []
+    ix, iw = 8, w - 16
+    rh = (h - 8) / 3.0
+    vfs = int(min(fit(iw - 10, rh * 0.62, 6, 0.85, 0.62), 60))
+    lfs = clamp(int(min(rh * 0.16, iw / (9 * 0.62))), 8, 14)
+    gh = vfs * 0.72
+    gap = max(4, rh * 0.05)
+    blk = gh + gap + lfs * 0.8
+    vbox = vfs * 1.25
+    rows = []
+    for r in range(3):
+        top = 4 + r * rh + (rh - blk) / 2
+        rows.append((top + gh + vfs * 0.21 - vbox, top + gh + gap - lfs * 0.15))
+    t_pre = ("var t = fd('TimeLeft'); var a = '-', b = '';\r\n"
+             "if (t && t !== '-') { var p = ('' + t).split(':');\r\n"
+             "  if (p.length >= 3 && p[0] != '0' && p[0] != '00') { a = parseInt(p[0], 10) + 'h' + p[1]; }\r\n"
+             "  else { var i = t.lastIndexOf(':'); if (i < 0) { a = t; } else { a = t.substring(0, i); b = t.substring(i); } } }")
+    vy, ly = rows[0]
+    it += centered_pair("Tempo", ix, iw, vy, vbox, t_pre, "", "18", ":39", vfs, vfs, SES_GREY)
+    it.append(text("Tempo etichetta", ix, ly, iw, lfs * 1.4, None, "GARA", lfs, WHITE, weight="Bold", va=0,
+                   bindings={"Text": js("var t = $prop('DTPlugin.Sessione_Nome');\r\nreturn t ? t : 'TEMPO';")}))
+    vy, ly = rows[1]
+    p_a = "var p = fd('Pos'); var a = '-';\r\nif (p && p !== '-') { var i = ('' + p).indexOf('/'); a = i < 0 ? p : ('' + p).substring(0, i); }"
+    p_b = "var n = fd('Cars'); var b = (n && n !== '-' && n != '0') ? '/' + n : '';"
+    it += centered_pair("Pos", ix, iw, vy, vbox, p_a, p_b, "25", "/25", vfs, vfs, SES_GREY)
+    # sotto: "(freccia 3)" a sinistra del centro, "POS" a destra
+    cxm = ix + iw / 2
+    lhh = lfs * 1.4
+    ad = lfs * 0.85
+    gtxt = js("var g = fd('PosGain');\r\nif (!g || g === '-') { g = '0'; }\r\nreturn g + ')';")
+    gcol = js("var c = $prop('DTPlugin.PosGain_Colore');\r\nreturn c ? c : '#FF9E9E9E';")
+    nw = lfs * 1.3
+    it.append(text("Pos guadagno", cxm - 3 - nw, ly, nw, lhh, None, "3)", lfs, GREEN, weight="Bold", ha=2, va=0, bindings={"Text": gtxt, "TextColor": gcol}))
+    ax = cxm - 3 - nw - ad - 1
+    it.append(pos_arrow("Pos", ax, ly + lfs * 0.1, ad))
+    it.append(text("Pos parentesi", ax - lfs * 0.45, ly, lfs * 0.45, lhh, None, "(", lfs, GREY, weight="Medium", ha=2, va=0,
+                   bindings={"Left": js("var d = $prop('DTPlugin.PosGain_Dir');\r\nreturn (d != null && d != 0) ? %d : %d;" % (round(ax - lfs * 0.45), round(ax + ad - lfs * 0.45)))}))
+    it.append(text("Pos etichetta", cxm + 3, ly, iw / 2 - 3, lhh, None, "POS", lfs, GREY, weight="Medium", ha=0, va=0))
+    vy, ly = rows[2]
+    g_a = "var a = fd('Lap'); if (!a) { a = '-'; }"
+    g_b = "var t = $prop('DTPlugin.GiriTotali'); var b = (t == null || t === '') ? '' : '/' + t;"
+    tfs = max(8, int(vfs * 0.55))
+    it += centered_pair("Giro", ix, iw, vy, vbox, g_a, g_b, "4", "/~27.1", vfs, tfs, SES_GREY, gap=vfs * 0.12, hb=vbox - vfs * 0.08)
+    it.append(text("Giro etichetta", ix, ly, iw, lhh, None, "GIRO", lfs, GREY, weight="Medium", va=0))
+    for r in (1, 2):
+        it.append(hdiv("Divisore %d" % r, ix + iw * 0.08, 4 + r * rh, iw * 0.84))
     return it
 
 
