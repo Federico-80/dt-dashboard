@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "2.26";
+        public const string VersionText = "2.27";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -418,6 +418,12 @@ namespace FedeDashboard
             bridge.Attach("Avviso_Strategia", () => alertStrategy);
             bridge.Attach("Lift_Attivo", () => liftOn);
             bridge.Attach("FuelDelta_Colore", () => { double dd = fuelTrk.Delta; return double.IsNaN(dd) ? "#FFFFFFFF" : (dd <= 0 ? "#FF00E676" : "#FFFF1744"); });
+            // giri di carburante / energia: bianchi, rossi da 3 giri in giu'
+            foreach (var lk in new[] { "FuelLaps", "VELaps" })
+            {
+                string kk = lk;
+                bridge.Attach(kk + "_Colore", () => { var rt = Find(kk); double g = rt != null ? rt.Value : double.NaN; return !double.IsNaN(g) && g <= 3 ? "#FFFF1744" : "#FFFFFFFF"; });
+            }
             bridge.Attach("Refill_Colore", () => { string v; lock (strat) return strat.TryGetValue("RefillColore", out v) ? v : "#FFFFFFFF"; });
             bridge.Attach("Lift_Testo", () => liftText);
             bridge.Attach("Lift_Progresso", () => liftP);

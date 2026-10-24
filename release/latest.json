@@ -1,5 +1,5 @@
 {
-  "version": "2.26",
-  "notes": "2.26: strategia calcolata anche in prova e qualifica (avviso automatico solo in gara)",
+  "version": "2.27",
+  "notes": "2.27: settori viola come il gioco anche da soli in pista; giri carburante/energia rossi da 3 in giu'",
   "date": "2026-10-24"
 }

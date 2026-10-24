@@ -144,9 +144,9 @@ namespace FedeDashboard
             // senza i settori degli altri (iRacing) il viola non si puo' calcolare: solo verde / giallo
             if (genericMode) return Green;
             double overall = OthersBest(i, false), cls = OthersBest(i, true);
-            // viola solo se batte tempi veri degli altri: senza confronto (primo giro, nessun tempo) resta verde
-            if (!double.IsNaN(overall) && t <= overall + 0.0005) return Purple;
-            if (!double.IsNaN(cls) && t <= cls + 0.0005) strip = true;
+            // come il gioco: viola se nessun altro ha fatto meglio (anche se sei da solo o gli altri non hanno ancora un tempo)
+            if (double.IsNaN(overall) || t <= overall + 0.0005) return Purple;
+            if (double.IsNaN(cls) || t <= cls + 0.0005) strip = true;
             return Green;
         }
         double OthersBest(int i, bool sameClass)

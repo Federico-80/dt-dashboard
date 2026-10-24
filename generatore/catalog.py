@@ -225,7 +225,7 @@ CARD_INDEX = {c["name"]: i for i, c in enumerate(CARDS)}
 DAMAGE_ZONES = 8
 
 # canali con colore calcolato dal plugin (blu freddo -> verde ok -> rosso caldo): DTPlugin.<Id>_Colore
-COLOR_CHANNELS = ["PosGain"] + ["TyreT" + w[0] for w in WHEELS] + ["TyreP" + w[0] for w in WHEELS] + ["BrakeT" + w[0] for w in WHEELS] + ["TyreW" + w[0] for w in WHEELS] + ["FuelDelta", "Refill"]
+COLOR_CHANNELS = ["PosGain"] + ["TyreT" + w[0] for w in WHEELS] + ["TyreP" + w[0] for w in WHEELS] + ["BrakeT" + w[0] for w in WHEELS] + ["TyreW" + w[0] for w in WHEELS] + ["FuelDelta", "Refill", "FuelLaps", "VELaps"]
 
 # categorie per la tavolozza del plugin (ordine = ordine di visualizzazione)
 CATEGORIES = [

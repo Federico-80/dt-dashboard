@@ -271,7 +271,8 @@ def gauge_items(card, w, h, items_ref=None):
     ptxt = "var t = fd('%s');\r\nif (!t || t === '-') { return '(-)'; }\r\nt = '' + t; if (t.indexOf('%%') < 0) { t = t + '%%'; }\r\nreturn '(' + t + ')';" % pc
     gh_ = bh_ * 0.66
     vfs = fit(bw_ - 10, gh_, 4, 0.95, wfrac=0.58)
-    it.append(text("Giri", bx, by, bw_, gh_ + 2, None, CH[lp][7], vfs, WHITE, va=2, bindings={"Text": js(gtxt)}))
+    it.append(text("Giri", bx, by, bw_, gh_ + 2, None, CH[lp][7], vfs, WHITE, va=2, bindings={"Text": js(gtxt),
+                   "TextColor": js("var c = $prop('DTPlugin.%s_Colore');\r\nreturn c ? c : '#FFFFFFFF';" % lp)}))
     qfs = clamp(int(min((bh_ - gh_) * 0.85, (bw_ - 8) / (7 * 0.56))), 8, 40)
     it.append(text("Percentuale", bx, by + gh_, bw_, bh_ - gh_, None, "(" + CH[pc][7].replace("%", "") + "%)", qfs, WHITE, va=0, weight="Medium",
                    bindings={"Text": js(ptxt)}))
