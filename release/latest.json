@@ -1,5 +1,5 @@
 {
-  "version": "2.25",
-  "notes": "2.25: consumo in tempo reale con memoria per pista/auto, fine gara a tempo calcolata sul primo, nuove schede: risparmio (+1 giro, 1 sosta in meno), rifornimento impostato nel menu box LMU, usura gomme per giro e giri gomme, posizione dopo il box",
+  "version": "2.26",
+  "notes": "2.26: strategia calcolata anche in prova e qualifica (avviso automatico solo in gara)",
   "date": "2026-10-24"
 }

@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "2.25";
+        public const string VersionText = "2.26";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -1658,8 +1658,9 @@ namespace FedeDashboard
             }
             bool nrg = !double.IsNaN(ve) && ve > 0 && !double.IsNaN(vePer) && vePer > 0.01;
 
-            if (!running || !race) { d["Attiva"] = "0"; SetStrat(d); return; }
-            d["Attiva"] = "1";
+            // anche in prova e qualifica (come se la sessione fosse una gara): "1" gara, "2" altre sessioni
+            if (!running) { d["Attiva"] = "0"; SetStrat(d); return; }
+            d["Attiva"] = race ? "1" : "2";
             // Come LMU: calcola subito, appena c'e' un consumo per giro (stima dei plugin LMU o di SimHub) e un tempo sul giro.
             // Tempo sul giro: ultimo giro valido, altrimenti migliore + 0.5 s, altrimenti la media dei migliori giri della tua classe.
             // tempo sul giro: prima quello stimato da LMU (lo stesso del menu strategia), poi ultimo giro / migliore / media della classe
@@ -1678,7 +1679,7 @@ namespace FedeDashboard
             // come TinyPedal: la gara a tempo finisce quando il primo taglia il traguardo dopo lo zero
             if (!double.IsNaN(timeLeft) && timeLeft > 0 && timeLeft < 360000)
             {
-                double endT = RaceEndTime(timeLeft);
+                double endT = race ? RaceEndTime(timeLeft) : timeLeft;
                 // il tuo ultimo giro: lo finisci dopo che il primo e' arrivato (non conta tempo oltre)
                 timeLeft = Math.Max(0.001, endT - 0.001);
             }

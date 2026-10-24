@@ -716,8 +716,8 @@ def strategy_items(w, h):
         x += cw
     # fuori gara: avviso sopra
     msg = [rect("Strategia fuori gara fondo", 2, 2, w - 4, h - 4, bg="#F0101010", radius=int(min(10, h / 4))),
-           text("Strategia fuori gara", 2, 2, w - 4, h - 4, None, "STRATEGIA: SOLO IN GARA", fit(w - 20, h - 4, 24, 0.4), GREY, weight="Medium")]
-    it.append(layer("Fuori gara", msg, None, ("StratFuori", 1), vis_js="return $prop('DTPlugin.Strat_Attiva') != '1';"))
+           text("Strategia fuori gara", 2, 2, w - 4, h - 4, None, "STRATEGIA: IN ATTESA DEI DATI", fit(w - 20, h - 4, 24, 0.4), GREY, weight="Medium")]
+    it.append(layer("Fuori gara", msg, None, ("StratFuori", 1), vis_js="var a = $prop('DTPlugin.Strat_Attiva');\r\nreturn a == null || a == '0';"))
     return it
 
 
