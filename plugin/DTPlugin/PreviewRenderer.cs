@@ -254,6 +254,14 @@ namespace FedeDashboard
                 {
                     if ((nm == "Delta predefinito") != (p.CenterTop == 0)) continue;
                 }
+                else if (nm == "Barra giri")
+                {
+                    if (p.ShowInputs || p.HideSideBars) continue;     // opzioni della pagina: barre ai lati della marcia
+                }
+                else if (nm == "Barre acceleratore e freno")
+                {
+                    if (!p.ShowInputs || p.HideSideBars) continue;
+                }
                 else if (Get(it, "Visible") is bool && !(bool)Get(it, "Visible")) continue;
                 try
                 {

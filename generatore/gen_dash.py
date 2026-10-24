@@ -328,8 +328,6 @@ def iconrow_items(card, w, h):
             it.append(vdiv("Divisore %d %d" % (k, r), 4 + k * cw, 3 + r * rh + (rh - dh) / 2, dh))
     for r in range(1, rows):
         it.append(hdiv("Divisore riga %d" % r, 4 + iw * 0.06, 3 + r * rh, iw * 0.88))
-    if meteo and row:
-        it.append(vdiv("Divisore stato", bx - 3, 3 + (ih - dh) / 2, dh))
     return it
 
 
