@@ -164,7 +164,45 @@ namespace FedeDashboard
         public readonly double[] Brakes = { double.NaN, double.NaN, double.NaN, double.NaN };
         public double Aero = double.NaN, VehicleDmg = double.NaN, NewTyres = double.NaN;
         public DateTime WearTime = DateTime.MinValue, CondTime = DateTime.MinValue;
+        /// <summary>Menu box: "VIRTUAL ENERGY:" (valore in %) o "FUEL:" (testo tipo "45.0L" o "12.0gal").</summary>
+        void ReadRefill(List<object> menu)
+        {
+            if (menu == null) return;
+            foreach (var it in menu)
+            {
+                var d = it as Dictionary<string, object>;
+                if (d == null) continue;
+                string name = Convert.ToString(MiniJson.Get(d, "name") ?? "").Trim().ToUpperInvariant();
+                if (name == "VIRTUAL ENERGY:")
+                {
+                    double v = MiniJson.Num(d, "currentSetting");
+                    if (!double.IsNaN(v)) { Refill = v; RefillIsVe = true; }
+                    return;
+                }
+                if (name == "FUEL:")
+                {
+                    try
+                    {
+                        var opts = MiniJson.Get(d, "settings") as List<object>;
+                        int cur = (int)MiniJson.Num(d, "currentSetting");
+                        if (opts == null || cur < 0 || cur >= opts.Count) return;
+                        string txt = Convert.ToString(MiniJson.Get(opts[cur], "text") ?? "");
+                        var m = System.Text.RegularExpressions.Regex.Match(txt, @"[0-9]+([.,][0-9]+)?");
+                        if (!m.Success) return;
+                        double v = double.Parse(m.Value.Replace(',', '.'), System.Globalization.CultureInfo.InvariantCulture);
+                        if (txt.ToLowerInvariant().Contains("gal")) v *= 3.7854118;
+                        Refill = v; RefillIsVe = false;
+                    }
+                    catch { }
+                    return;
+                }
+            }
+        }
+
         public double BattNow = double.NaN, BattMax = double.NaN;
+        /// <summary>Rifornimento impostato nel menu box: energia virtuale in % (RefillIsVe) o carburante in litri. NaN se non letto.</summary>
+        public double Refill = double.NaN;
+        public bool RefillIsVe;
         public double CutsAllowed = double.NaN;
         public double AirC = double.NaN, TrackC = double.NaN, RainIntensity = double.NaN, Cloud = double.NaN, Wetness = double.NaN;
         public double TimeCompletion = double.NaN, RaceCompletion = double.NaN;
@@ -375,6 +413,7 @@ namespace FedeDashboard
                 RainIntensity = MiniJson.Num(rr, "currentWeather.rainIntensity");
                 Cloud = MiniJson.Num(rr, "currentWeather.cloudCoverage");
                 if (ak > 0) WeatherTime = DateTime.Now;
+                ReadRefill(MiniJson.Get(rr, "pitMenu.pitMenu") as List<object>);
             }
 
             int t3 = (tick / 6) % 3;

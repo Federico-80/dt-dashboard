@@ -95,6 +95,18 @@ CHANNELS += [
     ("Battery",   "BATTERIA",      "@batteria",     "num", 0, "%", 4, "78%"),
     ("Sky",       "CIELO",         "@cielo",        "text", 0, "", 13, "Nuvoloso"),
 ]
+# calcoli come TinyPedal: consumo in tempo reale, risparmio, rifornimento impostato, gomme, posizione dopo il box
+CHANNELS += [
+    ("FuelLive",    "CONSUMO STIMATO", "@carb_stima",   "num",    2, "",  5, "2.64"),
+    ("FuelDelta",   "CONS. VS ULTIMO", "@carb_delta",   "signed", 2, "",  6, "-0.12"),
+    ("VELive",      "VE STIMATA",      "@ve_stima",     "num",    2, "%", 6, "11.85%"),
+    ("SavePlus1",   "PER +1 GIRO",     "@giro_piu",     "text",   0, "",  7, "2.52 l"),
+    ("SaveStop",    "1 SOSTA IN MENO", "@sosta_meno",   "text",   0, "",  7, "2.41 l"),
+    ("Refill",      "RIFORNIMENTO",    "@rifornimento", "text",   0, "",  6, "65 %"),
+    ("TyreWearLap", "USURA / GIRO",    "@usura_giro",   "num",    1, "%", 5, "1.8%"),
+    ("TyreLaps",    "GIRI GOMME",      "@giri_gomme",   "num",    0, "",  3, "24"),
+    ("PitRejoin",   "DOPO IL BOX",     "@pos_dopo_box", "text",   0, "",  4, "P7"),
+]
 for i in range(1, 7):
     CHANNELS.append(("Custom%d" % i, "PERS. %d" % i, "", "num", 1, "", 6, "-"))
 
@@ -192,6 +204,20 @@ CARDS.append(single("Batteria", "Battery", CYAN))
 CARDS.append(dict(name="Previsioni meteo", kind="forecast", title="PREVISIONI", color=FRAME))
 CARDS.append(dict(name="Gomme (tutto in uno: temperatura, pressione, usura, freni)", kind="tyres3", title="GOMME", color=FRAME))
 STANDINGS_MAX = 60   # righe esportate dal plugin per ogni classifica
+CARDS += [
+    single("Consumo stimato (in tempo reale)", "FuelLive"),
+    single("Consumo rispetto all'ultimo giro", "FuelDelta"),
+    single("Energia stimata (in tempo reale)", "VELive", CYAN),
+    single("Consumo per fare 1 giro in più", "SavePlus1", GREEN),
+    single("Consumo per 1 sosta in meno", "SaveStop", YELLOW),
+    group("Risparmio carburante", "RISPARMIO", [("FuelLive", WHITE), ("SavePlus1", GREEN), ("SaveStop", YELLOW)]),
+    single("Rifornimento impostato (menu box LMU)", "Refill"),
+    single("Usura gomme per giro", "TyreWearLap"),
+    single("Giri che durano le gomme", "TyreLaps"),
+    group("Gomme (usura e durata)", "GOMME", [("TyreWearLap", WHITE), ("TyreLaps", WHITE)]),
+    single("Posizione dopo il box", "PitRejoin"),
+]
+
 CARD_INDEX = {c["name"]: i for i, c in enumerate(CARDS)}
 
 # zone danno LMU (mDentSeverity01..08), macchina vista dall'alto con il muso in alto:
@@ -199,18 +225,21 @@ CARD_INDEX = {c["name"]: i for i, c in enumerate(CARDS)}
 DAMAGE_ZONES = 8
 
 # canali con colore calcolato dal plugin (blu freddo -> verde ok -> rosso caldo): DTPlugin.<Id>_Colore
-COLOR_CHANNELS = ["PosGain"] + ["TyreT" + w[0] for w in WHEELS] + ["TyreP" + w[0] for w in WHEELS] + ["BrakeT" + w[0] for w in WHEELS] + ["TyreW" + w[0] for w in WHEELS]
+COLOR_CHANNELS = ["PosGain"] + ["TyreT" + w[0] for w in WHEELS] + ["TyreP" + w[0] for w in WHEELS] + ["BrakeT" + w[0] for w in WHEELS] + ["TyreW" + w[0] for w in WHEELS] + ["FuelDelta", "Refill"]
 
 # categorie per la tavolozza del plugin (ordine = ordine di visualizzazione)
 CATEGORIES = [
     ("Tempi", ["Tempi giro", "Delta", "Ultimo giro", "Miglior giro", "Giro stimato"]),
-    ("Carburante ed energia", ["Carburante", "Carburante (litri)", "Carburante (giri)", "Consumo medio", "Energia virtuale (VE)", "Energia virtuale (completa)", "Giri energia virtuale", "Consumo energia virtuale", "ERS / batteria", "Carburante (barra + giri)", "Energia virtuale (barra + giri)", "Strategia gara (soste, finestra, rifornimento)"]),
+    ("Carburante ed energia", ["Carburante", "Carburante (litri)", "Carburante (giri)", "Consumo medio", "Energia virtuale (VE)", "Energia virtuale (completa)", "Giri energia virtuale", "Consumo energia virtuale", "ERS / batteria", "Carburante (barra + giri)", "Energia virtuale (barra + giri)", "Strategia gara (soste, finestra, rifornimento)",
+                               "Consumo stimato (in tempo reale)", "Consumo rispetto all'ultimo giro", "Energia stimata (in tempo reale)",
+                               "Consumo per fare 1 giro in più", "Consumo per 1 sosta in meno", "Risparmio carburante", "Rifornimento impostato (menu box LMU)"]),
     ("Comandi auto", ["Assetto (TC/ABS/BB/MAP)", "TC", "TC Cut", "TC Slip", "ABS", "Ripartizione freno (BB)", "Mappa motore"]),
-    ("Gomme e freni", ["Gomme (tutto in uno: temperatura, pressione, usura, freni)", "Gomme complete (temp. carcassa, pressione, freni)", "Gomme (pressione + temperatura)", "Gomme (temperature)", "Usura gomme", "Temperature freni", "Danni (schema auto)"]),
+    ("Gomme e freni", ["Gomme (tutto in uno: temperatura, pressione, usura, freni)", "Gomme complete (temp. carcassa, pressione, freni)", "Gomme (pressione + temperatura)", "Gomme (temperature)", "Usura gomme", "Temperature freni", "Danni (schema auto)",
+                        "Usura gomme per giro", "Giri che durano le gomme", "Gomme (usura e durata)"]),
     ("Sessione e gara", ["Sessione", "Posizione", "Giro", "Tempo rimasto", "Ora", "Distacchi", "Distacco avanti", "Distacco dietro", "Classifica generale", "Classifica di classe", "Stato auto (luci, bandiera, tergi, motore)"]),
     ("Motore e pedali", ["Pedali", "Velocità", "Giri motore", "Motore (acqua/olio)"]),
     ("Meteo", ["Meteo", "Temperatura aria", "Temperatura pista", "Previsioni meteo"]),
-    ("Sosta e danni (LMU)", ["Sosta (tempi stimati da LMU)", "Tempo sosta totale", "Danni sospensioni", "Danni (aero e motore)", "Usura freni", "Gomme nuove rimaste", "Track limits", "Batteria"]),
+    ("Sosta e danni (LMU)", ["Sosta (tempi stimati da LMU)", "Tempo sosta totale", "Danni sospensioni", "Danni (aero e motore)", "Usura freni", "Gomme nuove rimaste", "Track limits", "Batteria", "Posizione dopo il box"]),
     ("Personalizzati", ["Personalizzato %d" % i for i in range(1, 7)]),
 ]
 _cat_all = [n for _, ns in CATEGORIES for n in ns]

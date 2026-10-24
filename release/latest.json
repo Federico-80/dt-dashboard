@@ -1,5 +1,5 @@
 {
-  "version": "2.24",
-  "notes": "2.24: conto alla rovescia lift & coast (LMU) nel riquadro delle bandiere",
+  "version": "2.25",
+  "notes": "2.25: consumo in tempo reale con memoria per pista/auto, fine gara a tempo calcolata sul primo, nuove schede: risparmio (+1 giro, 1 sosta in meno), rifornimento impostato nel menu box LMU, usura gomme per giro e giri gomme, posizione dopo il box",
   "date": "2026-10-24"
 }

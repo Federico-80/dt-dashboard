@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "2.24";
+        public const string VersionText = "2.25";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -417,6 +417,8 @@ namespace FedeDashboard
             bridge.Attach("Avviso_Danni", () => alertDamage);
             bridge.Attach("Avviso_Strategia", () => alertStrategy);
             bridge.Attach("Lift_Attivo", () => liftOn);
+            bridge.Attach("FuelDelta_Colore", () => { double dd = fuelTrk.Delta; return double.IsNaN(dd) ? "#FFFFFFFF" : (dd <= 0 ? "#FF00E676" : "#FFFF1744"); });
+            bridge.Attach("Refill_Colore", () => { string v; lock (strat) return strat.TryGetValue("RefillColore", out v) ? v : "#FFFFFFFF"; });
             bridge.Attach("Lift_Testo", () => liftText);
             bridge.Attach("Lift_Progresso", () => liftP);
             bridge.Attach("Lift_Colore", () => liftColor);
@@ -1300,6 +1302,143 @@ namespace FedeDashboard
             MarkActive();
         }
 
+        // ------------------------------------------------ risparmio, gomme, posizione dopo il box (come TinyPedal)
+        /// <summary>Consumo a giro da tenere per fare un giro in piu' con quello che hai (carburante o energia).</summary>
+        object PlusOneLap()
+        {
+            string vs;
+            double ve = VePercent(), vePer = VePerLap(out vs);
+            double pos = Num(bridge.GetPropertyValue("DataCorePlugin.GameData.TrackPositionPercent"));
+            if (double.IsNaN(pos)) pos = 0;
+            bool useVe = !double.IsNaN(ve) && ve > 0 && vePer > 0.01;
+            double amount = useVe ? ve : Num(bridge.GetPropertyValue("DataCorePlugin.GameData.Fuel"));
+            double per = useVe ? vePer : FuelPerLap();
+            if (double.IsNaN(amount) || !(per > 0.01)) return null;
+            double total = amount + per * Math.Max(0, Math.Min(1, pos));   // da inizio giro
+            double can = Math.Floor(total / per + 1e-6);
+            double tgt = total / (can + 1);
+            return tgt.ToString(useVe ? "0.0" : "0.00", CultureInfo.InvariantCulture) + (useVe ? " %" : " l");
+        }
+
+        readonly double[] tyreAtLapStart = { double.NaN, double.NaN, double.NaN, double.NaN };
+        readonly double[] tyreWearLap = { double.NaN, double.NaN, double.NaN, double.NaN };
+        double tyreWearPerLap = double.NaN;
+        static readonly string[] WheelKeys = { "FL", "FR", "RL", "RR" };
+
+        double TyreRemaining(int i) { var rt = Find("TyreW" + WheelKeys[i]); return rt != null ? rt.Value : double.NaN; }
+
+        /// <summary>Fine giro: usura di ogni gomma nel giro (solo giri puliti; dopo un cambio gomme si riparte).</summary>
+        void TyreLapDone(bool clean)
+        {
+            double worst = double.NaN;
+            for (int i = 0; i < 4; i++)
+            {
+                double now = TyreRemaining(i), st = tyreAtLapStart[i];
+                if (clean && !double.IsNaN(now) && !double.IsNaN(st) && st > now && st - now < 20)
+                {
+                    tyreWearLap[i] = st - now;
+                    if (double.IsNaN(worst) || tyreWearLap[i] > worst) worst = tyreWearLap[i];
+                }
+                tyreAtLapStart[i] = now;
+            }
+            if (!double.IsNaN(worst)) tyreWearPerLap = worst;
+        }
+
+        /// <summary>Giri che restano alla gomma che finisce prima (fino a 0% di battistrada).</summary>
+        double TyreLapsLeft()
+        {
+            double best = double.NaN;
+            for (int i = 0; i < 4; i++)
+            {
+                double now = TyreRemaining(i), w = tyreWearLap[i];
+                if (double.IsNaN(now) || double.IsNaN(w) || w <= 0.01) continue;
+                double l = now / w;
+                if (double.IsNaN(best) || l < best) best = l;
+            }
+            return double.IsNaN(best) ? double.NaN : Math.Floor(best);
+        }
+
+        // corsia box: tempo perso (misurato all'ultima sosta su questa pista, sosta ferma esclusa)
+        DateTime laneIn = DateTime.MinValue; double laneStill, laneInPos = double.NaN;
+        double pitLaneLoss = double.NaN; string pitLaneTrack = "";
+        volatile string pitRejoinText;
+
+        void TrackPitLane(DateTime now, bool laneNow, double dt)
+        {
+            string track = Convert.ToString(bridge.GetPropertyValue("DataCorePlugin.GameData.TrackName") ?? "");
+            if (track != pitLaneTrack) { pitLaneTrack = track; pitLaneLoss = LoadPitLoss(track); }
+            double pos = Num(bridge.GetPropertyValue("DataCorePlugin.GameData.TrackPositionPercent"));
+            if (laneNow)
+            {
+                if (laneIn == DateTime.MinValue) { laneIn = now; laneStill = 0; laneInPos = pos; }
+                if (Num(bridge.GetPropertyValue("DataCorePlugin.GameData.SpeedKmh")) < 2) laneStill += dt;
+            }
+            else if (laneIn != DateTime.MinValue)
+            {
+                double total = (now - laneIn).TotalSeconds - laneStill;
+                double frac = double.IsNaN(laneInPos) || double.IsNaN(pos) ? double.NaN : pos - laneInPos;
+                if (!double.IsNaN(frac) && frac < 0) frac += 1;
+                double lapT = lmuEstLap > 0 ? lmuEstLap : Seconds(bridge.GetPropertyValue("DataCorePlugin.GameData.LastLapTime"));
+                if (total > 3 && total < 180 && !double.IsNaN(frac) && frac < 0.5 && lapT > 20)
+                {
+                    double loss = total - frac * lapT;   // corsia box contro lo stesso pezzo di pista in velocita'
+                    if (loss > 2 && loss < 120) { pitLaneLoss = loss; SavePitLoss(track, loss); }
+                }
+                laneIn = DateTime.MinValue;
+            }
+        }
+
+        static string PitLossFile(string track)
+        {
+            var sb = new System.Text.StringBuilder();
+            foreach (char ch in track) sb.Append(char.IsLetterOrDigit(ch) ? ch : '_');
+            return System.IO.Path.Combine(FedeLog.Folder, "DTConsumi", sb + ".corsiabox.txt");
+        }
+
+        static double LoadPitLoss(string track)
+        {
+            try
+            {
+                if (track.Length == 0) return double.NaN;
+                string f = PitLossFile(track);
+                double v;
+                if (System.IO.File.Exists(f) && double.TryParse(System.IO.File.ReadAllText(f).Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out v)) return v;
+            }
+            catch { }
+            return double.NaN;
+        }
+
+        static void SavePitLoss(string track, double v)
+        {
+            try
+            {
+                if (track.Length == 0) return;
+                string f = PitLossFile(track);
+                System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(f));
+                System.IO.File.WriteAllText(f, v.ToString("0.0", CultureInfo.InvariantCulture));
+            }
+            catch { }
+        }
+
+        /// <summary>Posizione in cui rientri se ti fermi adesso: corsia box + sosta (stima LMU), contro le auto dietro.</summary>
+        void ComputeRejoin(List<LmuCar> cars, LmuCar me, bool race)
+        {
+            pitRejoinText = null;
+            if (!race || me == null || double.IsNaN(pitLaneLoss)) return;
+            double stop = lmuRest != null && !double.IsNaN(lmuRest.RepTotal) ? lmuRest.RepTotal : double.NaN;
+            if (double.IsNaN(stop)) return;
+            double lapT = lmuEstLap > 0 ? lmuEstLap : (me.Last > 0 ? me.Last : me.Best);
+            if (!(lapT > 20)) return;
+            double loss = pitLaneLoss + stop;
+            var list = Settings.Timing.GapMode == 1 ? cars.FindAll(c => c.Cls == me.Cls) : cars;
+            // tempo dietro al primo (giri compresi) di ogni auto
+            Func<LmuCar, double> behind = c => (double.IsNaN(c.Tbl) ? 0 : c.Tbl) + (double.IsNaN(c.LapsBehindLeader) ? 0 : c.LapsBehindLeader * lapT);
+            double mine = behind(me) + loss;
+            int p = 1;
+            foreach (var c in list) if (c != me && behind(c) < mine) p++;
+            pitRejoinText = "P" + p;
+        }
+
         // ------------------------------------------------ lift & coast (LMU)
         volatile bool liftOn;
         volatile string liftText = "", liftColor = "#FF7B1FA2";
@@ -1396,6 +1535,7 @@ namespace FedeDashboard
 
         bool lapFromLine, lapClean;
         readonly List<double> fuelLaps = new List<double>();
+        readonly ConsumptionTracker fuelTrk = new ConsumptionTracker("carb"), veTrk = new ConsumptionTracker("energia");
 
         // Come la dash RBR32: consumo e giri di energia virtuale presi dai plugin LMU se installati
         // (TweaksOnTrack, LMU NeoRed, doX SessionData), altrimenti calcolati dal DT Plugin sui giri puliti.
@@ -1417,6 +1557,8 @@ namespace FedeDashboard
             }
             if (lmuRest != null) { double rp = lmuRest.VePerLapPct; if (!double.IsNaN(rp)) { source = "LMU (consumo previsto dal gioco)"; return rp; } }
             source = "DT Plugin";
+            double te = veTrk.Estimate;
+            if (!double.IsNaN(te) && te > 0.01) { source = "DT Plugin (in tempo reale)"; return te; }
             double a = VeAverage();
             if (double.IsNaN(a) || a <= 0.01) a = veLastLap;
             return a;
@@ -1450,6 +1592,7 @@ namespace FedeDashboard
                 double ve = VePercent(), vePer = VePerLap(out vs), ratio = FuelRatio(out rs);
                 if (!double.IsNaN(ve) && ve > 0 && vePer > 0.01 && !double.IsNaN(ratio)) return vePer * ratio;
             }
+            { double te = fuelTrk.Estimate; if (!double.IsNaN(te) && te > 0.01) return te; }
             if (fuelLaps.Count > 0) { double sm = 0; foreach (var x in fuelLaps) sm += x; return sm / fuelLaps.Count; }
             double v = Num(bridge.GetPropertyValue("DataCorePlugin.Computed.Fuel_LastLapConsumption"));
             if (!double.IsNaN(v) && v > 0.01) return v;
@@ -1532,6 +1675,13 @@ namespace FedeDashboard
 
             // giri alla fine (esclusa la corrente)
             double timeLeft = Seconds(bridge.GetPropertyValue("DataCorePlugin.GameData.SessionTimeLeft"));
+            // come TinyPedal: la gara a tempo finisce quando il primo taglia il traguardo dopo lo zero
+            if (!double.IsNaN(timeLeft) && timeLeft > 0 && timeLeft < 360000)
+            {
+                double endT = RaceEndTime(timeLeft);
+                // il tuo ultimo giro: lo finisci dopo che il primo e' arrivato (non conta tempo oltre)
+                timeLeft = Math.Max(0.001, endT - 0.001);
+            }
             int remLaps = AsInt(bridge.GetPropertyValue("DataCorePlugin.GameData.RemainingLaps"));
             int lapsToEnd;
             if (!double.IsNaN(timeLeft) && timeLeft > 0 && timeLeft < 360000)
@@ -1633,6 +1783,24 @@ namespace FedeDashboard
             d["Questo"] = fillTo(lap);
             d["Prossimo"] = fillTo(lap + 1);
             d["Chiusura"] = fillTo(closeLap);
+            // come TinyPedal: consumo a giro per fare una sosta in meno
+            {
+                double tank = useVe ? ve : fuel;
+                if (stops >= 1 && lapsDrive > 0.5 && !double.IsNaN(tank))
+                {
+                    double tgt = ((stops - 1) * cap + tank) / lapsDrive;
+                    d["SostaMeno"] = tgt.ToString(useVe ? "0.0" : "0.00", CultureInfo.InvariantCulture) + (useVe ? " %" : " l");
+                }
+                else d["SostaMeno"] = "-";
+            }
+            // rifornimento impostato nel menu box di LMU: basta per arrivare alla fine dalla sosta in chiusura finestra?
+            if (lmuRest != null && !double.IsNaN(lmuRest.Refill) && lmuRest.RefillIsVe == useVe && stops >= 1 && P[2] > 0)
+            {
+                double atPit = P[0] - (Math.Max(lap, closeLap) - lap) * per;
+                double needTo = Math.Min(cap, atPit + P[2]);
+                d["RefillColore"] = lmuRest.Refill + 0.5 < needTo ? "#FFFF1744" : "#FF00E676";
+            }
+            else d["RefillColore"] = "#FFFFFFFF";
             SetStrat(d);
         }
 
@@ -1679,7 +1847,12 @@ namespace FedeDashboard
                     return fuelNowV / (vePer * ratio);
                 }
             }
-            // prima la media dei giri puliti (come per l'energia), poi SimHub
+            // consumo in tempo reale (confronto punto per punto con l'ultimo giro valido)
+            {
+                double te = fuelTrk.Estimate, fuelNow = Num(bridge.GetPropertyValue("DataCorePlugin.GameData.Fuel"));
+                if (!double.IsNaN(te) && te > 0.01 && !double.IsNaN(fuelNow)) { source = "DT Plugin (in tempo reale)"; return fuelNow / te; }
+            }
+            // poi la media dei giri puliti (come per l'energia), poi SimHub
             if (fuelLaps.Count > 0)
             {
                 double fuelNow = Num(bridge.GetPropertyValue("DataCorePlugin.GameData.Fuel"));
@@ -1749,9 +1922,22 @@ namespace FedeDashboard
             double fuel = fuelRt != null ? fuelRt.Value : double.NaN;
             bool laneNow = pitRt != null && pitRt.Value > 0;
             if (laneNow || !running) lapClean = false;
+            {
+                // consumo in tempo reale: campioni lungo il giro
+                string combo = Convert.ToString(bridge.GetPropertyValue("DataCorePlugin.GameData.TrackName") ?? "") + "_" + Convert.ToString(bridge.GetPropertyValue("DataCorePlugin.GameData.CarModel") ?? "");
+                if (combo.Length > 1) { fuelTrk.SetCombo(combo); veTrk.SetCombo(combo); }
+                double tpos = Num(bridge.GetPropertyValue("DataCorePlugin.GameData.TrackPositionPercent"));
+                bool moving = Num(bridge.GetPropertyValue("DataCorePlugin.GameData.SpeedKmh")) > 5;
+                if (running) { fuelTrk.Sample(fuel, tpos, moving); veTrk.Sample(VePercent(), tpos, moving); }
+                if (laneNow) { fuelTrk.Interrupt(); veTrk.Interrupt(); }
+                double dtl = lastAlertUpdate == DateTime.MinValue ? 0 : Math.Min(1, (now - lastAlertUpdate).TotalSeconds);
+                lastAlertUpdate = now;
+                TrackPitLane(now, laneNow, dtl);
+            }
             if (lastLapNumber >= 0 && lapNo == lastLapNumber + 1)
             {
                 double ve = VePercent();
+                bool trkF = false, trkV = false; double trkFu = 0, trkVu = 0;
                 if (lapFromLine && lapClean)
                 {
                     if (!double.IsNaN(fuelAtLapStart) && fuel > 0 && fuelAtLapStart > fuel)
@@ -1761,6 +1947,7 @@ namespace FedeDashboard
                         if (double.IsNaN(medF) || fuelLaps.Count < 2 || (usedF > medF * 0.6 && usedF < medF * 1.6))
                         {
                             fuelLastLap = usedF;
+                            trkF = true; trkFu = usedF;
                             fuelLaps.Add(usedF);
                             if (fuelLaps.Count > 5) fuelLaps.RemoveAt(0);
                         }
@@ -1772,11 +1959,15 @@ namespace FedeDashboard
                         if (double.IsNaN(med) || veLaps.Count < 2 || (used > med * 0.6 && used < med * 1.6))
                         {
                             veLastLap = used;
+                            trkV = true; trkVu = used;
                             veLaps.Add(used);
                             if (veLaps.Count > 5) veLaps.RemoveAt(0);
                         }
                     }
                 }
+                TyreLapDone(lapFromLine && lapClean);
+                fuelTrk.LapDone(trkF, trkFu);
+                veTrk.LapDone(trkV, trkVu);
                 fuelAtLapStart = fuel;
                 veAtLapStart = ve;
                 lapFromLine = true;
@@ -1796,6 +1987,7 @@ namespace FedeDashboard
                 fuelAtLapStart = fuel;
                 veAtLapStart = VePercent();
                 lapFromLine = false;
+                fuelTrk.Interrupt(); veTrk.Interrupt();
                 if (lapNo < lastLapNumber) { veLaps.Clear(); fuelLaps.Clear(); veLastLap = double.NaN; fuelLastLap = double.NaN; } // nuova sessione
             }
             lastLapNumber = lapNo;
@@ -2269,6 +2461,19 @@ namespace FedeDashboard
                         return double.IsNaN(pr) ? null : (object)(pr * 100);
                     }
                 case "@ve_ultimo": return double.IsNaN(veLastLap) ? null : (object)veLastLap;
+                case "@carb_stima": { double e = fuelTrk.Estimate; return double.IsNaN(e) ? null : (object)e; }
+                case "@carb_delta": { double e = fuelTrk.Delta; return double.IsNaN(e) ? null : (object)e; }
+                case "@ve_stima": { double e = veTrk.Estimate; return double.IsNaN(e) ? null : (object)e; }
+                case "@giro_piu": return PlusOneLap();
+                case "@sosta_meno": { string v; lock (strat) return strat.TryGetValue("SostaMeno", out v) && v != "-" ? v : null; }
+                case "@rifornimento":
+                    {
+                        if (lmuRest == null || double.IsNaN(lmuRest.Refill)) return null;
+                        return lmuRest.RefillIsVe ? lmuRest.Refill.ToString("0", CultureInfo.InvariantCulture) + " %" : lmuRest.Refill.ToString("0", CultureInfo.InvariantCulture) + " l";
+                    }
+                case "@usura_giro": { double w = tyreWearPerLap; return double.IsNaN(w) ? null : (object)w; }
+                case "@giri_gomme": { double w = TyreLapsLeft(); return double.IsNaN(w) ? null : (object)w; }
+                case "@pos_dopo_box": return pitRejoinText;
                 case "@carb_media": { if (fuelLaps.Count == 0) return null; double sm = 0; foreach (var x in fuelLaps) sm += x; return sm / fuelLaps.Count; }
                 case "@ve_media": { string vsrc; double a = VePerLap(out vsrc); return double.IsNaN(a) ? null : (object)a; }
                 case "@ve_giri": { string vsrc; double g = VeLapsLeft(out vsrc); return double.IsNaN(g) ? null : (object)g; }
@@ -2308,6 +2513,23 @@ namespace FedeDashboard
         }
 
         /// <summary>Distacco (s) dalla macchina davanti / dietro in classifica, letto dalla lista avversari di SimHub.</summary>
+        // primo in classifica: dove e' sul giro e che passo ha (per la fine delle gare a tempo)
+        volatile bool leaderIsMe = true;
+        DateTime lastAlertUpdate = DateTime.MinValue;
+        double leaderFrac = double.NaN, leaderPace = double.NaN;
+
+        /// <summary>
+        /// Gare a tempo: la gara finisce quando il primo passa sul traguardo dopo lo zero. Restituisce i secondi da ora
+        /// a quel momento (se il primo non sei tu e se ne conosce il passo), altrimenti il tempo che resta.
+        /// </summary>
+        double RaceEndTime(double timeLeft)
+        {
+            if (leaderIsMe || double.IsNaN(leaderFrac) || !(leaderPace > 20 && leaderPace < 1800)) return timeLeft;
+            double first = (1 - Math.Max(0, Math.Min(1, leaderFrac))) * leaderPace;   // primo passaggio sul traguardo
+            if (timeLeft <= first) return first;
+            return first + Math.Ceiling((timeLeft - first) / leaderPace - 1e-6) * leaderPace;
+        }
+
         void ComputeGaps(object newData)
         {
             gapAhead = double.NaN;
@@ -2328,6 +2550,16 @@ namespace FedeDashboard
                 }
                 if (player == null) return;
                 int playerPos = AsInt(GetMember(player, "Position"));
+                foreach (var o in all)
+                    if (AsInt(GetMember(o, "Position")) == 1)
+                    {
+                        leaderIsMe = o == player;
+                        leaderFrac = Num(GetMember(o, "TrackPositionPercent"));
+                        double lp = Seconds(GetMember(o, "LastLapTime"));
+                        if (!(lp > 0)) lp = Seconds(GetMember(o, "BestLapTime"));
+                        leaderPace = lp;
+                        break;
+                    }
                 string playerClass = (GetMember(player, "CarClass") ?? "").ToString();
 
                 // auto della stessa classe ordinate per posizione
@@ -2535,6 +2767,12 @@ namespace FedeDashboard
             if (me == null || cars.Count == 0) return false;
             cars.Sort((a, b) => a.Place.CompareTo(b.Place));
             lmuPlace = me.Place; lmuCars = cars.Count;
+            {
+                var ld = cars[0];
+                leaderIsMe = ld == me;
+                leaderFrac = ld.Progress - Math.Floor(ld.Progress);
+                leaderPace = ld.EstLap > 0 ? ld.EstLap : (ld.Last > 0 ? ld.Last : ld.Best);
+            }
             lmuEstLap = me.EstLap > 0 ? me.EstLap : double.NaN;
             var same = cars.FindAll(c => c.Cls == me.Cls);
             classCount = same.Count;
@@ -2570,6 +2808,7 @@ namespace FedeDashboard
             SetBoxLmu(0, ahead, gapAhead, extra);
             SetBoxLmu(1, behind, gapBehind, extra);
             try { StandingsLmu(cars, me, race, extra); } catch (Exception ex) { FedeLog.Error("classifica LMU", ex); }
+            try { ComputeRejoin(cars, me, race); } catch (Exception ex) { FedeLog.Error("posizione dopo il box", ex); }
             return true;
         }
 
