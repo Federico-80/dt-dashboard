@@ -29,6 +29,7 @@ namespace FedeDashboard
         public List<GameProfile> GameProfiles { get; set; } = new List<GameProfile>();
         /// <summary>Quando parte un gioco con pagine proprie, usa quelle da solo.</summary>
         public bool AutoGamePages { get; set; } = true;
+        public bool LiftCoastOff { get; set; }   // true = niente conto alla rovescia lift & coast (LMU)
 
         public bool HasProfile(string key)
         {

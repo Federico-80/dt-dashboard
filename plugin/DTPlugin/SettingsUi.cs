@@ -1418,6 +1418,11 @@ namespace FedeDashboard
                 alertsPanel.Children.Add(Help("Gli avvisi compaiono sopra la dashboard. Se ne scattano due insieme vince il box, poi danni, bandiere, cambio valori e fine giro. " +
                                      "Premi \"Prova\" per vederli subito sulla dash.", "0,-4,0,14"));
                 foreach (var a in S.Alerts) alertsPanel.Children.Add(AlertCard(a));
+                // lift & coast: conto alla rovescia nel riquadro delle bandiere (solo LMU)
+                dynamic right, body;
+                dynamic card = Card("Lift & coast (LMU)", "Quando LMU ti segnala di alzare il piede per risparmiare, sopra velocità e giri compare il conto alla rovescia (3, 2, 1) e poi ALZA, con una barra che si riempie.", out right, out body);
+                right.Children.Add(Check("Attivo", !S.LiftCoastOff, v => S.LiftCoastOff = !v, AlertChanged));
+                alertsPanel.Children.Add(card);
             }
             catch (Exception ex) { FedeLog.Error("scheda avvisi", ex); }
         }

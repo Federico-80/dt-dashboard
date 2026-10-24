@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "2.23";
+        public const string VersionText = "2.24";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -416,6 +416,10 @@ namespace FedeDashboard
             bridge.Attach("Attesa_StemmaNumero", () => Settings.Idle.BadgeShowNumber && !string.IsNullOrEmpty(Settings.Idle.Number));
             bridge.Attach("Avviso_Danni", () => alertDamage);
             bridge.Attach("Avviso_Strategia", () => alertStrategy);
+            bridge.Attach("Lift_Attivo", () => liftOn);
+            bridge.Attach("Lift_Testo", () => liftText);
+            bridge.Attach("Lift_Progresso", () => liftP);
+            bridge.Attach("Lift_Colore", () => liftColor);
             for (int i = 0; i < 8; i++) { int zi = i; bridge.Attach("Danno_Z" + (zi + 1) + "_Livello", () => dent[zi]); }
             foreach (var key in new[] { "FL", "FR", "RL", "RR", "Aero" })
             {
@@ -1296,6 +1300,54 @@ namespace FedeDashboard
             MarkActive();
         }
 
+        // ------------------------------------------------ lift & coast (LMU)
+        volatile bool liftOn;
+        volatile string liftText = "", liftColor = "#FF7B1FA2";
+        double liftP, liftRate, liftLastP;
+        DateTime liftLastT = DateTime.MinValue, liftHold = DateTime.MinValue;
+
+        /// <summary>
+        /// LMU dice quanto manca al punto in cui alzare il piede (0 = niente, 1 = alza ora).
+        /// Dalla velocita' con cui sale stimiamo i secondi che mancano: conto alla rovescia 3, 2, 1, ALZA.
+        /// </summary>
+        void UpdateLift(DateTime now)
+        {
+            double p = double.NaN;
+            if (!Settings.LiftCoastOff)
+            {
+                p = Num(Raw("PlayerNativeTelemetry.mLiftAndCoastProgress"));
+                if (double.IsNaN(p)) p = Num(Raw("CurrentPlayerTelemetry.mLiftAndCoastProgress"));
+                if (!double.IsNaN(p) && p > 1.0001) p /= 255.0;   // 0-255 nella memoria del gioco
+            }
+            if (double.IsNaN(p) || p <= 0.001)
+            {
+                // resta acceso un attimo dopo "ALZA" per non sfarfallare
+                if (liftOn && now >= liftHold) { liftOn = false; liftText = ""; liftP = 0; }
+                liftRate = 0; liftLastP = 0; liftLastT = now;
+                return;
+            }
+            double dt = (now - liftLastT).TotalSeconds;
+            if (dt > 0.02 && dt < 1 && p > liftLastP)
+            {
+                double r = (p - liftLastP) / dt;
+                liftRate = liftRate <= 0 ? r : liftRate * 0.7 + r * 0.3;   // media mobile: numero stabile
+            }
+            if (dt > 0.02) { liftLastP = p; liftLastT = now; }
+            liftP = p;
+            double secs = liftRate > 0 ? (1 - p) / liftRate : double.NaN;
+            if (p >= 0.97 || (!double.IsNaN(secs) && secs < 0.4))
+            {
+                liftText = "ALZA"; liftColor = "#FFD500F9"; liftHold = now.AddSeconds(0.6);
+            }
+            else
+            {
+                liftText = double.IsNaN(secs) ? "" : Math.Min(9, Math.Ceiling(secs)).ToString("0", CultureInfo.InvariantCulture);
+                liftColor = p > 0.8 ? "#FFAA00FF" : "#FF7B1FA2";
+                liftHold = now.AddSeconds(0.3);
+            }
+            liftOn = true;
+        }
+
         /// <summary>Chi aspetta il prossimo tasto premuto (assegnazione dal plugin), null = nessuno.</summary>
         public volatile Action<string, string, int> LearnButton;
 
@@ -1777,6 +1829,7 @@ namespace FedeDashboard
             else pitLaneSince = DateTime.MaxValue;
 
             var dmg = Alert("Damage"); var flg = Alert("Flag");
+            UpdateLift(now);
             if (UpdateDamage() && dmg.Enabled && settled) damageUntil = now.AddSeconds(Math.Max(0.5, dmg.Seconds));
             string flag = CurrentFlag(now, flg.Seconds);
             currentFlag = running ? flag : "";

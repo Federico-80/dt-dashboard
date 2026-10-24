@@ -1563,10 +1563,27 @@ def center_items(fi, ci=0):
     gx_, gy_, gw_, gh_ = cg["gear"]
     sy_ = cg["speed"][1]
     # dentro le barre laterali (barre a 8 px dal bordo, larghe 5) e fino al fondo delle barre
-    it.append(flag_box(gx_ + 17, sy_ - 8, gw_ - 34, gy_ + gh_ - 12 - (sy_ - 8), square=True))   # copre anche la linea   # bandiere: sopra la velocita', sempre nello stesso posto
+    it.append(flag_box(gx_ + 17, sy_ - 8, gw_ - 34, gy_ + gh_ - 12 - (sy_ - 8), square=True))   # copre anche la linea
+    it.append(lift_box(gx_ + 17, sy_ - 8, gw_ - 34, gy_ + gh_ - 12 - (sy_ - 8)))   # lift & coast: stesso posto, sopra la bandiera   # bandiere: sopra la velocita', sempre nello stesso posto
     for i, (x, y, w, h) in enumerate(cg["rows"]):
         it.append(widget("Riga centrale %d" % (i + 1), x, y, w, h, card_file(w, h), "Slot_C%d" % (i + 1)))
     return it
+
+
+def lift_box(x, y, w, h):
+    """Lift & coast di LMU: conto alla rovescia a quando alzare il piede (DTPlugin.Lift_*), nel riquadro delle bandiere."""
+    kids = [rect("Lift fondo", x, y, w, h, bg="#FF7B1FA2", radius=0,
+                 bindings={"BackgroundColor": js("var c = $prop('DTPlugin.Lift_Colore');\r\nreturn c ? c : '#FF7B1FA2';")})]
+    lh = round(h * 0.24)
+    kids.append(text("Lift titolo", x, y + 2, w, lh, None, "LIFT & COAST", fit(w - 10, lh, 12, 0.72), WHITE, weight="SemiBold"))
+    bh = max(5, round(h * 0.09))
+    kids.append(text("Lift conto", x, y + lh, w, h - lh - bh - 6, "[DTPlugin.Lift_Testo]", "2",
+                     fit(w - 10, h - lh - bh - 6, 4, 0.92, cap=90), WHITE, weight="Black"))
+    # barra che si riempie fino al punto in cui alzare
+    kids.append(rect("Lift barra fondo", x + 6, y + h - bh - 4, w - 12, bh, bg="#55FFFFFF", radius=0))
+    kids.append(rect("Lift barra", x + 6, y + h - bh - 4, (w - 12) * 0.6, bh, bg="#FFFFFFFF", radius=0,
+                     bindings={"Width": js("var p = $prop('DTPlugin.Lift_Progresso');\r\nreturn %s * Math.max(0, Math.min(1, p ? p : 0));" % (w - 12))}))
+    return layer("Lift and coast", kids, None, ("Lift_Attivo", 1), vis_js="return $prop('DTPlugin.Lift_Attivo') === true;")
 
 
 def flag_box(x, y, w, h, square=False):
