@@ -1,5 +1,5 @@
 {
-  "version": "2.22",
-  "notes": "2.22: tolta la barra doppia; nuovo avviso Strategia gara di lato a ogni giro (anche con tasto); tasti del volante assegnabili dal plugin per strategia e cambio pagina",
+  "version": "2.23",
+  "notes": "2.23: avvisi di lato alti tutto lo schermo (strategia, danni, fine giro)",
   "date": "2026-10-24"
 }

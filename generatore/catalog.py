@@ -398,7 +398,7 @@ def alert_variants():
     for top in ((DASH_H - sh) // 2, 10, DASH_H - sh - 10):
         out.append(((DASH_W - sw) // 2, top, sw, sh))
     # 7-8: meta' schermo di lato (entra da sinistra / da destra)
-    sw2, sh2 = 320, 400                       # di lato: piu' stretto e non alto tutto lo schermo
+    sw2, sh2 = 320, DASH_H                    # di lato: stretto ma alto tutto lo schermo
     sy2 = (DASH_H - sh2) // 2
     out.append((0, sy2, sw2, sh2))
     out.append((DASH_W - sw2, sy2, sw2, sh2))
