@@ -298,6 +298,8 @@ namespace FedeDashboard
         public bool ShowInputs { get; set; }
         /// <summary>Nasconde le barre verticali (giri o pedali) ai lati della marcia.</summary>
         public bool HideSideBars { get; set; }
+        /// <summary>Quanti blocchi al centro (Catalog.CenterLayouts): 0 = 5 blocchi (delta, marcia, 3 righe).</summary>
+        public int CenterLayout { get; set; }
         /// <summary>Riquadro in alto al centro: 0 = delta (predefinito), altrimenti la scheda scelta.</summary>
         public int CenterTop { get; set; }
         /// <summary>Fila di LED dei giri in alto: tutta la pagina scende un po'.</summary>
@@ -309,6 +311,7 @@ namespace FedeDashboard
         {
             if (string.IsNullOrWhiteSpace(Name)) Name = "Pagina";
             Frame = Clamp(Frame, Catalog.LedOffset);
+            CenterLayout = Clamp(CenterLayout, Catalog.CenterLayouts.Length);
             GridLeft = Clamp(GridLeft, Catalog.Grids.Length);
             GridRight = Clamp(GridRight, Catalog.Grids.Length);
             Toolbar = Clamp(Toolbar, Catalog.Toolbars.Length);
@@ -328,7 +331,7 @@ namespace FedeDashboard
                 SidebarLeft = SidebarLeft, SidebarRight = SidebarRight,
                 Left = new List<int>(Left), Right = new List<int>(Right),
                 Bottom = new List<int>(Bottom), Center = new List<int>(Center),
-                AutoPractice = AutoPractice, AutoQualify = AutoQualify, AutoRace = AutoRace, ShowInputs = ShowInputs, HideSideBars = HideSideBars, Leds = Leds, CenterTop = CenterTop
+                AutoPractice = AutoPractice, AutoQualify = AutoQualify, AutoRace = AutoRace, ShowInputs = ShowInputs, HideSideBars = HideSideBars, Leds = Leds, CenterTop = CenterTop, CenterLayout = CenterLayout
             };
         }
 

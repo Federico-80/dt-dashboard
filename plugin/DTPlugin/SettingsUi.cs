@@ -131,13 +131,19 @@ namespace FedeDashboard
                 <RowDefinition Height='Auto'/>
                 <RowDefinition Height='Auto'/>
                 <RowDefinition Height='Auto'/>
+                <RowDefinition Height='Auto'/>
+                <RowDefinition Height='Auto'/>
               </Grid.RowDefinitions>
               <TextBlock Grid.Row='0' Text='Barre' VerticalAlignment='Center' Foreground='#FF9A9A9A'/>
               <WrapPanel Grid.Row='0' Grid.Column='1' x:Name='FrameButtons' Margin='0,3'/>
               <TextBlock Grid.Row='1' Text='Riquadri in basso' VerticalAlignment='Center' Foreground='#FF9A9A9A'/>
               <WrapPanel Grid.Row='1' Grid.Column='1' x:Name='ToolbarButtons' Margin='0,3'/>
-              <TextBlock Grid.Row='2' Text='Griglie dei lati' VerticalAlignment='Top' Margin='0,8,0,0' Foreground='#FF9A9A9A'/>
-              <Grid Grid.Row='2' Grid.Column='1' Margin='0,6,0,0'>
+              <TextBlock Grid.Row='2' Text='Centro' VerticalAlignment='Center' Foreground='#FF9A9A9A'/>
+              <WrapPanel Grid.Row='2' Grid.Column='1' x:Name='CenterButtons' Margin='0,3'/>
+              <TextBlock Grid.Row='3' Text='LED dei giri' VerticalAlignment='Center' Foreground='#FF9A9A9A'/>
+              <WrapPanel Grid.Row='3' Grid.Column='1' x:Name='LedButtons' Margin='0,3'/>
+              <TextBlock Grid.Row='4' Text='Griglie dei lati' VerticalAlignment='Top' Margin='0,8,0,0' Foreground='#FF9A9A9A'/>
+              <Grid Grid.Row='4' Grid.Column='1' Margin='0,6,0,0'>
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width='Auto'/>
                   <ColumnDefinition Width='Auto'/>
@@ -151,10 +157,9 @@ namespace FedeDashboard
                   <WrapPanel x:Name='GridRButtons' MaxWidth='560'/>
                 </StackPanel>
               </Grid>
-              <StackPanel Grid.Row='3' Grid.Column='1' Margin='0,8,0,0'>
+              <StackPanel Grid.Row='5' Grid.Column='1' Margin='0,8,0,0'>
                 <CheckBox x:Name='ChkInputs' Content='Ai lati della marcia: acceleratore e freno (invece della barra dei giri)'/>
                 <CheckBox x:Name='ChkNoBars' Content='Nascondi le barre ai lati della marcia' Margin='0,6,0,0'/>
-                <CheckBox x:Name='ChkLeds' Content='LED dei giri in alto (tutta la pagina scende un po&apos;)' Margin='0,6,0,0'/>
               </StackPanel>
             </Grid>
             <Grid Margin='0,18,0,0'><Grid.ColumnDefinitions><ColumnDefinition Width='Auto'/><ColumnDefinition Width='*'/></Grid.ColumnDefinitions><TextBlock Text='ANTEPRIMA E SCHEDE' FontWeight='Bold' FontSize='14' Foreground='White'/><Border Grid.Column='1' Height='1' Background='#FF4A4A4A' VerticalAlignment='Center' Margin='12,0,0,0'/></Grid>
@@ -287,7 +292,7 @@ namespace FedeDashboard
         string uiGame = "";
         readonly PreviewRenderer previewRenderer = new PreviewRenderer();
         bool realPreview, previewErrorLogged;
-        readonly dynamic root, tabs, cbPage, tbName, chkP, chkQ, chkR, chkInputs, chkNoBars, chkLeds, cbGame, gameInfo, chkAutoGame, frameButtons, toolbarButtons,
+        readonly dynamic root, tabs, cbPage, tbName, chkP, chkQ, chkR, chkInputs, chkNoBars, cbGame, gameInfo, chkAutoGame, centerButtons, ledButtons, frameButtons, toolbarButtons,
                          gridLButtons, gridRButtons, preview, pickerPanel, grid, timer, alertsPanel, tyresPanel, idlePanel, idlePreview;
         dynamic tyreLive;
         bool updating;
@@ -383,10 +388,11 @@ namespace FedeDashboard
             chkR = F("ChkR");
             chkInputs = F("ChkInputs");
             chkNoBars = F("ChkNoBars");
-            chkLeds = F("ChkLeds");
             cbGame = F("CbGame"); gameInfo = F("GameInfo"); chkAutoGame = F("ChkAutoGame");
             frameButtons = F("FrameButtons");
             toolbarButtons = F("ToolbarButtons");
+            centerButtons = F("CenterButtons");
+            ledButtons = F("LedButtons");
             gridLButtons = F("GridLButtons");
             gridRButtons = F("GridRButtons");
             preview = F("Preview");
@@ -419,7 +425,6 @@ namespace FedeDashboard
             OnCheck((object)chkR, v => Page.AutoRace = v);
             OnCheck((object)chkInputs, v => Page.ShowInputs = v);
             OnCheck((object)chkNoBars, v => Page.HideSideBars = v);
-            OnCheck((object)chkLeds, v => Page.Leds = v);
             OnCheck((object)chkAutoGame, v => S.AutoGamePages = v);
             foreach (var n in GameProfile.Names) cbGame.Items.Add(n);
             uiGame = S.ProfileGame;
@@ -607,7 +612,6 @@ namespace FedeDashboard
                 chkR.IsChecked = p.AutoRace;
                 chkInputs.IsChecked = p.ShowInputs;
                 chkNoBars.IsChecked = p.HideSideBars;
-                chkLeds.IsChecked = p.Leds;
                 BuildLayoutButtons();
                 DrawPreview();
                 BuildPicker();
@@ -635,11 +639,8 @@ namespace FedeDashboard
             for (int i = 0; i < FrameShort.Length; i++)
             {
                 int idx = i;
-                // disegnino della cornice (come le griglie dei lati) + nome sotto
-                int tb = Math.Min(p.Toolbar, Catalog.Toolbars.Length - 1);
-                dynamic b = Wpf.Xaml("<Button {NS} Padding='4' Margin='0,0,4,4' ToolTip='" + Wpf.Esc(Catalog.Frames[i]) + "'" + BtnColors(p.Frame == i) + ">" +
-                                     "<StackPanel>" + MiniLayout(i + (p.Leds ? Catalog.LedOffset : 0), tb, p.Frame == i, false) +
-                                     "<TextBlock Text='" + Wpf.Esc(FrameShort[i]) + "' FontSize='10.5' HorizontalAlignment='Center' Margin='0,3,0,0'/></StackPanel></Button>");
+                // come le griglie dei lati: solo i blocchi (barre laterali e barra in basso)
+                dynamic b = Wpf.Xaml(IconButton(Catalog.Frames[i], p.Frame == i, 68, 40, FrameBlocks(i)));
                 Wpf.On((object)b, "Click", (s, e) => { Page.Frame = idx; Changed(); });
                 frameButtons.Children.Add(b);
             }
@@ -649,18 +650,111 @@ namespace FedeDashboard
             for (int i = 0; i < Catalog.Toolbars.Length; i++)
             {
                 int idx = i;
-                string label = Catalog.Toolbars[i].Split(' ')[0];
                 bool sel = hasToolbar && p.Toolbar == i;
-                dynamic b = Wpf.Xaml("<Button {NS} Padding='4' Margin='0,0,4,4' ToolTip='" + Wpf.Esc(Catalog.Toolbars[i]) + "'" + BtnColors(sel) + ">" +
-                                     "<StackPanel>" + MiniLayout(p.EffectiveFrame, i, sel, true) +
-                                     "<TextBlock Text='" + Wpf.Esc(label) + "' FontSize='10.5' HorizontalAlignment='Center' Margin='0,3,0,0'/></StackPanel></Button>");
+                dynamic b = Wpf.Xaml(IconButton(Catalog.Toolbars[i], sel, 68, 16, ToolbarBlocks(p.EffectiveFrame, i)));
                 b.IsEnabled = hasToolbar;
                 Wpf.On((object)b, "Click", (s, e) => { Page.Toolbar = idx; Changed(); });
                 toolbarButtons.Children.Add(b);
             }
 
+            ledButtons.Children.Clear();
+            for (int i = 0; i < 2; i++)
+            {
+                bool on = i == 1;
+                dynamic b = Wpf.Xaml(IconButton(on ? "Con i LED dei giri in alto (tutta la pagina scende un po')" : "Senza LED", p.Leds == on, 68, 40, LedBlocks(on)));
+                Wpf.On((object)b, "Click", (s, e) => { Page.Leds = on; Changed(); });
+                ledButtons.Children.Add(b);
+            }
+
+            centerButtons.Children.Clear();
+            for (int i = 0; i < Catalog.CenterLayouts.Length; i++)
+            {
+                int idx = i;
+                dynamic b = Wpf.Xaml(IconButton(Catalog.CenterLayouts[i], p.CenterLayout == i, 20, 48, CenterBlocks(p.EffectiveFrame, i)));
+                Wpf.On((object)b, "Click", (s, e) => { Page.CenterLayout = idx; selKind = ""; selIndex = -1; Changed(); });
+                centerButtons.Children.Add(b);
+            }
+
             FillGridButtons((object)gridLButtons, p.GridLeft, v => Page.GridLeft = v);
             FillGridButtons((object)gridRButtons, p.GridRight, v => Page.GridRight = v);
+        }
+
+        /// <summary>Pulsante con il disegnino dei blocchi (stile delle griglie dei lati). blocks = rettangoli in 0..1.</summary>
+        static string IconButton(string tip, bool selected, double w, double h, List<double[]> blocks)
+        {
+            var sb = new StringBuilder();
+            sb.Append("<Button {NS} Padding='4' Margin='0,0,4,4' ToolTip='" + Wpf.Esc(tip) + "'");
+            sb.Append(selected ? " Background='" + Accent + "' BorderBrush='" + Accent + "'>" : ">");
+            sb.Append("<Canvas Width='" + Wpf.N(w) + "' Height='" + Wpf.N(h) + "'>");
+            foreach (var r in blocks)
+            {
+                double x = r[0] * w, y = r[1] * h, bw = Math.Max(1.5, r[2] * w - 1.5), bh = Math.Max(1.5, r[3] * h - 1.5);
+                sb.Append("<Border Canvas.Left='" + Wpf.N(x) + "' Canvas.Top='" + Wpf.N(y) + "' Width='" + Wpf.N(bw) + "' Height='" + Wpf.N(bh) +
+                          "' CornerRadius='2' Background='" + (selected ? "#FFFFFFFF" : "#FFB0B0B0") + "'/>");
+            }
+            sb.Append("</Canvas></Button>");
+            return sb.ToString();
+        }
+
+        static List<double[]> Scale(IEnumerable<int[]> rects, double x0, double y0, double w, double h)
+        {
+            var l = new List<double[]>();
+            foreach (var r in rects) l.Add(new[] { (r[0] - x0) / w, (r[1] - y0) / h, r[2] / w, r[3] / h });
+            return l;
+        }
+
+        /// <summary>Barre: barre laterali + barra in basso (una o due righe), su tutta la pagina.</summary>
+        static List<double[]> FrameBlocks(int f)
+        {
+            var l = new List<int[]>();
+            if (Catalog.FrameHasSidebars[f]) l.AddRange(Catalog.SidebarRects[f]);
+            if (Catalog.FrameHasToolbar[f])
+            {
+                var t = Catalog.ToolbarRects[f][Catalog.Toolbars.Length - 1];   // "1 riquadro largo": la barra intera
+                l.AddRange(t);
+            }
+            return Scale(l, 0, 0, 850, 480);
+        }
+
+        /// <summary>LED: fila di pallini in alto e la pagina che scende; senza LED solo la pagina.</summary>
+        static List<double[]> LedBlocks(bool on)
+        {
+            var l = new List<double[]>();
+            double top = 0;
+            if (on)
+            {
+                const int n = 8;
+                double d = 0.075, gap = (1.0 - n * d) / (n - 1);
+                for (int i = 0; i < n; i++) l.Add(new[] { i * (d + gap), 0.0, d, 0.13 });
+                top = 0.24;
+            }
+            l.Add(new[] { 0.0, top, 1.0, 1.0 - top });
+            return l;
+        }
+
+        /// <summary>Riquadri in basso: solo la fila dei riquadri.</summary>
+        static List<double[]> ToolbarBlocks(int f, int t)
+        {
+            int ff = Catalog.FrameHasToolbar[f] ? f : 1;
+            var rs = Catalog.ToolbarRects[ff][t];
+            if (rs.Length == 0) return new List<double[]>();
+            int y0 = int.MaxValue, y1 = 0;
+            foreach (var r in rs) { y0 = Math.Min(y0, r[1]); y1 = Math.Max(y1, r[1] + r[3]); }
+            var row = new List<int[]>();
+            foreach (var r in rs) if (r[1] == rs[0][1]) row.Add(r);   // solo la riga di riquadri (non il largo della doppia)
+            int h0 = row[0][3];
+            return Scale(row, 0, row[0][1], 850, h0);
+        }
+
+        /// <summary>Centro: delta, marcia e le righe sotto.</summary>
+        static List<double[]> CenterBlocks(int f, int c)
+        {
+            var r = Catalog.CenterRects[f][c];
+            var l = new List<int[]>();
+            for (int i = 0; i < r.Length; i++) if (i != 2) l.Add(r[i]);
+            int y0 = r[0][1], y1 = 0;
+            foreach (var x in l) y1 = Math.Max(y1, x[1] + x[3]);
+            return Scale(l, r[0][0], y0, r[0][2], y1 - y0);
         }
 
         /// <summary>Disegnino della pagina (64x36): centro, lati, barre laterali e riquadri in basso. onlyBottom = evidenzia la barra in basso.</summary>
@@ -678,7 +772,7 @@ namespace FedeDashboard
             try
             {
                 string side = onlyBottom ? dim : on;
-                var c = Catalog.CenterRects[f];
+                var c = Catalog.CenterRects[f][0];
                 for (int i = 0; i < c.Length; i++) if (i != 2) box(c[i], side);
                 var g = Catalog.GridRects[f][Catalog.Grids.Length - 1];   // "Unico": tutta la zona dei lati
                 foreach (var r in g[0]) box(r, side);
@@ -795,14 +889,14 @@ namespace FedeDashboard
             {
                 if (p.Leds) FixedRect(new[] { 9, 5, 832, 26 }, "LED GIRI");
             }
-            var c = Catalog.CenterRects[f];
+            var c = Catalog.CenterRects[f][Math.Max(0, Math.Min(p.CenterLayout, Catalog.CenterLayouts.Length - 1))];
             if (!realPreview)
             {
                 FixedRect(c[1], "MARCIA");
                 FixedRect(c[2], "VELOCITÀ");
             }
             SlotRect(c[0], "D", 0);
-            for (int i = 0; i < Catalog.CenterRows; i++) SlotRect(c[3 + i], "C", i);
+            for (int i = 0; i + 3 < c.Length; i++) SlotRect(c[3 + i], "C", i);
 
             var left = Catalog.GridRects[f][p.GridLeft][0];
             for (int i = 0; i < left.Length; i++) SlotRect(left[i], "L", i);

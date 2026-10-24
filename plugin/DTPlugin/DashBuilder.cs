@@ -38,7 +38,7 @@ namespace FedeDashboard
         {
             var sb = new StringBuilder();
             foreach (var p in s.Pages)
-                sb.Append(p.EffectiveFrame).Append(',').Append(p.GridLeft).Append(',').Append(p.GridRight).Append(',').Append(p.Toolbar).Append(';');
+                sb.Append(p.EffectiveFrame).Append(',').Append(p.CenterLayout).Append(',').Append(p.GridLeft).Append(',').Append(p.GridRight).Append(',').Append(p.Toolbar).Append(';');
             if (s.Font != null) sb.Append("F").Append(s.Font.Key);
             return sb.ToString();
         }
@@ -98,7 +98,8 @@ namespace FedeDashboard
             {
                 var p = pages[i];
                 int f = Clamp(p.EffectiveFrame, Catalog.Frames.Length), gl = Clamp(p.GridLeft, Catalog.Grids.Length),
-                    gr = Clamp(p.GridRight, Catalog.Grids.Length), tb = Clamp(p.Toolbar, Catalog.Toolbars.Length);
+                    gr = Clamp(p.GridRight, Catalog.Grids.Length), tb = Clamp(p.Toolbar, Catalog.Toolbars.Length),
+                    cl = Clamp(p.CenterLayout, Catalog.CenterLayouts.Length);
                 var kids = new List<string>();
                 string single, stD, stS;
                 int fs;
@@ -106,10 +107,10 @@ namespace FedeDashboard
                     && pieces.TryGetValue("STRATO_D", out stD) && pieces.TryGetValue("STRATO_S", out stS))
                 {
                     // barra doppia solo quando serve rifornire (DTPlugin.BarraDoppia), altrimenti la cornice con la barra singola
-                    kids.Add(stD.Replace("\"@@FIGLI@@\"", string.Join(",", Layout(pieces, f, gl, gr, tb))));
-                    kids.Add(stS.Replace("\"@@FIGLI@@\"", string.Join(",", Layout(pieces, fs, gl, gr, tb))));
+                    kids.Add(stD.Replace("\"@@FIGLI@@\"", string.Join(",", Layout(pieces, f, gl, gr, tb, cl))));
+                    kids.Add(stS.Replace("\"@@FIGLI@@\"", string.Join(",", Layout(pieces, fs, gl, gr, tb, cl))));
                 }
-                else kids = Layout(pieces, f, gl, gr, tb);
+                else kids = Layout(pieces, f, gl, gr, tb, cl);
                 string idx = (i + 1).ToString(CultureInfo.InvariantCulture);
                 layers.Add(pageTpl.Replace("\"@@FIGLI@@\"", string.Join(",", kids)).Replace("@@IDX@@", idx));
             }
@@ -147,7 +148,8 @@ namespace FedeDashboard
         /// <summary>Schede delle righe centrali: la misura viene dal catalogo (Schede_LxA.djson).</summary>
         public static bool IsCenterCardFile(string name)
         {
-            foreach (var fr in Catalog.CenterRects)
+            foreach (var frs in Catalog.CenterRects)
+            foreach (var fr in frs)
                 for (int i = 0; i < fr.Length; i++)
                 {
                     if (i == 1 || i == 2) continue;   // marcia e velocita' non sono schede
@@ -258,10 +260,10 @@ namespace FedeDashboard
             return changed;
         }
 
-        static List<string> Layout(Dictionary<string, string> pieces, int f, int gl, int gr, int tb)
+        static List<string> Layout(Dictionary<string, string> pieces, int f, int gl, int gr, int tb, int cl)
         {
             var kids = new List<string>();
-            AddArray(kids, pieces, "CENTRO_" + f);
+            AddArray(kids, pieces, "CENTRO_" + f + "_" + cl);
             AddArray(kids, pieces, "GRIGLIA_" + f + "_L_" + gl);
             AddArray(kids, pieces, "GRIGLIA_" + f + "_R_" + gr);
             AddArray(kids, pieces, "BARRA_" + f + "_" + tb);

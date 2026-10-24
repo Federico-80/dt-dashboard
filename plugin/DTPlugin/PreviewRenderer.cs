@@ -53,7 +53,7 @@ namespace FedeDashboard
             InitTypes();
             if (!LoadPieces(font)) return false;
             int f = p.EffectiveFrame;
-            var keys = new[] { "CENTRO_" + f, "GRIGLIA_" + f + "_L_" + p.GridLeft, "GRIGLIA_" + f + "_R_" + p.GridRight,
+            var keys = new[] { "CENTRO_" + f + "_" + p.CenterLayout, "GRIGLIA_" + f + "_L_" + p.GridLeft, "GRIGLIA_" + f + "_R_" + p.GridRight,
                                "BARRA_" + f + "_" + p.Toolbar, "LATERALI_" + f };
             string mainFile = Path.Combine(Folder, DashBuilder.DashName + ".djson");
             foreach (var k in keys)

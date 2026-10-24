@@ -1,5 +1,5 @@
 {
-  "version": "2.12",
-  "notes": "2.12: anteprima vera nel plugin, cerca nelle schede, riquadro delta modificabile, disegnini dei layout, avvisi squadrati senza bordo e font piu' leggero",
+  "version": "2.13",
+  "notes": "2.13: centro da 2 a 5 blocchi, icone a blocchi per barre/riquadri/centro/LED",
   "date": "2026-10-24"
 }

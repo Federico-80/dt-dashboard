@@ -78,13 +78,17 @@ w("        {")
 for fi in range(len(FRAMES)):
     w("            " + (rects(sidebar_cells(fi)) if FRAMES[fi][1] else "new int[0][]") + ",")
 w("        };")
-w("        // CenterRects[cornice] = { delta, marcia, velocita', riga1, riga2, riga3 }")
-w("        public static readonly int[][][] CenterRects = new int[][][]")
+w("        // CenterRects[cornice][centro] = { delta, marcia, velocita', riga1, riga2, ... }")
+w("        public static readonly int[][][][] CenterRects = new int[][][][]")
 w("        {")
 for fi in range(len(FRAMES)):
-    c = center_geom(fi)
-    w("            " + rects([c["delta"], c["gear"], c["speed"]] + c["rows"]) + ",")
+    parts = []
+    for ci in range(len(CENTER_LAYOUTS)):
+        c = center_geom(fi, ci)
+        parts.append(rects([c["delta"], c["gear"], c["speed"]] + c["rows"]))
+    w("            new int[][][] { " + ", ".join(parts) + " },")
 w("        };")
+w("        public static readonly string[] CenterLayouts = new string[] " + arr([c[0] for c in CENTER_LAYOUTS], s) + ";")
 w("")
 w("        public static List<PageSettings> DefaultPages()")
 w("        {")

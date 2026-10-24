@@ -1334,9 +1334,9 @@ def led_strip(x, y, w, h):
     return it
 
 
-def center_items(fi):
+def center_items(fi, ci=0):
     BLINK_ = BLINK
-    cg = center_geom(fi)
+    cg = center_geom(fi, ci)
     it = []
     if frame_led(fi):
         it.append(layer("LED giri", led_strip(M + 4, M, DASH_W - 2 * M - 8, LED_H)))
@@ -1500,7 +1500,7 @@ DOUBLE_OFF = "return $prop('DTPlugin.BarraDoppia') !== true;"
 
 
 def layout_items(fi, page):
-    return center_items(fi) + piece_grid(fi, "L", page["grid_l"]) + piece_grid(fi, "R", page["grid_r"]) \
+    return center_items(fi, page.get("center", 0)) + piece_grid(fi, "L", page["grid_l"]) + piece_grid(fi, "R", page["grid_r"]) \
         + piece_toolbar(fi, page["toolbar"]) + piece_sidebars(fi)
 
 
@@ -2099,7 +2099,8 @@ def write_all():
     # pezzi per il DT Plugin: centro, griglie, barre per ogni cornice (crea anche tutti i file delle schede)
     pieces = {}
     for fi in range(len(FRAMES)):
-        pieces["CENTRO_%d" % fi] = center_items(fi)
+        for ci in range(len(CENTER_LAYOUTS)):
+            pieces["CENTRO_%d_%d" % (fi, ci)] = center_items(fi, ci)
         pieces["LATERALI_%d" % fi] = piece_sidebars(fi)
         for gi in range(len(GRIDS)):
             pieces["GRIGLIA_%d_L_%d" % (fi, gi)] = piece_grid(fi, "L", gi)

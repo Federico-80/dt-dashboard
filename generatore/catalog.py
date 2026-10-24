@@ -337,16 +337,21 @@ def sidebar_cells(fi):
     return [(M, g["top"], SB, h), (DASH_W - M - SB, g["top"], SB, h)]
 
 
-def center_geom(fi):
+# centro: quanti blocchi (delta + marcia + righe sotto la marcia); con meno righe la marcia diventa piu' alta
+CENTER_LAYOUTS = [("5 blocchi", 3), ("4 blocchi", 2), ("3 blocchi", 1), ("2 blocchi", 0)]
+
+
+def center_geom(fi, ci=0):
     g = frame_geom(fi)
     top, bottom = g["top"], g["bottom"]
     delta_h, speed_h, row_h = 50, 40, 36   # delta piu' alto (spazio preso dal riquadro della marcia)
-    rows_h = CENTER_ROWS * row_h + (CENTER_ROWS - 1) * G
+    n = CENTER_LAYOUTS[ci][1]
+    rows_block = n * (row_h + G)
     gear_top = top + delta_h + G
-    gear_h = bottom - rows_h - G - speed_h - G - gear_top
+    gear_h = bottom - rows_block - speed_h - G - gear_top
     speed_top = gear_top + gear_h + G
     rows_top = speed_top + speed_h + G
-    rows = [(CX, rows_top + i * (row_h + G), CW, row_h) for i in range(CENTER_ROWS)]
+    rows = [(CX, rows_top + i * (row_h + G), CW, row_h) for i in range(n)]
     # la velocita' sta dentro il riquadro della marcia (un solo riquadro); "speed" e' la sua zona interna
     box_h = gear_h + G + speed_h
     sp_y = gear_top + int(box_h * 0.56)
