@@ -1,5 +1,5 @@
 {
-  "version": "2.34",
-  "notes": "2.34: carburante, energia e strategia come Mulsanne: media degli ultimi 5 giri puliti misurati (senza box e senza gialla), tempo sul giro medio dei giri puliti",
+  "version": "2.35",
+  "notes": "2.35: strategia come Mulsanne: giri alla fine col giro in corso, litri/energia da aggiungere (OK se basta), niente giro in piu' di margine",
   "date": "2026-10-25"
 }

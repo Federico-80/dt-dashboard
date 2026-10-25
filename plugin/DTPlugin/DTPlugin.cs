@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "2.34";
+        public const string VersionText = "2.35";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -1817,30 +1817,28 @@ namespace FedeDashboard
                 SetStrat(d); return;
             }
 
-            // giri alla fine (esclusa la corrente)
+            // giri da fare fino alla fine, compreso il resto del giro in corso (come Mulsanne):
+            // gara a giri: giri totali - giri fatti - parte del giro gia' fatta;
+            // a tempo: tempo che resta / tempo medio sul giro; in gara il giro in corso allo zero va finito.
             double timeLeft = Seconds(bridge.GetPropertyValue("DataCorePlugin.GameData.SessionTimeLeft"));
-            // come TinyPedal: la gara a tempo finisce quando il primo taglia il traguardo dopo lo zero
-            if (!double.IsNaN(timeLeft) && timeLeft > 0 && timeLeft < 360000)
-            {
-                double endT = race ? RaceEndTime(timeLeft) : timeLeft;
-                // il tuo ultimo giro: lo finisci dopo che il primo e' arrivato (non conta tempo oltre)
-                timeLeft = Math.Max(0.001, endT - 0.001);
-            }
             int remLaps = AsInt(bridge.GetPropertyValue("DataCorePlugin.GameData.RemainingLaps"));
-            int lapsToEnd;
-            if (!double.IsNaN(timeLeft) && timeLeft > 0 && timeLeft < 360000)
+            int totLaps = AsInt(bridge.GetPropertyValue("DataCorePlugin.GameData.TotalLaps"));
+            bool lapRace = totLaps > 0 && totLaps < 10000;
+            bool timed = !lapRace && !double.IsNaN(timeLeft) && timeLeft > 0 && timeLeft < 360000;
+            double lapsRemaining;
+            if (timed)
             {
-                double after = timeLeft - (1 - pos) * avgLap;
-                lapsToEnd = after > 0 ? (int)Math.Ceiling(after / avgLap) : 0;
+                double lapsT = timeLeft / avgLap;
+                lapsRemaining = race ? Math.Ceiling(lapsT + pos - 1e-6) - pos : lapsT;
             }
-            else lapsToEnd = Math.Max(0, remLaps - 1);
-            // giri alla fine con i decimali, come LMU ("36.3 giri alla fine")
-            // come LMU: giri dopo quello in corso (il giro corrente non e' contato)
-            double lapsFrac = (!double.IsNaN(timeLeft) && timeLeft > 0 && timeLeft < 360000)
-                ? Math.Max(0, (timeLeft - (1 - pos) * avgLap) / avgLap) : Math.Max(0, remLaps - 1);
-            // giri da guidare davvero: resto del giro corrente + giri interi dopo (allo scadere del tempo il giro va finito)
-            double lapsDrive = (1 - pos) + Math.Ceiling(lapsFrac - 1e-6);
-            int fillLaps = lapsToEnd == 0 ? 0 : lapsToEnd + 1;
+            else if (lapRace) lapsRemaining = Math.Max(0, totLaps - (lap - 1) - pos);
+            else lapsRemaining = Math.Max(0, remLaps - pos);
+            lapsRemaining = Math.Max(0, lapsRemaining);
+            // giri interi dopo quello in corso
+            int lapsToEnd = Math.Max(0, (int)Math.Round(lapsRemaining - (1 - pos)));
+            double lapsFrac = lapsRemaining;          // mostrato come "giri alla fine"
+            double lapsDrive = lapsRemaining;
+            int fillLaps = lapsToEnd;
 
             // risorsa: energia (auto con VE) o carburante
             double fuel = Num(bridge.GetPropertyValue("DataCorePlugin.GameData.Fuel"));
@@ -1901,18 +1899,17 @@ namespace FedeDashboard
             // quanto serve ancora per arrivare alla fine (come "61% VE necessaria" di LMU)
             double needTot = per * lapsDrive - (useVe ? ve : fuel);
             d["Necessaria"] = needTot > 0 ? Math.Ceiling(needTot).ToString("0", CultureInfo.InvariantCulture) + (useVe ? " %" : " l") : "0";
-            // litri ed energia che servono ancora per arrivare alla fine (0 = bastano quelli a bordo)
+            // come Mulsanne: quanto aggiungere per arrivare alla fine (giri da fare x consumo - quello a bordo); OK = basta
             if (!double.IsNaN(fuel) && fuelPer > 0)
             {
-                // come LMU ("VE necessaria"): quanto serve per i giri alla fine, senza togliere quello a bordo
-                double nl = fuelPer * lapsFrac;
-                d["Litri"] = stops == 0 ? "-" : Math.Ceiling(nl).ToString("0", CultureInfo.InvariantCulture) + " l";   // niente sosta: niente da mettere
+                double nl = fuelPer * lapsRemaining - fuel;
+                d["Litri"] = nl > 0 ? Math.Ceiling(nl).ToString("0", CultureInfo.InvariantCulture) + " l" : "OK";
             }
             else d["Litri"] = "-";
             if (nrg)
             {
-                double ne = vePer * lapsFrac;
-                d["EnergiaNec"] = stops == 0 ? "-" : Math.Ceiling(ne).ToString("0", CultureInfo.InvariantCulture) + " %";
+                double ne = vePer * lapsRemaining - ve;
+                d["EnergiaNec"] = ne > 0 ? Math.Ceiling(ne).ToString("0", CultureInfo.InvariantCulture) + " %" : "OK";
             }
             else d["EnergiaNec"] = "-";
 
