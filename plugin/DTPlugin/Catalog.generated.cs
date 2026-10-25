@@ -417,14 +417,14 @@ namespace FedeDashboard
             return list;
         }
 
-        // DT LapBox: schermo 1050x684, blocchi possibili {x, y, w, h} e per ogni griglia i blocchi usati (in ordine di riquadro)
+        // DT LapBox: schermo 1050x700, blocchi possibili {x, y, w, h} e per ogni griglia i blocchi usati (in ordine di riquadro)
         public const int LapBoxWidth = 1050;
-        public const int LapBoxHeight = 684;
-        public static readonly int[][] LapBoxCells = new int[][] { new[] { 6, 102, 514, 117 }, new[] { 526, 102, 514, 117 }, new[] { 6, 225, 514, 117 }, new[] { 526, 225, 514, 117 }, new[] { 6, 348, 514, 117 }, new[] { 526, 348, 514, 117 }, new[] { 6, 471, 514, 117 }, new[] { 526, 471, 514, 117 }, new[] { 6, 102, 514, 240 }, new[] { 526, 102, 514, 240 }, new[] { 6, 348, 514, 240 }, new[] { 526, 348, 514, 240 }, new[] { 6, 102, 1034, 240 }, new[] { 6, 348, 1034, 240 }, new[] { 6, 102, 514, 486 }, new[] { 526, 102, 514, 486 }, new[] { 6, 102, 1034, 486 } };
+        public const int LapBoxHeight = 700;
+        public static readonly int[][] LapBoxCells = new int[][] { new[] { 6, 110, 514, 117 }, new[] { 526, 110, 514, 117 }, new[] { 6, 233, 514, 117 }, new[] { 526, 233, 514, 117 }, new[] { 6, 356, 514, 117 }, new[] { 526, 356, 514, 117 }, new[] { 6, 479, 514, 117 }, new[] { 526, 479, 514, 117 }, new[] { 6, 110, 514, 240 }, new[] { 526, 110, 514, 240 }, new[] { 6, 356, 514, 240 }, new[] { 526, 356, 514, 240 }, new[] { 6, 110, 1034, 240 }, new[] { 6, 356, 1034, 240 }, new[] { 6, 110, 514, 486 }, new[] { 526, 110, 514, 486 }, new[] { 6, 110, 1034, 486 } };
         public static readonly int[][] LapBoxGridCells = new int[][] { new[] { 0, 1, 2, 3, 4, 5, 6, 7 }, new[] { 8, 9, 10, 11 }, new[] { 12, 13 }, new[] { 14, 15 }, new[] { 16 } };
         public static readonly string[] LapBoxGrids = new string[] { "8 blocchi", "4 blocchi", "2 blocchi sopra e sotto", "2 blocchi affiancati", "1 blocco" };
         public static readonly int[][][] LapBoxGridUnits = new int[][][] { new int[][] { new[] { 0, 0, 1, 1 }, new[] { 1, 0, 1, 1 }, new[] { 0, 1, 1, 1 }, new[] { 1, 1, 1, 1 }, new[] { 0, 2, 1, 1 }, new[] { 1, 2, 1, 1 }, new[] { 0, 3, 1, 1 }, new[] { 1, 3, 1, 1 } }, new int[][] { new[] { 0, 0, 1, 2 }, new[] { 1, 0, 1, 2 }, new[] { 0, 2, 1, 2 }, new[] { 1, 2, 1, 2 } }, new int[][] { new[] { 0, 0, 2, 2 }, new[] { 0, 2, 2, 2 } }, new int[][] { new[] { 0, 0, 1, 4 }, new[] { 1, 0, 1, 4 } }, new int[][] { new[] { 0, 0, 2, 4 } } };
-        public static readonly int[][] LapBoxLights = new int[][] { new[] { 253, 0, 140, 86 }, new[] { 635, 0, 140, 86 } };
+        public static readonly int[][] LapBoxLights = new int[][] { new[] { 253, 0, 140, 94 }, new[] { 635, 0, 140, 94 } };
 
         public static List<PageSettings> DefaultLapBoxPages()
         {

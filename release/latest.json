@@ -1,5 +1,5 @@
 {
-  "version": "2.32",
-  "notes": "2.32: LapBox 1050x684 (luci non piu' tagliate, meno spazio a sinistra); settori: il tuo migliore preso anche dal gioco (giusto anche dopo un riavvio)",
+  "version": "2.33",
+  "notes": "2.33: LapBox 1050x700 (luci intere); settori: se il gioco non manda i settori degli altri, viola solo se nessuno della tua classe ha un tempo",
   "date": "2026-10-25"
 }

@@ -99,11 +99,12 @@ namespace FedeDashboard
                     string name = Str(Get(v, "mDriverName"));
                     if (name.Length == 0) continue;
                     object[] e;
-                    if (!others.TryGetValue(name, out e)) { e = new object[] { "", new[] { double.NaN, double.NaN, double.NaN } }; others[name] = e; }
+                    if (!others.TryGetValue(name, out e)) { e = new object[] { "", new[] { double.NaN, double.NaN, double.NaN }, false }; others[name] = e; }
                     e[0] = Str(Get(v, "mVehicleClass"));
                     var b = (double[])e[1];
                     double b1 = N(Get(v, "mBestSector1")), b2 = N(Get(v, "mBestSector2")), bl = N(Get(v, "mBestLapTime"));
                     double l1 = N(Get(v, "mLastSector1")), l2 = N(Get(v, "mLastSector2")), ll = N(Get(v, "mLastLapTime"));
+                    if (bl > 0 || ll > 0) e[2] = true;   // ha un tempo sul giro (anche se i settori non arrivano)
                     Better(b, 0, b1); Better(b, 0, l1);
                     if (b1 > 0 && b2 > b1) Better(b, 1, b2 - b1);
                     if (l1 > 0 && l2 > l1) Better(b, 1, l2 - l1);
@@ -188,12 +189,16 @@ namespace FedeDashboard
             // senza i settori degli altri (iRacing) il viola non si puo' calcolare: solo verde / giallo
             if (genericMode) return Green;
             // viola = migliore della tua classe (anche se nessun altro della classe ha ancora un tempo)
-            double cls = ClassBest(i);
-            return double.IsNaN(cls) || t <= cls + 0.0005 ? Purple : Green;
+            bool rivals;
+            double cls = ClassBest(i, out rivals);
+            // senza settori degli altri (online LMU a volte non li manda): viola solo se nessuno della tua classe ha un tempo
+            if (double.IsNaN(cls)) return rivals ? Green : Purple;
+            return t <= cls + 0.0005 ? Purple : Green;
         }
 
-        double ClassBest(int i)
+        double ClassBest(int i, out bool rivals)
         {
+            rivals = false;
             nextOthers = DateTime.MinValue; TrackOthers(DateTime.Now);   // dati freschi al momento del confronto
             string myClass = Str(raw("CurrentPlayer.mVehicleClass"));
             if (!classLogged && others.Count > 0)
@@ -207,6 +212,7 @@ namespace FedeDashboard
             foreach (var e in others.Values)
             {
                 if (myClass.Length > 0 && !string.Equals((string)e[0], myClass, StringComparison.OrdinalIgnoreCase)) continue;
+                if (e.Length > 2 && e[2] is bool && (bool)e[2]) rivals = true;
                 double t = ((double[])e[1])[i];
                 if (t > 0 && (double.IsNaN(best) || t < best)) best = t;
             }
