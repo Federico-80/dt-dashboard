@@ -1,9 +1,9 @@
-"""DT LapBox: dashboard per la RaceSense LapBox 4" (800x630).
+"""DT LapBox: dashboard per la RaceSense LapBox 4" (1050x630, schermo 5:3).
 In alto (0-100) le due luci dietro le finestrelle, comandate dal DT Plugin (DTPlugin.LB_Luce1 / LB_Luce2).
 Sotto (100-580) la parte visibile, divisa in 2 colonne x 4 righe: le griglie sono quelle dei lati della DT Dashboard
 e le schede sono le stesse (file Schede_LxA.djson alle misure della LapBox).
 Ogni blocco possibile e' un widget: il plugin dice quali si vedono (LB_CellaVis_n) e che scheda mostrano (LB_Cella_n).
-Cambio pagina e schermata di attesa sono sotto-dashboard 800x480 (Avvisi.djson, Attesa.djson): niente avvisi a schermo."""
+Cambio pagina e schermata di attesa sono sotto-dashboard 990x488 (Avvisi.djson, Attesa.djson): niente avvisi a schermo."""
 import copy, json, os, shutil, sys, zipfile
 import catalog as C
 import gen_dash as G
@@ -11,7 +11,7 @@ import gen_dash as G
 NAME = "DT LapBox"
 W, H = C.LB_W, C.LB_H
 TOP, BOT = C.LB_TOP, C.LB_BOTTOM
-SW, SH = W, BOT - TOP          # parte visibile 800x480
+SX, SY, SW, SH = 30, 82, 990, 488   # parte visibile nella finestra (avvisi di pagina, attesa)
 P = "DTPlugin."
 
 
@@ -60,7 +60,7 @@ def cells():
 
 
 def overlay_doc():
-    """Cambio pagina, motore spento, plugin mancante / bloccato: 800x480 (gli avvisi a schermo sulla LapBox non servono)."""
+    """Cambio pagina, motore spento, plugin mancante / bloccato: 990x488 (gli avvisi a schermo sulla LapBox non servono)."""
     def make():
         toast = G.layer("Avviso pagina", [
             G.rect("Avviso fondo", SW / 2 - 170, SH / 2 - 45, 340, 90, bg="#F0101010", border=G.WHITE, bw=2, radius=14),
@@ -85,7 +85,7 @@ def idle_doc():
 
 
 def overlay_widget(name, fn):
-    d = G.widget(name, 0, TOP, SW, SH, fn, "_nessuno")
+    d = G.widget(name, SX, SY, SW, SH, fn, "_nessuno")
     d["Bindings"] = {}
     d["_pv"] = dict(kind="widget", file=fn, slot="_nessuno")
     return d

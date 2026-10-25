@@ -439,19 +439,22 @@ ALERT_MAX_VALUES = 4
 # ---------------------------------------------------------------- DT LapBox (RaceSense LapBox 4")
 # schermo 800x630: in alto (0-100) le due luci dietro le finestrelle, sotto (100-580) la parte visibile.
 # La parte visibile e' divisa in 2 colonne x 4 righe (8 blocchi): le griglie sono le stesse dei lati della DT Dashboard.
-LB_W, LB_H = 800, 630
-LB_TOP, LB_BOTTOM = 100, 580
-LB_LIGHTS = [(198, 37), (580, 37)]     # centri delle due luci (come la dash RaceSense)
-LB_LIGHT_D = 115
-LB_M, LB_G = 4, 6
-LB_CW = (LB_W - 2 * LB_M - LB_G) // 2                                   # 393
-LB_RH = (LB_BOTTOM - LB_TOP - 2 * LB_M - 3 * LB_G) // 4                  # 113
+# lo schermo della LapBox e' 5:3 (come 800x480): la dash e' 1050x630 cosi' riempie anche i lati
+# (con 800x630 SimHub lasciava due bande nere). Parte visibile nella finestra misurata dalla foto: x ~30-1020, y ~80-570.
+LB_W, LB_H = 1050, 630
+LB_X0, LB_X1 = 36, 1014
+LB_TOP, LB_BOTTOM = 104, 562
+LB_LIGHTS = [(323, 12), (705, 12)]     # centri delle due luci (dietro i due fori sopra lo schermo)
+LB_LIGHT_D = 110
+LB_G = 6
+LB_CW = (LB_X1 - LB_X0 - LB_G) // 2                                     # 486
+LB_RH = (LB_BOTTOM - LB_TOP - 3 * LB_G) // 4                             # 110
 
 
 def lb_rect(cell):
     c, r, w, h = cell
-    x = LB_M + c * (LB_CW + LB_G)
-    y = LB_TOP + LB_M + r * (LB_RH + LB_G)
+    x = LB_X0 + c * (LB_CW + LB_G)
+    y = LB_TOP + r * (LB_RH + LB_G)
     return (x, y, w * LB_CW + (w - 1) * LB_G, h * LB_RH + (h - 1) * LB_G)
 
 
