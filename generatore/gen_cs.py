@@ -111,7 +111,7 @@ w("        public static readonly int[][] LapBoxCells = " + rects([lb_rect(c) fo
 w("        public static readonly int[][] LapBoxGridCells = new int[][] { " + ", ".join("new[] " + arr(g) for g in LB_GRID_CELLS) + " };")
 w("        public static readonly string[] LapBoxGrids = new string[] " + arr([g[0] for g in LB_GRIDS], s) + ";")
 w("        public static readonly int[][][] LapBoxGridUnits = new int[][][] { " + ", ".join(rects(g[1]) for g in LB_GRIDS) + " };")
-w("        public static readonly int[][] LapBoxLights = new int[][] { " + ", ".join("new[] { %d, %d, %d }" % (x, y, LB_LIGHT_D) for (x, y) in LB_LIGHTS) + " };")
+w("        public static readonly int[][] LapBoxLights = " + rects(LB_LIGHTS) + ";")
 w("")
 w("        public static List<PageSettings> DefaultLapBoxPages()")
 w("        {")

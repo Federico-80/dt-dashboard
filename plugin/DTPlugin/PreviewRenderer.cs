@@ -39,13 +39,7 @@ namespace FedeDashboard
             try
             {
                 foreach (var l in Catalog.LapBoxLights)
-                {
-                    double d = l[2] * 0.74;
-                    var halo = Wpf.Xaml("<Border {NS} Width='" + Wpf.N(l[2]) + "' Height='" + Wpf.N(l[2]) + "' CornerRadius='" + Wpf.N(l[2] / 2.0) + "' Background='#3000E676'/>");
-                    Add(canvas, halo, l[0] - l[2] / 2.0, l[1] - l[2] / 2.0);
-                    var core = Wpf.Xaml("<Border {NS} Width='" + Wpf.N(d) + "' Height='" + Wpf.N(d) + "' CornerRadius='" + Wpf.N(d / 2) + "' Background='#FF00C060'/>");
-                    Add(canvas, core, l[0] - d / 2, l[1] - d / 2);
-                }
+                    Add(canvas, Wpf.Xaml("<Border {NS} Width='" + Wpf.N(l[2]) + "' Height='" + Wpf.N(l[3]) + "' Background='#FF00C060'/>"), l[0], l[1]);
                 int g = p.GridLeft < 0 || p.GridLeft >= Catalog.LapBoxGridCells.Length ? 0 : p.GridLeft;
                 var cells = Catalog.LapBoxGridCells[g];
                 for (int i = 0; i < cells.Length; i++)

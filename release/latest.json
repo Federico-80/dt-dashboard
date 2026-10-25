@@ -1,5 +1,5 @@
 {
-  "version": "2.29",
-  "notes": "2.29: DT LapBox allargata (1050x630) per riempire lo schermo, blocchi dentro la finestra, luci piu' piccole",
+  "version": "2.30",
+  "notes": "2.30: settori viola solo se migliori della tua categoria; LapBox senza bordi, blocchi piu' grandi, luci a zona piena",
   "date": "2026-10-25"
 }

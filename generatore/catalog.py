@@ -442,13 +442,13 @@ ALERT_MAX_VALUES = 4
 # lo schermo della LapBox e' 5:3 (come 800x480): la dash e' 1050x630 cosi' riempie anche i lati
 # (con 800x630 SimHub lasciava due bande nere). Parte visibile nella finestra misurata dalla foto: x ~30-1020, y ~80-570.
 LB_W, LB_H = 1050, 630
-LB_X0, LB_X1 = 36, 1014
-LB_TOP, LB_BOTTOM = 104, 562
-LB_LIGHTS = [(323, 12), (705, 12)]     # centri delle due luci (dietro i due fori sopra lo schermo)
-LB_LIGHT_D = 110
+LB_X0, LB_X1 = 18, 1032
+LB_TOP, LB_BOTTOM = 72, 566
+# le due luci: una zona piena (rettangolo) dietro ogni foro, cosi' il foro e' tutto acceso anche se non e' preciso
+LB_LIGHTS = [(253, 0, 140, 62), (635, 0, 140, 62)]     # x, y, larghezza, altezza
 LB_G = 6
-LB_CW = (LB_X1 - LB_X0 - LB_G) // 2                                     # 486
-LB_RH = (LB_BOTTOM - LB_TOP - 3 * LB_G) // 4                             # 110
+LB_CW = (LB_X1 - LB_X0 - LB_G) // 2
+LB_RH = (LB_BOTTOM - LB_TOP - 3 * LB_G) // 4
 
 
 def lb_rect(cell):

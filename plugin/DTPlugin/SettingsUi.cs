@@ -1022,7 +1022,7 @@ namespace FedeDashboard
             catch (Exception ex) { if (!previewErrorLogged) { previewErrorLogged = true; FedeLog.Error("anteprima LapBox", ex); } preview.Children.Clear(); realPreview = false; }
             if (!realPreview)
                 foreach (var l in Catalog.LapBoxLights)
-                    FixedRect(new[] { l[0] - l[2] / 2, Math.Max(0, l[1] - l[2] / 2), l[2], l[2] / 2 + l[1] }, "LUCE");
+                    FixedRect(l, "LUCE");
             int g = p.GridLeft < 0 || p.GridLeft >= Catalog.LapBoxGridCells.Length ? 0 : p.GridLeft;
             var cells = Catalog.LapBoxGridCells[g];
             for (int i = 0; i < cells.Length; i++) SlotRect(Catalog.LapBoxCells[cells[i]], "L", i);

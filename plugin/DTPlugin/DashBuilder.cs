@@ -124,7 +124,16 @@ namespace FedeDashboard
             string json = ApplyStyle(tpl.Replace("\"@@PAGINE@@\"", string.Join(",", layers)), font, true, false);
             try { if (ApplyFontToOtherFiles(folder, outPath, font) > 0 && Started) NeedsReload = true; } catch (Exception ex) { FedeLog.Error("carattere schede", ex); }
             // stesso carattere anche sulla DT LapBox (tutti i suoi file: le pagine li sceglie il plugin, non si ricompone)
-            try { if (Directory.Exists(LapBoxFolder)) ApplyFontToOtherFiles(LapBoxFolder, "", font); } catch (Exception ex) { FedeLog.Error("carattere LapBox", ex); }
+            try
+            {
+                if (Directory.Exists(LapBoxFolder))
+                {
+                    // sulla LapBox le schede non hanno bordi: solo il carattere
+                    var lf = font == null ? null : new FontSettings { Family = font.Family, Weight = font.Weight, SizePct = font.SizePct, CenterBorder = 0, CardBorder = 0 };
+                    ApplyFontToOtherFiles(LapBoxFolder, "", lf);
+                }
+            }
+            catch (Exception ex) { FedeLog.Error("carattere LapBox", ex); }
 
             if (File.Exists(outPath) && File.ReadAllText(outPath, Encoding.UTF8) == json)
             {

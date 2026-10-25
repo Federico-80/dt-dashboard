@@ -3,7 +3,7 @@ In alto (0-100) le due luci dietro le finestrelle, comandate dal DT Plugin (DTPl
 Sotto (100-580) la parte visibile, divisa in 2 colonne x 4 righe: le griglie sono quelle dei lati della DT Dashboard
 e le schede sono le stesse (file Schede_LxA.djson alle misure della LapBox).
 Ogni blocco possibile e' un widget: il plugin dice quali si vedono (LB_CellaVis_n) e che scheda mostrano (LB_Cella_n).
-Cambio pagina e schermata di attesa sono sotto-dashboard 990x488 (Avvisi.djson, Attesa.djson): niente avvisi a schermo."""
+Cambio pagina e schermata di attesa sono sotto-dashboard della parte visibile (Avvisi.djson, Attesa.djson): niente avvisi a schermo."""
 import copy, json, os, shutil, sys, zipfile
 import catalog as C
 import gen_dash as G
@@ -11,7 +11,7 @@ import gen_dash as G
 NAME = "DT LapBox"
 W, H = C.LB_W, C.LB_H
 TOP, BOT = C.LB_TOP, C.LB_BOTTOM
-SX, SY, SW, SH = 30, 82, 990, 488   # parte visibile nella finestra (avvisi di pagina, attesa)
+SX, SY, SW, SH = C.LB_X0, C.LB_TOP, C.LB_X1 - C.LB_X0, C.LB_BOTTOM - C.LB_TOP   # parte visibile nella finestra (avvisi di pagina, attesa)
 P = "DTPlugin."
 
 
@@ -32,19 +32,14 @@ def at_size(w, h, fn):
 
 
 def lights():
-    """Le due luci: alone + disco. Spente = disco scuro."""
+    """Le due luci: una zona piena dietro ogni foro (colore dal plugin). Spente = nero."""
     it = []
-    D = C.LB_LIGHT_D
-    for k, (cx, cy) in enumerate(C.LB_LIGHTS):
+    for k, (x, y, w, h) in enumerate(C.LB_LIGHTS):
         prop = "$prop('%sLB_Luce%d')" % (P, k + 1)
-        glow = js("var c = %s;\r\nif (!c || c.length < 9) { return '#00000000'; }\r\nreturn '#50' + c.substring(3);" % prop)
-        core = js("var c = %s;\r\nreturn (!c || c.length < 9) ? '#FF161616' : c;" % prop)
-        g = G.rect("Luce %d alone" % (k + 1), cx - D / 2, cy - D / 2, D, D, bg="#00000000", radius=int(D / 2), bindings={"BackgroundColor": glow})
-        d = D * 0.74
-        c = G.rect("Luce %d" % (k + 1), cx - d / 2, cy - d / 2, d, d, bg="#FF161616", radius=int(d / 2), bindings={"BackgroundColor": core})
-        g["_pv"]["bg"] = "#5000E676"
-        c["_pv"]["bg"] = "#FF00E676"
-        it += [g, c]
+        col = js("var c = %s;\r\nreturn (!c || c.length < 9) ? '#FF000000' : c;" % prop)
+        r = G.rect("Luce %d" % (k + 1), x, y, w, h, bg="#FF000000", radius=0, bindings={"BackgroundColor": col})
+        r["_pv"]["bg"] = "#FF00E676"
+        it.append(r)
     return it
 
 
@@ -60,7 +55,7 @@ def cells():
 
 
 def overlay_doc():
-    """Cambio pagina, motore spento, plugin mancante / bloccato: 990x488 (gli avvisi a schermo sulla LapBox non servono)."""
+    """Cambio pagina, motore spento, plugin mancante / bloccato: della parte visibile (gli avvisi a schermo sulla LapBox non servono)."""
     def make():
         toast = G.layer("Avviso pagina", [
             G.rect("Avviso fondo", SW / 2 - 170, SH / 2 - 45, 340, 90, bg="#F0101010", border=G.WHITE, bw=2, radius=14),
@@ -84,6 +79,25 @@ def idle_doc():
     return G.dash_doc(SW, SH, scr, G.metadata(SW, SH, scr, idle=[0]))
 
 
+def no_borders(doc):
+    """Schede senza cornice: il bordo della "Cornice" a 0 (il nome della scheda resta)."""
+    def walk(items):
+        for it in items:
+            if isinstance(it, dict):
+                if it.get("Name") == "Cornice" and "BorderStyle" in it:
+                    bs = it["BorderStyle"]
+                    for k in ("BorderTop", "BorderBottom", "BorderLeft", "BorderRight"):
+                        if k in bs:
+                            bs[k] = 0
+                    if "_pv" in it:
+                        it["_pv"]["border"] = None
+                if it.get("Childrens"):
+                    walk(it["Childrens"])
+    for sc in doc["Screens"]:
+        walk(sc["Items"])
+    return doc
+
+
 def overlay_widget(name, fn):
     d = G.widget(name, SX, SY, SW, SH, fn, "_nessuno")
     d["Bindings"] = {}
@@ -94,9 +108,7 @@ def overlay_widget(name, fn):
 def build():
     bg = G.rect("Sfondo", 0, 0, W, H, bg="#FF000000", radius=0)
     race = [bg] + lights() + cells() + [overlay_widget("Avvisi", "Avvisi.djson")]
-    idle = [copy.deepcopy(bg)] + [G.rect("Luce spenta %d" % (k + 1), cx - C.LB_LIGHT_D * 0.37, cy - C.LB_LIGHT_D * 0.37,
-                                         C.LB_LIGHT_D * 0.74, C.LB_LIGHT_D * 0.74, bg="#FF161616", radius=int(C.LB_LIGHT_D * 0.37))
-                                  for k, (cx, cy) in enumerate(C.LB_LIGHTS)] + [overlay_widget("Attesa", "Attesa.djson")]
+    idle = [copy.deepcopy(bg), overlay_widget("Attesa", "Attesa.djson")]
     scr = [G.screen("Attesa", idle, ingame=False, idle=True, bg="#FF000000"), G.screen("Gara", race, ingame=True, bg="#FF000000")]
     meta = G.metadata(W, H, scr, title=NAME, ingame=[1], idle=[0], preview=1)
     meta["Description"] = "DT Dashboard per RaceSense LapBox 4\" (layout e schede dal DT Plugin)"
@@ -123,7 +135,7 @@ def write(out_dir):
     files = {NAME + ".djson": doc, "Avvisi.djson": overlay_doc(), "Attesa.djson": idle_doc()}
     sizes = {G.card_file(*C.lb_rect(c)[2:]) for c in C.LB_CELLS}
     for fn in sizes:
-        files[fn] = G.CARD_FILES[fn]
+        files[fn] = no_borders(copy.deepcopy(G.CARD_FILES[fn]))
     import icons
     G.write_docs(folder, files, icons.all_icons())
     with open(os.path.join(folder, NAME + ".djson.metadata"), "w", encoding="utf-8") as f:
