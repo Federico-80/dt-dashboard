@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "2.27";
+        public const string VersionText = "2.28";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -328,6 +328,17 @@ namespace FedeDashboard
             bridge.Attach("Pagine", () => Settings.Pages.Count);
             bridge.Attach("MostraPagina", () => DateTime.Now < toastUntil);
             bridge.Attach("Cornice", () => Page.Frame);
+            // DT LapBox: blocchi visibili, schede, nome pagina, luci
+            for (int k = 0; k < Catalog.LapBoxCells.Length; k++)
+            {
+                int kk = k;
+                bridge.Attach("LB_CellaVis" + (kk + 1), () => LapBoxSlotOf(kk) >= 0);
+                bridge.Attach("LB_Cella" + (kk + 1), () => { int i = LapBoxSlotOf(kk); return i < 0 ? 0 : SlotValue(LapBoxPage.Left, i); });
+            }
+            bridge.Attach("LB_Pagina", () => Settings.LapBoxActive + 1);
+            bridge.Attach("LB_PaginaNome", () => LapBoxPage.Name);
+            bridge.Attach("LB_Luce1", () => lbLight1);
+            bridge.Attach("LB_Luce2", () => lbLight2);
             bridge.Attach("Griglia_L", () => Page.GridLeft);
             bridge.Attach("Griglia_R", () => Page.GridRight);
             bridge.Attach("BarraInferiore", () => Page.Toolbar);
@@ -552,7 +563,7 @@ namespace FedeDashboard
             for (int i = 0; i < 6; i++)
             {
                 int idx = i;
-                bridge.AddAction("VaiAPagina" + (idx + 1), () => SetActivePage(idx, true));
+                bridge.AddAction("VaiAPagina" + (idx + 1), () => { if (idx < Settings.LapBoxPages.Count) Settings.LapBoxActive = idx; SetActivePage(idx, true); });
             }
         }
 
@@ -704,6 +715,112 @@ namespace FedeDashboard
             }
         }
 
+        /// <summary>Pagina attiva della DT LapBox.</summary>
+        public PageSettings LapBoxPage
+        {
+            get
+            {
+                try
+                {
+                    var l = Settings != null ? Settings.LapBoxPages : null;
+                    if (l == null || l.Count == 0) return FallbackPage;
+                    int i = Settings.LapBoxActive;
+                    if (i < 0 || i >= l.Count) i = 0;
+                    return l[i] ?? FallbackPage;
+                }
+                catch { return FallbackPage; }
+            }
+        }
+
+        public void SetLapBoxPage(int index, bool showToast)
+        {
+            if (index < 0 || index >= Settings.LapBoxPages.Count) return;
+            Settings.LapBoxActive = index;
+            if (showToast && Settings.PageToastSeconds > 0)
+                toastUntil = DateTime.Now.AddSeconds(Settings.PageToastSeconds);
+            var h = PageChanged;
+            if (h != null) h();
+        }
+
+        /// <summary>Blocco k della LapBox: indice del riquadro nella griglia della pagina attiva (-1 = non usato).</summary>
+        int LapBoxSlotOf(int cell)
+        {
+            var p = LapBoxPage;
+            int g = p.GridLeft < 0 || p.GridLeft >= Catalog.LapBoxGridCells.Length ? 0 : p.GridLeft;
+            return Array.IndexOf(Catalog.LapBoxGridCells[g], cell);
+        }
+
+        // ------------------------------------------------ luci della LapBox
+        volatile string lbLight1 = "", lbLight2 = "";
+        double lbDeltaPrev = double.NaN, lbTrend;
+        DateTime lbDeltaT = DateTime.MinValue;
+
+        static string Alpha(string argb, double k)
+        {
+            if (string.IsNullOrEmpty(argb) || argb.Length < 9) return argb;
+            int a = (int)Math.Round(Math.Max(0.25, Math.Min(1, k)) * 255);
+            return "#" + a.ToString("X2") + argb.Substring(3);
+        }
+
+        /// <summary>
+        /// Le due luci, in ordine di importanza: corsia box / limitatore (blu lampeggiante), cambio marcia al limite
+        /// (rosso lampeggiante), bandiera (colore della bandiera), lift &amp; coast (viola);
+        /// altrimenti come la LapBox RaceSense: a sinistra se stai guadagnando (verde) o perdendo (rosso) sul giro migliore,
+        /// a destra il delta (verde sotto, rosso sopra), piu' accese quanto piu' e' grande la differenza.
+        /// Carburante o energia sotto i 3 giri: la destra resta rossa.
+        /// </summary>
+        void UpdateLapBoxLights(DateTime now, bool running, bool pitLane, string flag)
+        {
+            var lb = Settings.LapBox ?? new LapBoxSettings();
+            if (!running) { lbLight1 = lbLight2 = ""; return; }
+            bool slow = (now.Ticks / TimeSpan.TicksPerMillisecond / 250) % 2 == 0;
+            bool fast = (now.Ticks / TimeSpan.TicksPerMillisecond / 90) % 2 == 0;
+            const string Blue = "#FF2979FF", Red = "#FFFF1744", Green = "#FF00E676";
+            if (lb.Pit && pitLane) { lbLight1 = lbLight2 = slow ? Blue : ""; return; }
+            double rpm = Num(bridge.GetPropertyValue("DataCorePlugin.GameData.CarSettings_CurrentDisplayedRPMPercent"));
+            if (lb.Shift && !double.IsNaN(rpm) && rpm >= 97) { lbLight1 = lbLight2 = fast ? Red : ""; return; }
+            if (lb.Flags && flag.Length > 0)
+            {
+                string t, b, f;
+                FlagInfo(flag, out t, out b, out f);
+                bool blinkIt = flag == "Blue" || flag == "Black";
+                lbLight1 = lbLight2 = (!blinkIt || slow) ? b : "";
+                return;
+            }
+            if (lb.Lift && liftOn) { lbLight1 = lbLight2 = liftColor; return; }
+            string l1 = "", l2 = "";
+            if (lb.Delta)
+            {
+                var dr = Find("Delta");
+                double d = dr != null ? dr.Value : double.NaN;
+                if (!double.IsNaN(d) && Math.Abs(d) < 60)
+                {
+                    double dt = (now - lbDeltaT).TotalSeconds;
+                    if (dt >= 0.25)
+                    {
+                        if (!double.IsNaN(lbDeltaPrev) && dt < 2)
+                        {
+                            double r = (d - lbDeltaPrev) / dt;       // s di delta al secondo: < 0 stai guadagnando
+                            lbTrend = lbTrend * 0.6 + r * 0.4;
+                        }
+                        lbDeltaPrev = d; lbDeltaT = now;
+                    }
+                    if (Math.Abs(lbTrend) > 0.004) l1 = Alpha(lbTrend < 0 ? Green : Red, Math.Abs(lbTrend) / 0.05);
+                    l2 = Alpha(d <= 0 ? Green : Red, 0.3 + Math.Abs(d) / 0.5);
+                }
+                else { lbDeltaPrev = double.NaN; lbTrend = 0; }
+            }
+            if (lb.Fuel)
+            {
+                var fl = Find("FuelLaps"); var vl = Find("VELaps");
+                double g = double.NaN;
+                if (fl != null && !double.IsNaN(fl.Value) && fl.Value > 0) g = fl.Value;
+                if (vl != null && !double.IsNaN(vl.Value) && vl.Value > 0 && (double.IsNaN(g) || vl.Value < g)) g = vl.Value;
+                if (!double.IsNaN(g) && g <= 3) l2 = Red;
+            }
+            lbLight1 = l1; lbLight2 = l2;
+        }
+
         static int SlotValue(List<int> list, int index)
         {
             if (list == null || index < 0 || index >= list.Count) return 0;
@@ -712,6 +829,8 @@ namespace FedeDashboard
 
         public void ChangePage(int delta)
         {
+            int m = Settings.LapBoxPages != null ? Settings.LapBoxPages.Count : 0;
+            if (m > 0) Settings.LapBoxActive = ((Settings.LapBoxActive + delta) % m + m) % m;   // la LapBox cambia pagina insieme
             int n = Settings.Pages.Count;
             if (n == 0) return;
             SetActivePage(((Settings.ActivePage + delta) % n + n) % n, true);
@@ -905,6 +1024,12 @@ namespace FedeDashboard
             sessionKind = kind;
             simStartPos = 0; startPosAll = 0; startPosClass = 0; startFrozen = false;
             if (kind.Length == 0) return;
+            var lbp = Settings.LapBoxPages;
+            for (int i = 0; lbp != null && i < lbp.Count; i++)
+            {
+                var p = lbp[i];
+                if ((kind == "P" && p.AutoPractice) || (kind == "Q" && p.AutoQualify) || (kind == "R" && p.AutoRace)) { Settings.LapBoxActive = i; break; }
+            }
             var pages = Settings.Pages;
             for (int i = 0; i < pages.Count; i++)
             {
@@ -2062,6 +2187,7 @@ namespace FedeDashboard
             else boxFlagOn = false;
             bool showingPit = (now < testUntil && testKind == "Pit") || (now >= testUntil && pitOn);
             alertBox = alertActive && showingPit && !pit.SimpleLayout;
+            try { UpdateLapBoxLights(now, running, limiterOn || inLane, running ? flag : ""); } catch { }
         }
 
         static string FirstOr(List<string> list, string def)

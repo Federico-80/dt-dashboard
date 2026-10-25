@@ -26,6 +26,7 @@ namespace FedeDashboard
         const string DashAsset = "DT.Dashboard.simhubdash";   // GitHub sostituisce gli spazi con punti nei nomi degli allegati
         const string DashFolder = "DT Dashboard";
         const string RallyAsset = "DT.Rally.simhubdash";
+        const string LapBoxAsset = "DT.LapBox.simhubdash";
 
         public volatile string Status = "";
         public volatile string LatestVersion = "";
@@ -243,6 +244,16 @@ namespace FedeDashboard
                         FedeLog.Write("Dashboard DT Rally installata");
                     }
                     catch (Exception ex) { FedeLog.Write("DT Rally non installata: " + ex.Message); }
+                    // dashboard per la RaceSense LapBox (facoltativa)
+                    try
+                    {
+                        string lz = Path.Combine(tmp, "lapbox.simhubdash");
+                        string lu = dashUrl.Replace(DashAsset, LapBoxAsset);
+                        Download(lu, new System.Collections.Generic.List<string> { Raw + "main/release/" + LapBoxAsset }, lz);
+                        InstallDash(lz, tmp, "DT LapBox");
+                        FedeLog.Write("Dashboard DT LapBox installata");
+                    }
+                    catch (Exception ex) { FedeLog.Write("DT LapBox non installata: " + ex.Message); }
                 }
                 // 2) plugin
                 Status = "Scarico il plugin…"; Notify();

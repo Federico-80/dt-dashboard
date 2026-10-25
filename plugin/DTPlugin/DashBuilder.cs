@@ -34,6 +34,11 @@ namespace FedeDashboard
             get { return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "DashTemplates", DashName); }
         }
 
+        public static string LapBoxFolder
+        {
+            get { return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "DashTemplates", "DT LapBox"); }
+        }
+
         static string Signature(FedeSettings s)
         {
             var sb = new StringBuilder();
@@ -118,6 +123,8 @@ namespace FedeDashboard
             if (!tpl.Contains("\"@@PAGINE@@\"")) throw new InvalidDataException("modello senza @@PAGINE@@");
             string json = ApplyStyle(tpl.Replace("\"@@PAGINE@@\"", string.Join(",", layers)), font, true, false);
             try { if (ApplyFontToOtherFiles(folder, outPath, font) > 0 && Started) NeedsReload = true; } catch (Exception ex) { FedeLog.Error("carattere schede", ex); }
+            // stesso carattere anche sulla DT LapBox (tutti i suoi file: le pagine li sceglie il plugin, non si ricompone)
+            try { if (Directory.Exists(LapBoxFolder)) ApplyFontToOtherFiles(LapBoxFolder, "", font); } catch (Exception ex) { FedeLog.Error("carattere LapBox", ex); }
 
             if (File.Exists(outPath) && File.ReadAllText(outPath, Encoding.UTF8) == json)
             {
@@ -235,7 +242,7 @@ namespace FedeDashboard
             int changed = 0;
             foreach (var file in Directory.GetFiles(folder, "*.djson"))
             {
-                if (string.Equals(Path.GetFullPath(file), Path.GetFullPath(mainPath), StringComparison.OrdinalIgnoreCase)) continue;
+                if (mainPath.Length > 0 && string.Equals(Path.GetFullPath(file), Path.GetFullPath(mainPath), StringComparison.OrdinalIgnoreCase)) continue;
                 string cur = File.ReadAllText(file, Encoding.UTF8);
                 string origPath = file + ".orig";
                 string orig = File.Exists(origPath) ? File.ReadAllText(origPath, Encoding.UTF8) : null;

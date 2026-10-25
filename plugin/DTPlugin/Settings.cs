@@ -31,6 +31,12 @@ namespace FedeDashboard
         public bool AutoGamePages { get; set; } = true;
         public bool LiftCoastOff { get; set; }   // true = niente conto alla rovescia lift & coast (LMU)
 
+        // ---------------------------------------------------------------- DT LapBox (RaceSense LapBox 4")
+        /// <summary>Pagine della DT LapBox: di ogni pagina contano solo nome, griglia (GridLeft), schede (Left) e sessioni.</summary>
+        public List<PageSettings> LapBoxPages { get; set; } = new List<PageSettings>();
+        public int LapBoxActive { get; set; }
+        public LapBoxSettings LapBox { get; set; } = new LapBoxSettings();
+
         public bool HasProfile(string key)
         {
             key = key ?? "";
@@ -116,6 +122,12 @@ namespace FedeDashboard
             if (ProfileGame == null) ProfileGame = "";
             if (ActivePage < 0 || ActivePage >= Pages.Count) ActivePage = 0;
             if (PageToastSeconds < 0) PageToastSeconds = 0;
+            if (LapBoxPages == null) LapBoxPages = new List<PageSettings>();
+            LapBoxPages.RemoveAll(x => x == null);
+            if (LapBoxPages.Count == 0) LapBoxPages.AddRange(Catalog.DefaultLapBoxPages());
+            foreach (var p in LapBoxPages) p.Normalize();
+            if (LapBoxActive < 0 || LapBoxActive >= LapBoxPages.Count) LapBoxActive = 0;
+            if (LapBox == null) LapBox = new LapBoxSettings();
 
             var byId = new Dictionary<string, ChannelSettings>();
             foreach (var c in Channels)
@@ -256,6 +268,17 @@ namespace FedeDashboard
             s.Normalize();
             return s;
         }
+    }
+
+    /// <summary>Le due luci della LapBox: cosa possono mostrare (in ordine di importanza).</summary>
+    public class LapBoxSettings
+    {
+        public bool Pit { get; set; } = true;       // limitatore / corsia box: blu lampeggiante
+        public bool Shift { get; set; } = true;     // al limite dei giri: lampeggiano per cambiare marcia
+        public bool Flags { get; set; } = true;     // bandiera esposta: colore della bandiera
+        public bool Lift { get; set; } = true;      // lift & coast (LMU): viola
+        public bool Fuel { get; set; } = true;      // carburante / energia sotto i 3 giri: rosso fisso a destra
+        public bool Delta { get; set; } = true;     // sinistra: stai guadagnando / perdendo; destra: delta + o -
     }
 
     /// <summary>Un tasto del volante / button box (vid:pid della periferica + numero tasto).</summary>

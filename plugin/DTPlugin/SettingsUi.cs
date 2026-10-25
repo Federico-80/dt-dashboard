@@ -95,6 +95,10 @@ namespace FedeDashboard
         <ScrollViewer VerticalScrollBarVisibility='Auto'>
         <DockPanel Margin='22,18,22,16'>
           <StackPanel DockPanel.Dock='Top'>
+            <Grid Margin='0,4,0,12'><Grid.ColumnDefinitions><ColumnDefinition Width='Auto'/><ColumnDefinition Width='*'/></Grid.ColumnDefinitions><TextBlock Text='DASHBOARD' FontWeight='Bold' FontSize='14' Foreground='White'/><Border Grid.Column='1' Height='1' Background='#FF4A4A4A' VerticalAlignment='Center' Margin='12,0,0,0'/></Grid>
+            <WrapPanel x:Name='DashSel' Margin='24,0,0,4'/>
+            <TextBlock x:Name='DashInfo' Margin='24,2,0,10' TextWrapping='Wrap' Foreground='#FF9A9A9A' FontSize='12' MaxWidth='900' HorizontalAlignment='Left'/>
+            <StackPanel x:Name='GameSection'>
             <Grid Margin='0,4,0,12'><Grid.ColumnDefinitions><ColumnDefinition Width='Auto'/><ColumnDefinition Width='*'/></Grid.ColumnDefinitions><TextBlock Text='GIOCO' FontWeight='Bold' FontSize='14' Foreground='White'/><Border Grid.Column='1' Height='1' Background='#FF4A4A4A' VerticalAlignment='Center' Margin='12,0,0,0'/></Grid>
             <WrapPanel Margin='24,0,0,4'>
               <ComboBox x:Name='CbGame' Width='240' Margin='0,2,10,2' VerticalContentAlignment='Center'/>
@@ -103,6 +107,8 @@ namespace FedeDashboard
             </WrapPanel>
             <TextBlock x:Name='GameInfo' Margin='24,2,0,4' TextWrapping='Wrap' Foreground='#FF9A9A9A' FontSize='12'/>
             <CheckBox x:Name='ChkAutoGame' Margin='24,2,0,8' Content='Quando parte un gioco, usa da solo le sue pagine'/>
+            </StackPanel>
+            <StackPanel x:Name='PageSection'>
             <Grid Margin='0,10,0,12'><Grid.ColumnDefinitions><ColumnDefinition Width='Auto'/><ColumnDefinition Width='*'/></Grid.ColumnDefinitions><TextBlock Text='PAGINA' FontWeight='Bold' FontSize='14' Foreground='White'/><Border Grid.Column='1' Height='1' Background='#FF4A4A4A' VerticalAlignment='Center' Margin='12,0,0,0'/></Grid>
             <WrapPanel Margin='24,0,0,4'>
               <ComboBox x:Name='CbPage' Width='180' Margin='0,2,10,2' VerticalContentAlignment='Center'/>
@@ -120,6 +126,17 @@ namespace FedeDashboard
               <CheckBox x:Name='ChkR' Content='Gara' Margin='0,0,18,0'/>
             </WrapPanel>
             <StackPanel x:Name='PageKeys' Margin='24,8,0,0'/>
+            </StackPanel>
+            <StackPanel x:Name='LbLayout' Visibility='Collapsed'>
+              <Grid Margin='0,18,0,12'><Grid.ColumnDefinitions><ColumnDefinition Width='Auto'/><ColumnDefinition Width='*'/></Grid.ColumnDefinitions><TextBlock Text='LAYOUT LAPBOX' FontWeight='Bold' FontSize='14' Foreground='White'/><Border Grid.Column='1' Height='1' Background='#FF4A4A4A' VerticalAlignment='Center' Margin='12,0,0,0'/></Grid>
+              <StackPanel Margin='24,0,0,0'>
+                <TextBlock Text='Blocchi (lo schermo è diviso in 8: 2 colonne x 4 righe)' FontSize='11.5' Foreground='#FF9A9A9A' Margin='0,0,0,4'/>
+                <WrapPanel x:Name='LbGridButtons' MaxWidth='760' HorizontalAlignment='Left'/>
+                <TextBlock Text='Le due luci in alto (in ordine di importanza)' FontSize='11.5' Foreground='#FF9A9A9A' Margin='0,10,0,4'/>
+                <StackPanel x:Name='LbLights'/>
+              </StackPanel>
+            </StackPanel>
+            <StackPanel x:Name='MainLayout'>
 
             <Grid Margin='0,18,0,0'><Grid.ColumnDefinitions><ColumnDefinition Width='Auto'/><ColumnDefinition Width='*'/></Grid.ColumnDefinitions><TextBlock Text='LAYOUT' FontWeight='Bold' FontSize='14' Foreground='White'/><Border Grid.Column='1' Height='1' Background='#FF4A4A4A' VerticalAlignment='Center' Margin='12,0,0,0'/></Grid>
             <StackPanel Margin='24,0,0,0'>
@@ -158,9 +175,10 @@ namespace FedeDashboard
                 <CheckBox x:Name='ChkNoBars' Content='Nascondi le barre ai lati della marcia' Margin='0,6,0,0'/>
               </StackPanel>
             </StackPanel>
-            <Grid Margin='0,18,0,0'><Grid.ColumnDefinitions><ColumnDefinition Width='Auto'/><ColumnDefinition Width='*'/></Grid.ColumnDefinitions><TextBlock Text='ANTEPRIMA E SCHEDE' FontWeight='Bold' FontSize='14' Foreground='White'/><Border Grid.Column='1' Height='1' Background='#FF4A4A4A' VerticalAlignment='Center' Margin='12,0,0,0'/></Grid>
+            </StackPanel>
+            <Grid x:Name='PreviewHead' Margin='0,18,0,0'><Grid.ColumnDefinitions><ColumnDefinition Width='Auto'/><ColumnDefinition Width='*'/></Grid.ColumnDefinitions><TextBlock Text='ANTEPRIMA E SCHEDE' FontWeight='Bold' FontSize='14' Foreground='White'/><Border Grid.Column='1' Height='1' Background='#FF4A4A4A' VerticalAlignment='Center' Margin='12,0,0,0'/></Grid>
           </StackPanel>
-          <Grid>
+          <Grid x:Name='PreviewArea'>
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width='*'/>
               <ColumnDefinition Width='360'/>
@@ -294,6 +312,12 @@ namespace FedeDashboard
                          gridLButtons, gridRButtons, preview, pickerPanel, grid, timer, alertsPanel, pageKeys, tyresPanel, idlePanel, idlePreview;
         dynamic tyreLive;
         bool updating;
+        // dashboard che si sta impostando: 0 DT Dashboard (5"), 1 DT LapBox (4"), 2 DT Rally
+        int dashMode;
+        dynamic dashSel, dashInfo, gameSection, pageSection, lbLayout, mainLayout, previewHead, previewArea, lbGridButtons, lbLights;
+        List<PageSettings> PagesList { get { return dashMode == 1 ? S.LapBoxPages : S.Pages; } }
+        int ActiveIdx { get { return dashMode == 1 ? S.LapBoxActive : S.ActivePage; } }
+        void SetActive(int i, bool toast) { if (dashMode == 1) plugin.SetLapBoxPage(i, toast); else plugin.SetActivePage(i, toast); }
 
         // riquadro selezionato (L, R, C, T, SL, SR) e trascinamento
         string selKind = "";
@@ -304,7 +328,7 @@ namespace FedeDashboard
         double pressX, pressY;
 
         FedeSettings S { get { return plugin.Settings; } }
-        PageSettings Page { get { return plugin.Page; } }
+        PageSettings Page { get { return dashMode == 1 ? plugin.LapBoxPage : plugin.Page; } }
 
         /// <summary>
         /// SimHub senza licenza mette il pannello in uno spazio senza limite di altezza: le barre di scorrimento
@@ -398,6 +422,9 @@ namespace FedeDashboard
             grid = F("Grid");
             alertsPanel = F("AlertsPanel");
             pageKeys = F("PageKeys");
+            dashSel = F("DashSel"); dashInfo = F("DashInfo"); gameSection = F("GameSection"); pageSection = F("PageSection");
+            lbLayout = F("LbLayout"); mainLayout = F("MainLayout"); previewHead = F("PreviewHead"); previewArea = F("PreviewArea");
+            lbGridButtons = F("LbGridButtons"); lbLights = F("LbLights");
             tyresPanel = F("TyresPanel");
             idlePanel = F("IdlePanel");
             idlePreview = F("IdlePreview");
@@ -410,7 +437,7 @@ namespace FedeDashboard
                 int i = cbPage.SelectedIndex;
                 if (i < 0) return;
                 selKind = ""; selIndex = -1;
-                plugin.SetActivePage(i, true);
+                SetActive(i, true);
                 Changed();
             });
             Wpf.On((object)tbName, "LostFocus", (s, e) => RenamePage());
@@ -647,17 +674,18 @@ namespace FedeDashboard
                 ((dynamic)F("BtnGameCreate")).IsEnabled = uiGame.Length > 0 && !own;
                 ((dynamic)F("BtnGameDelete")).IsEnabled = own;
                 chkAutoGame.IsChecked = S.AutoGamePages;
+                BuildDashSel();
                 cbPage.Items.Clear();
-                foreach (var pg in S.Pages) cbPage.Items.Add(pg.Name);
-                cbPage.SelectedIndex = S.ActivePage;
+                foreach (var pg in PagesList) cbPage.Items.Add(pg.Name);
+                cbPage.SelectedIndex = ActiveIdx;
                 if (!(bool)tbName.IsKeyboardFocusWithin) tbName.Text = p.Name;
                 chkP.IsChecked = p.AutoPractice;
                 chkQ.IsChecked = p.AutoQualify;
                 chkR.IsChecked = p.AutoRace;
                 chkInputs.IsChecked = p.ShowInputs;
                 chkNoBars.IsChecked = p.HideSideBars;
-                BuildLayoutButtons();
-                DrawPreview();
+                if (dashMode == 1) { BuildLapBoxButtons(); DrawLapBoxPreview(); }
+                else if (dashMode == 0) { BuildLayoutButtons(); DrawPreview(); }
                 BuildPicker();
             }
             catch (Exception ex)
@@ -892,8 +920,9 @@ namespace FedeDashboard
             if (l != null && index >= 0 && index < l.Count) l[index] = value;
         }
 
-        static string Tag(string kind, int index)
+        string Tag(string kind, int index)
         {
+            if (dashMode == 1) return "Blocco " + (index + 1);
             switch (kind)
             {
                 case "L": return "S" + (index + 1);
@@ -906,8 +935,9 @@ namespace FedeDashboard
             }
         }
 
-        static string AreaName(string kind)
+        string AreaName(string kind)
         {
+            if (dashMode == 1) return "DT LapBox";
             switch (kind)
             {
                 case "L": return "Lato sinistro";
@@ -917,6 +947,85 @@ namespace FedeDashboard
                 case "T": return "Barra inferiore";
                 default: return "Barra laterale";
             }
+        }
+
+        // ---------------------------------------------------------------- scelta della dashboard
+        void BuildDashSel()
+        {
+            dashSel.Children.Clear();
+            string[] names = { "DT Dashboard (5\")", "DT LapBox (4\")", "DT Rally" };
+            for (int i = 0; i < names.Length; i++)
+            {
+                int v = i;
+                dashSel.Children.Add(Seg(names[i], dashMode == i, true, () =>
+                {
+                    if (dashMode == v) return;
+                    dashMode = v; selKind = ""; selIndex = -1;
+                    root.Dispatcher.BeginInvoke(new Action(RefreshAll));
+                }));
+            }
+            dashInfo.Text = dashMode == 0
+                ? "Pagine e layout della DT Dashboard per lo schermo da 5\" (VoCore 800x480). Gli avvisi a schermo sono solo qui; gomme, tempi, valori e schermata iniziale valgono anche per la LapBox."
+                : dashMode == 1
+                ? "DT LapBox per la RaceSense LapBox 4\" (800x630): in alto le due luci, sotto lo schermo diviso in 2 colonne x 4 righe. " +
+                  "Ha le sue pagine (niente avvisi a schermo, ci sono le luci); con i tasti del volante cambiano insieme a quelle della DT Dashboard. In SimHub apri la dashboard \"DT LapBox\" sullo schermo della LapBox."
+                : "La DT Rally non ha pagine da impostare: contagiri a barra, marcia, tempo prova, gomme, motore e aiuti sono fissi. " +
+                  "Usa gli stessi valori del plugin (scheda Valori) e la schermata di blocco col codice. In SimHub apri la dashboard \"DT Rally\".";
+            gameSection.Visibility = Wpf.Visibility(dashMode == 0);
+            pageSection.Visibility = Wpf.Visibility(dashMode != 2);
+            mainLayout.Visibility = Wpf.Visibility(dashMode == 0);
+            lbLayout.Visibility = Wpf.Visibility(dashMode == 1);
+            previewHead.Visibility = Wpf.Visibility(dashMode != 2);
+            previewArea.Visibility = Wpf.Visibility(dashMode != 2);
+            preview.Width = dashMode == 1 ? Catalog.LapBoxWidth : 850;
+            preview.Height = dashMode == 1 ? Catalog.LapBoxHeight : 480;
+        }
+
+        void BuildLapBoxButtons()
+        {
+            var p = Page;
+            lbGridButtons.Children.Clear();
+            for (int g = 0; g < Catalog.LapBoxGrids.Length; g++)
+            {
+                int idx = g;
+                var sb = new StringBuilder();
+                sb.Append("<Button {NS} Padding='4' Margin='0,0,4,4' ToolTip='" + Wpf.Esc(Catalog.LapBoxGrids[g]) + "'");
+                sb.Append(g == p.GridLeft ? " Background='" + Accent + "' BorderBrush='" + Accent + "'>" : ">");
+                sb.Append("<Canvas Width='56' Height='36'>");
+                foreach (var u in Catalog.LapBoxGridUnits[g])
+                {
+                    double x = u[0] * 28 + 1, y = u[1] * 9 + 1, w = u[2] * 28 - 2, h = u[3] * 9 - 2;
+                    sb.Append("<Border Canvas.Left='" + Wpf.N(x) + "' Canvas.Top='" + Wpf.N(y) + "' Width='" + Wpf.N(w) + "' Height='" + Wpf.N(h) +
+                              "' CornerRadius='1.5' Background='" + (g == p.GridLeft ? "#FFFFFFFF" : "#FFB0B0B0") + "'/>");
+                }
+                sb.Append("</Canvas></Button>");
+                dynamic b = Wpf.Xaml(sb.ToString());
+                Wpf.On((object)b, "Click", (s, e) => { Page.GridLeft = idx; selKind = ""; selIndex = -1; Changed(); });
+                lbGridButtons.Children.Add(b);
+            }
+            lbLights.Children.Clear();
+            var lb = S.LapBox;
+            lbLights.Children.Add(Check("Corsia box / limitatore: blu lampeggiante", lb.Pit, v => lb.Pit = v, Save, false, "0,0,0,6"));
+            lbLights.Children.Add(Check("Cambio marcia: rosso lampeggiante al limite dei giri", lb.Shift, v => lb.Shift = v, Save, false, "0,0,0,6"));
+            lbLights.Children.Add(Check("Bandiere: colore della bandiera (blu e nera lampeggiano)", lb.Flags, v => lb.Flags = v, Save, false, "0,0,0,6"));
+            lbLights.Children.Add(Check("Lift & coast (LMU): viola", lb.Lift, v => lb.Lift = v, Save, false, "0,0,0,6"));
+            lbLights.Children.Add(Check("Carburante o energia sotto i 3 giri: destra rossa", lb.Fuel, v => lb.Fuel = v, Save, false, "0,0,0,6"));
+            lbLights.Children.Add(Check("Delta sul giro migliore: sinistra = stai guadagnando (verde) o perdendo (rosso), destra = delta sotto (verde) o sopra (rosso)", lb.Delta, v => lb.Delta = v, Save, false, "0,0,0,6"));
+        }
+
+        void DrawLapBoxPreview()
+        {
+            preview.Children.Clear();
+            var p = Page;
+            realPreview = false;
+            try { realPreview = previewRenderer.DrawLapBox((object)preview, p); }
+            catch (Exception ex) { if (!previewErrorLogged) { previewErrorLogged = true; FedeLog.Error("anteprima LapBox", ex); } preview.Children.Clear(); realPreview = false; }
+            if (!realPreview)
+                foreach (var l in Catalog.LapBoxLights)
+                    FixedRect(new[] { l[0] - l[2] / 2, Math.Max(0, l[1] - l[2] / 2), l[2], l[2] / 2 + l[1] }, "LUCE");
+            int g = p.GridLeft < 0 || p.GridLeft >= Catalog.LapBoxGridCells.Length ? 0 : p.GridLeft;
+            var cells = Catalog.LapBoxGridCells[g];
+            for (int i = 0; i < cells.Length; i++) SlotRect(Catalog.LapBoxCells[cells[i]], "L", i);
         }
 
         // ---------------------------------------------------------------- anteprima
@@ -1603,7 +1712,7 @@ namespace FedeDashboard
                     foreach (var rt in plugin.Runtime) if (rt.Def.Id == id) return rt.Settings.Label;
                     return id;
                 };
-                bool ok = previewRenderer.DrawAlert((object)canvas, Page, S.Font, a, lbl);
+                bool ok = previewRenderer.DrawAlert((object)canvas, plugin.Page, S.Font, a, lbl);
                 if (!ok) { g.Children.Remove(body); stack.Children.Add(body); return; }   // file della dash non trovati: niente anteprima
                 g.Children.Add(pb);
                 stack.Children.Add(g);
@@ -2244,41 +2353,44 @@ namespace FedeDashboard
         // ---------------------------------------------------------------- gestione pagine
         void AddPage(bool duplicate)
         {
+            var list = PagesList;
             PageSettings np = duplicate
                 ? Page.Clone(Page.Name + " (copia)")
-                : Catalog.DefaultPages()[0].Clone("Pagina " + (S.Pages.Count + 1));
+                : (dashMode == 1 ? Catalog.DefaultLapBoxPages()[0] : Catalog.DefaultPages()[0]).Clone("Pagina " + (list.Count + 1));
             np.AutoPractice = np.AutoQualify = np.AutoRace = false;
             np.Normalize();
-            S.Pages.Add(np);
+            list.Add(np);
             selKind = ""; selIndex = -1;
-            plugin.SetActivePage(S.Pages.Count - 1, true);
+            SetActive(list.Count - 1, true);
             Changed();
         }
 
         void DeletePage()
         {
-            if (S.Pages.Count <= 1)
+            var list = PagesList;
+            if (list.Count <= 1)
             {
                 Wpf.Alert("Serve almeno una pagina.");
                 return;
             }
             if (!Wpf.Confirm("Eliminare la pagina \"" + Page.Name + "\"?")) return;
-            int i = S.ActivePage;
-            S.ActivePage = 0;
-            S.Pages.RemoveAt(i);
+            int i = ActiveIdx;
+            if (dashMode == 1) S.LapBoxActive = 0; else S.ActivePage = 0;
+            list.RemoveAt(i);
             selKind = ""; selIndex = -1;
-            plugin.SetActivePage(Math.Max(0, i - 1), false);
+            SetActive(Math.Max(0, i - 1), false);
             Changed();
         }
 
         void MovePage(int delta)
         {
-            int i = S.ActivePage, j = i + delta;
-            if (j < 0 || j >= S.Pages.Count) return;
-            var tmp = S.Pages[i];
-            S.Pages[i] = S.Pages[j];
-            S.Pages[j] = tmp;
-            plugin.SetActivePage(j, false);
+            var list = PagesList;
+            int i = ActiveIdx, j = i + delta;
+            if (j < 0 || j >= list.Count) return;
+            var tmp = list[i];
+            list[i] = list[j];
+            list[j] = tmp;
+            SetActive(j, false);
             Changed();
         }
 

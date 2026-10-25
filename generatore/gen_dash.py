@@ -2265,6 +2265,27 @@ def write_thumbs(folder, name, doc, ctx, card_files=None):
     main.resize((int(round(w * 300.0 / h)), 300), Image.LANCZOS).save(os.path.join(folder, name + ".djson.png"))
 
 
+def write_docs(folder, files, ICONS):
+    """Scrive i .djson (con le icone usate in nome.djson.ressources)."""
+    import hashlib
+    for fn, doc in files.items():
+        body = json.dumps(strip(doc), ensure_ascii=False, separators=(",", ":"))
+        used = [n for n in ICONS if ('"%s"' % n) in body or ("'%s'" % n) in body
+                 or (n.startswith("dt-dz") and "'dt-dz" in body) or (n.startswith("dt-cielo") and "'dt-cielo-'" in body) or (n.startswith("dt-freccia") and "'dt-freccia-" in body)]      # zone danno scelte a runtime ('dt-dz3-' + livello)
+        if used:
+            import struct
+            def png_size(b):
+                return struct.unpack(">II", b[16:24])
+            doc["Images"] = [{"Name": n, "Extension": ".png", "Modified": False, "Optimized": True, "Width": png_size(ICONS[n])[0],
+                              "Height": png_size(ICONS[n])[1], "Length": len(ICONS[n]), "MD5": hashlib.md5(ICONS[n]).hexdigest()} for n in used]
+            with zipfile.ZipFile(os.path.join(folder, fn + ".ressources"), "w", zipfile.ZIP_DEFLATED) as z:
+                for n in used:
+                    z.writestr(n + ".png", ICONS[n])
+            body = json.dumps(strip(doc), ensure_ascii=False, separators=(",", ":"))
+        with open(os.path.join(folder, fn), "w", encoding="utf-8") as f:
+            f.write(body)
+
+
 def write_all():
     fonts_src = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts")
     folder = os.path.join(OUT, DASH_NAME)
@@ -2305,22 +2326,7 @@ def write_all():
             for sc in doc["Screens"]:
                 sc["Items"] = [drop(i) for i in sc["Items"] if not (isinstance(i, dict) and i.get("$type") == T_IMAGE)]
         ICONS = {}
-    for fn, doc in files.items():
-        body = json.dumps(strip(doc), ensure_ascii=False, separators=(",", ":"))
-        used = [n for n in ICONS if ('"%s"' % n) in body or ("'%s'" % n) in body
-                 or (n.startswith("dt-dz") and "'dt-dz" in body) or (n.startswith("dt-cielo") and "'dt-cielo-'" in body) or (n.startswith("dt-freccia") and "'dt-freccia-" in body)]      # zone danno scelte a runtime ('dt-dz3-' + livello)
-        if used:
-            import struct
-            def png_size(b):
-                return struct.unpack(">II", b[16:24])
-            doc["Images"] = [{"Name": n, "Extension": ".png", "Modified": False, "Optimized": True, "Width": png_size(ICONS[n])[0],
-                              "Height": png_size(ICONS[n])[1], "Length": len(ICONS[n]), "MD5": hashlib.md5(ICONS[n]).hexdigest()} for n in used]
-            with zipfile.ZipFile(os.path.join(folder, fn + ".ressources"), "w", zipfile.ZIP_DEFLATED) as z:
-                for n in used:
-                    z.writestr(n + ".png", ICONS[n])
-            body = json.dumps(strip(doc), ensure_ascii=False, separators=(",", ":"))
-        with open(os.path.join(folder, fn), "w", encoding="utf-8") as f:
-            f.write(body)
+    write_docs(folder, files, ICONS)
     with open(os.path.join(folder, DASH_NAME + ".djson.metadata"), "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, indent=2)
     # modello della dash (le pagine al posto di "@@PAGINE@@") + pezzi, per il DT Plugin

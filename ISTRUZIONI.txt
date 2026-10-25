@@ -144,6 +144,14 @@ DT Rally (dashboard semplificata per i rally):
  barre di freno e gas, avviso freno a mano, tempo prova, ultimo e migliore, gomme, acqua, olio,
  carburante, TC/ABS/ripartitore e avanzamento della prova. Si aggiorna insieme al plugin.
 
+DT LapBox (per la RaceSense LapBox 4"):
+ Nel pacchetto c'è anche "DT LapBox.simhubdash": doppio clic per importarla, poi sceglila in SimHub
+ per lo schermo della LapBox. In alto le due luci, sotto lo schermo diviso in 2 colonne x 4 righe.
+ Pagine, griglia e schede si scelgono in SimHub > DT Plugin > Pagine e layout > Dashboard: "DT LapBox (4")".
+ Le luci (in ordine di importanza): corsia box blu lampeggiante, cambio marcia rosso lampeggiante,
+ bandiere, lift & coast viola, carburante/energia sotto i 3 giri, altrimenti delta sul giro migliore
+ (sinistra: stai guadagnando o perdendo; destra: delta sotto o sopra). Si aggiorna insieme al plugin.
+
 4) CAMBIARE PAGINA DAL VOLANTE
 ------------------------------
  SimHub > Controlli ed eventi > Nuova mappatura, azione:

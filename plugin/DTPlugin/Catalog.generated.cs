@@ -416,6 +416,23 @@ namespace FedeDashboard
                 Left = new List<int> { 14, 15, 16, 17, 18, 30, 34, 35 }, Right = new List<int> { 6, 27, 28, 29, 21, 0, 0, 0 }, Bottom = new List<int> { 14, 16, 17, 18, 28, 0, 0 }, Center = new List<int> { 32, 33, 31 } });
             return list;
         }
+
+        // DT LapBox: schermo 800x630, blocchi possibili {x, y, w, h} e per ogni griglia i blocchi usati (in ordine di riquadro)
+        public const int LapBoxWidth = 800;
+        public const int LapBoxHeight = 630;
+        public static readonly int[][] LapBoxCells = new int[][] { new[] { 4, 104, 393, 113 }, new[] { 403, 104, 393, 113 }, new[] { 4, 223, 393, 113 }, new[] { 403, 223, 393, 113 }, new[] { 4, 342, 393, 113 }, new[] { 403, 342, 393, 113 }, new[] { 4, 461, 393, 113 }, new[] { 403, 461, 393, 113 }, new[] { 4, 104, 393, 232 }, new[] { 403, 104, 393, 232 }, new[] { 4, 342, 393, 232 }, new[] { 403, 342, 393, 232 }, new[] { 4, 104, 792, 232 }, new[] { 4, 342, 792, 232 }, new[] { 4, 104, 393, 470 }, new[] { 403, 104, 393, 470 }, new[] { 4, 104, 792, 470 } };
+        public static readonly int[][] LapBoxGridCells = new int[][] { new[] { 0, 1, 2, 3, 4, 5, 6, 7 }, new[] { 8, 9, 10, 11 }, new[] { 12, 13 }, new[] { 14, 15 }, new[] { 16 } };
+        public static readonly string[] LapBoxGrids = new string[] { "8 blocchi", "4 blocchi", "2 blocchi sopra e sotto", "2 blocchi affiancati", "1 blocco" };
+        public static readonly int[][][] LapBoxGridUnits = new int[][][] { new int[][] { new[] { 0, 0, 1, 1 }, new[] { 1, 0, 1, 1 }, new[] { 0, 1, 1, 1 }, new[] { 1, 1, 1, 1 }, new[] { 0, 2, 1, 1 }, new[] { 1, 2, 1, 1 }, new[] { 0, 3, 1, 1 }, new[] { 1, 3, 1, 1 } }, new int[][] { new[] { 0, 0, 1, 2 }, new[] { 1, 0, 1, 2 }, new[] { 0, 2, 1, 2 }, new[] { 1, 2, 1, 2 } }, new int[][] { new[] { 0, 0, 2, 2 }, new[] { 0, 2, 2, 2 } }, new int[][] { new[] { 0, 0, 1, 4 }, new[] { 1, 0, 1, 4 } }, new int[][] { new[] { 0, 0, 2, 4 } } };
+        public static readonly int[][] LapBoxLights = new int[][] { new[] { 198, 37, 115 }, new[] { 580, 37, 115 } };
+
+        public static List<PageSettings> DefaultLapBoxPages()
+        {
+            var list = new List<PageSettings>();
+            list.Add(new PageSettings { Name = "Gara", GridLeft = 1, Left = new List<int> { 13, 5, 50, 8, 0, 0, 0, 0 } });
+            list.Add(new PageSettings { Name = "Prove", GridLeft = 0, Left = new List<int> { 22, 23, 13, 24, 14, 16, 17, 18 } });
+            return list;
+        }
     }
 
     public class ChannelDef

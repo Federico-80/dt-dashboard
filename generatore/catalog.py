@@ -434,3 +434,43 @@ def alert_variants():
     return out
 ALERT_VARIANTS = alert_variants()
 ALERT_MAX_VALUES = 4
+
+
+# ---------------------------------------------------------------- DT LapBox (RaceSense LapBox 4")
+# schermo 800x630: in alto (0-100) le due luci dietro le finestrelle, sotto (100-580) la parte visibile.
+# La parte visibile e' divisa in 2 colonne x 4 righe (8 blocchi): le griglie sono le stesse dei lati della DT Dashboard.
+LB_W, LB_H = 800, 630
+LB_TOP, LB_BOTTOM = 100, 580
+LB_LIGHTS = [(198, 37), (580, 37)]     # centri delle due luci (come la dash RaceSense)
+LB_LIGHT_D = 115
+LB_M, LB_G = 4, 6
+LB_CW = (LB_W - 2 * LB_M - LB_G) // 2                                   # 393
+LB_RH = (LB_BOTTOM - LB_TOP - 2 * LB_M - 3 * LB_G) // 4                  # 113
+
+
+def lb_rect(cell):
+    c, r, w, h = cell
+    x = LB_M + c * (LB_CW + LB_G)
+    y = LB_TOP + LB_M + r * (LB_RH + LB_G)
+    return (x, y, w * LB_CW + (w - 1) * LB_G, h * LB_RH + (h - 1) * LB_G)
+
+
+# griglie della LapBox: 8, 4, 2 (sopra e sotto o affiancati) e 1 blocco
+LB_GRIDS = [
+    ("8 blocchi",                [(c, r, 1, 1) for r in range(4) for c in range(2)]),
+    ("4 blocchi",                [(0, 0, 1, 2), (1, 0, 1, 2), (0, 2, 1, 2), (1, 2, 1, 2)]),
+    ("2 blocchi sopra e sotto",  [(0, 0, 2, 2), (0, 2, 2, 2)]),
+    ("2 blocchi affiancati",     [(0, 0, 1, 4), (1, 0, 1, 4)]),
+    ("1 blocco",                 [(0, 0, 2, 4)]),
+]
+LB_CELLS = []
+for _g in LB_GRIDS:
+    for _c in _g[1]:
+        if tuple(_c) not in LB_CELLS:
+            LB_CELLS.append(tuple(_c))
+LB_GRID_CELLS = [[LB_CELLS.index(tuple(c)) for c in g[1]] for g in LB_GRIDS]
+
+DEFAULT_LB_PAGES = [
+    dict(name="Gara", grid=1, L=_slots(["Delta", "Tempi giro", "Carburante (barra + giri)", "Distacchi"])),
+    dict(name="Prove", grid=0, L=_slots(["Ultimo giro", "Miglior giro", "Delta", "Giro stimato", "TC", "ABS", "Ripartizione freno (BB)", "Mappa motore"])),
+]

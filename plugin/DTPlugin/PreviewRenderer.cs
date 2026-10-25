@@ -26,7 +26,43 @@ namespace FedeDashboard
         Type tBorder, tGrid, tText, tImage, tCanvas, tCorner, tThick, tTextAlign, tVAlign, tHAlign, tFontFamily, tStretch;
         object weightConv, brushConv;
 
-        static string Folder { get { return DashBuilder.DashFolder; } }
+        static string folderOverride;
+        static string Folder { get { return folderOverride ?? DashBuilder.DashFolder; } }
+
+        /// <summary>Anteprima della DT LapBox: le due luci e le schede dei blocchi della griglia (file della cartella DT LapBox).</summary>
+        public bool DrawLapBox(object canvas, PageSettings p)
+        {
+            InitTypes();
+            string folder = DashBuilder.LapBoxFolder;
+            if (!Directory.Exists(folder)) return false;
+            folderOverride = folder;
+            try
+            {
+                foreach (var l in Catalog.LapBoxLights)
+                {
+                    double d = l[2] * 0.74;
+                    var halo = Wpf.Xaml("<Border {NS} Width='" + Wpf.N(l[2]) + "' Height='" + Wpf.N(l[2]) + "' CornerRadius='" + Wpf.N(l[2] / 2.0) + "' Background='#3000E676'/>");
+                    Add(canvas, halo, l[0] - l[2] / 2.0, l[1] - l[2] / 2.0);
+                    var core = Wpf.Xaml("<Border {NS} Width='" + Wpf.N(d) + "' Height='" + Wpf.N(d) + "' CornerRadius='" + Wpf.N(d / 2) + "' Background='#FF00C060'/>");
+                    Add(canvas, core, l[0] - d / 2, l[1] - d / 2);
+                }
+                int g = p.GridLeft < 0 || p.GridLeft >= Catalog.LapBoxGridCells.Length ? 0 : p.GridLeft;
+                var cells = Catalog.LapBoxGridCells[g];
+                for (int i = 0; i < cells.Length; i++)
+                {
+                    var r = Catalog.LapBoxCells[cells[i]];
+                    int card = p.Left != null && i < p.Left.Count ? p.Left[i] : 0;
+                    string fn = "Schede_" + r[2] + "x" + r[3] + ".djson";
+                    var sc = Screens(fn);
+                    if (sc == null || card < 0 || card >= sc.Count) continue;
+                    var scr = sc[card] as Dictionary<string, object>;
+                    if (scr == null) continue;
+                    DrawItems(canvas, Get(scr, "Items") as List<object>, r[0], r[1], p, Path.Combine(folder, fn), 1);
+                }
+                return true;
+            }
+            finally { folderOverride = null; }
+        }
 
         void InitTypes()
         {

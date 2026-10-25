@@ -1,5 +1,5 @@
 {
-  "version": "2.27",
-  "notes": "2.27: settori viola come il gioco anche da soli in pista; giri carburante/energia rossi da 3 in giu'",
-  "date": "2026-10-24"
+  "version": "2.28",
+  "notes": "2.28: nuova dashboard DT LapBox (RaceSense LapBox 4\"): 8/4/2/1 blocchi, due luci (box, cambio marcia, bandiere, lift & coast, carburante, delta); nel plugin scelta della dashboard in Pagine e layout",
+  "date": "2026-10-25"
 }
