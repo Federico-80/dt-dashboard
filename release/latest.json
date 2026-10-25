@@ -1,5 +1,5 @@
 {
-  "version": "2.33",
-  "notes": "2.33: LapBox 1050x700 (luci intere); settori: se il gioco non manda i settori degli altri, viola solo se nessuno della tua classe ha un tempo",
+  "version": "2.34",
+  "notes": "2.34: carburante, energia e strategia come Mulsanne: media degli ultimi 5 giri puliti misurati (senza box e senza gialla), tempo sul giro medio dei giri puliti",
   "date": "2026-10-25"
 }

@@ -24,7 +24,7 @@ namespace FedeDashboard
     [PluginName("DT Plugin")]
     public class DTPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public const string VersionText = "2.33";
+        public const string VersionText = "2.34";
 
         public FedeSettings Settings;
         public readonly Updater Updater = new Updater();
@@ -1664,7 +1664,9 @@ namespace FedeDashboard
             return double.IsNaN(v) ? double.NaN : v * 100.0;
         }
 
-        bool lapFromLine, lapClean;
+        bool lapFromLine, lapClean, lapYellow;
+        readonly List<double> cleanLapTimes = new List<double>();   // tempi degli ultimi 5 giri puliti (per la strategia)
+        static double Average(List<double> l) { double sm = 0; foreach (var x in l) sm += x; return l.Count > 0 ? sm / l.Count : double.NaN; }
         readonly List<double> fuelLaps = new List<double>();
         readonly ConsumptionTracker fuelTrk = new ConsumptionTracker("carb"), veTrk = new ConsumptionTracker("energia");
 
@@ -1679,6 +1681,8 @@ namespace FedeDashboard
 
         double VePerLap(out string source)
         {
+            // come Mulsanne: prima la media degli ultimi 5 giri puliti misurati (niente box, niente gialla)
+            if (veLaps.Count > 0) { source = "DT Plugin (media " + veLaps.Count + " giri puliti)"; return VeAverage(); }
             foreach (var vs in VeSources)
             {
                 var o = bridge.GetPropertyValue(vs[1]);
@@ -1697,6 +1701,11 @@ namespace FedeDashboard
 
         double VeLapsLeft(out string source)
         {
+            if (veLaps.Count > 0)
+            {
+                double ve0 = VePercent(), a = VeAverage();
+                if (!double.IsNaN(ve0) && a > 0.01) { source = "DT Plugin (media " + veLaps.Count + " giri puliti)"; return ve0 / a; }
+            }
             foreach (var vs in VeSources)
             {
                 var o = bridge.GetPropertyValue(vs[2]);
@@ -1717,6 +1726,7 @@ namespace FedeDashboard
 
         double FuelPerLap()
         {
+            if (fuelLaps.Count > 0) { double sm0 = 0; foreach (var x in fuelLaps) sm0 += x; return sm0 / fuelLaps.Count; }   // come Mulsanne: misurato prima di tutto
             if (lmuRest != null) { double rf = lmuRest.FuelPerLapFresh; if (!double.IsNaN(rf)) return rf; }
             {
                 string vs, rs;
@@ -1782,10 +1792,11 @@ namespace FedeDashboard
             // come il menu di LMU: consumo previsto e quantita' a bordo letti dal gioco, se disponibili
             if (lmuRest != null)
             {
+                // il consumo previsto da LMU solo finche' non ci sono giri puliti misurati (come Mulsanne)
                 double rp = lmuRest.VePerLapPct;
-                if (!double.IsNaN(rp) && rp > 0.01) vePer = rp;
+                if (veLaps.Count == 0 && !double.IsNaN(rp) && rp > 0.01) vePer = rp;
                 double rf = lmuRest.FuelPerLapFresh;
-                if (!double.IsNaN(rf) && rf > 0) fuelPer = rf;
+                if (fuelLaps.Count == 0 && !double.IsNaN(rf) && rf > 0) fuelPer = rf;
             }
             bool nrg = !double.IsNaN(ve) && ve > 0 && !double.IsNaN(vePer) && vePer > 0.01;
 
@@ -1795,7 +1806,8 @@ namespace FedeDashboard
             // Come LMU: calcola subito, appena c'e' un consumo per giro (stima dei plugin LMU o di SimHub) e un tempo sul giro.
             // Tempo sul giro: ultimo giro valido, altrimenti migliore + 0.5 s, altrimenti la media dei migliori giri della tua classe.
             // tempo sul giro: prima quello stimato da LMU (lo stesso del menu strategia), poi ultimo giro / migliore / media della classe
-            double avgLap = lmuEstLap > 0 && lmuEstLap < 1800 ? lmuEstLap
+            double avgLap = cleanLapTimes.Count > 0 ? Average(cleanLapTimes)
+                : lmuEstLap > 0 && lmuEstLap < 1800 ? lmuEstLap
                 : ((best > 0 && last > 0 && last <= best * 1.15) ? last : (best > 0 ? best + 0.5 : ClassLapEstimate()));
             bool haveCons = nrg || !double.IsNaN(fuelPer);
             if (!haveCons || !(avgLap > 0))
@@ -1962,6 +1974,13 @@ namespace FedeDashboard
 
         double FuelLapsLeft(out string source)
         {
+            if (fuelLaps.Count > 0)
+            {
+                double fuelNow0 = Num(bridge.GetPropertyValue("DataCorePlugin.GameData.Fuel"));
+                double sum0 = 0; foreach (var x in fuelLaps) sum0 += x;
+                double avg0 = sum0 / fuelLaps.Count;
+                if (!double.IsNaN(fuelNow0) && avg0 > 0.01) { source = "DT Plugin (media " + fuelLaps.Count + " giri puliti)"; return fuelNow0 / avg0; }
+            }
             // LMU: carburante a bordo / consumo previsto dal gioco (gli stessi numeri del menu)
             if (lmuRest != null)
             {
@@ -2054,6 +2073,8 @@ namespace FedeDashboard
             double fuel = fuelRt != null ? fuelRt.Value : double.NaN;
             bool laneNow = pitRt != null && pitRt.Value > 0;
             if (laneNow || !running) lapClean = false;
+            // full course yellow / safety car durante il giro: il giro non conta per le medie (come Mulsanne)
+            if (AsInt(Raw("Scoring.mScoringInfo.mGamePhase")) == 6) lapYellow = true;
             {
                 // consumo in tempo reale: campioni lungo il giro
                 string combo = Convert.ToString(bridge.GetPropertyValue("DataCorePlugin.GameData.TrackName") ?? "") + "_" + Convert.ToString(bridge.GetPropertyValue("DataCorePlugin.GameData.CarModel") ?? "");
@@ -2070,8 +2091,18 @@ namespace FedeDashboard
             {
                 double ve = VePercent();
                 bool trkF = false, trkV = false; double trkFu = 0, trkVu = 0;
-                if (lapFromLine && lapClean)
+                if (lapFromLine && lapClean && !lapYellow)
                 {
+                    double lt = Seconds(bridge.GetPropertyValue("DataCorePlugin.GameData.LastLapTime"));
+                    if (lt > 20 && lt < 1800)
+                    {
+                        double mt = Median(cleanLapTimes);
+                        if (double.IsNaN(mt) || cleanLapTimes.Count < 2 || (lt > mt * 0.85 && lt < mt * 1.2))
+                        {
+                            cleanLapTimes.Add(lt);
+                            if (cleanLapTimes.Count > 5) cleanLapTimes.RemoveAt(0);
+                        }
+                    }
                     if (!double.IsNaN(fuelAtLapStart) && fuel > 0 && fuelAtLapStart > fuel)
                     {
                         double usedF = fuelAtLapStart - fuel;
@@ -2104,6 +2135,7 @@ namespace FedeDashboard
                 veAtLapStart = ve;
                 lapFromLine = true;
                 lapClean = !laneNow;
+                lapYellow = false;
                 if (lap.Enabled && settled) lapUntil = now.AddSeconds(Math.Max(0.5, lap.Seconds));
                 // strategia: ad ogni giro in gara, subito dopo l'avviso di fine giro
                 var sa = Alert("Strategy");
@@ -2120,7 +2152,7 @@ namespace FedeDashboard
                 veAtLapStart = VePercent();
                 lapFromLine = false;
                 fuelTrk.Interrupt(); veTrk.Interrupt();
-                if (lapNo < lastLapNumber) { veLaps.Clear(); fuelLaps.Clear(); veLastLap = double.NaN; fuelLastLap = double.NaN; } // nuova sessione
+                if (lapNo < lastLapNumber) { veLaps.Clear(); fuelLaps.Clear(); cleanLapTimes.Clear(); veLastLap = double.NaN; fuelLastLap = double.NaN; } // nuova sessione
             }
             lastLapNumber = lapNo;
 
