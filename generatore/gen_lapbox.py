@@ -1,4 +1,4 @@
-"""DT LapBox: dashboard per la RaceSense LapBox 4" (1050x630, schermo 5:3).
+"""DT LapBox: dashboard per la RaceSense LapBox 4" (1050x656, circa 16:10).
 In alto (0-100) le due luci dietro le finestrelle, comandate dal DT Plugin (DTPlugin.LB_Luce1 / LB_Luce2).
 Sotto (100-580) la parte visibile, divisa in 2 colonne x 4 righe: le griglie sono quelle dei lati della DT Dashboard
 e le schede sono le stesse (file Schede_LxA.djson alle misure della LapBox).
