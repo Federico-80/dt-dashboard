@@ -440,11 +440,11 @@ ALERT_MAX_VALUES = 4
 # in alto le due luci dietro i fori, sotto la parte visibile nella finestra.
 # La parte visibile e' divisa in 2 colonne x 4 righe (8 blocchi): le griglie sono le stesse dei lati della DT Dashboard.
 # misure prese dalle foto: con 800x630 restavano bande ai lati, con 1050x630 una banda in alto (luci tagliate).
-LB_W, LB_H = 1050, 656            # proporzioni dello schermo della LapBox misurate dalle foto (circa 16:10)
-LB_X0, LB_X1 = 14, 1036
-LB_TOP, LB_BOTTOM = 88, 576
+LB_W, LB_H = 1050, 684            # proporzioni dello schermo della LapBox misurate dalle foto
+LB_X0, LB_X1 = 6, 1040
+LB_TOP, LB_BOTTOM = 102, 590
 # le due luci: una zona piena (rettangolo) dietro ogni foro, cosi' il foro e' tutto acceso anche se non e' preciso
-LB_LIGHTS = [(253, 0, 140, 70), (635, 0, 140, 70)]     # x, y, larghezza, altezza
+LB_LIGHTS = [(253, 0, 140, 86), (635, 0, 140, 86)]     # x, y, larghezza, altezza
 LB_G = 6
 LB_CW = (LB_X1 - LB_X0 - LB_G) // 2
 LB_RH = (LB_BOTTOM - LB_TOP - 3 * LB_G) // 4

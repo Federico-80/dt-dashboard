@@ -1,5 +1,5 @@
 {
-  "version": "2.31",
-  "notes": "2.31: DT LapBox 1050x656 (proporzioni dello schermo), luci piene nei fori, titoli dentro la finestra",
+  "version": "2.32",
+  "notes": "2.32: LapBox 1050x684 (luci non piu' tagliate, meno spazio a sinistra); settori: il tuo migliore preso anche dal gioco (giusto anche dopo un riavvio)",
   "date": "2026-10-25"
 }

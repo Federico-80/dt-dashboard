@@ -81,6 +81,7 @@ namespace FedeDashboard
         // migliori settori degli altri piloti (per nome): classe + 3 settori
         readonly System.Collections.Generic.Dictionary<string, object[]> others = new System.Collections.Generic.Dictionary<string, object[]>();
         DateTime nextOthers = DateTime.MinValue;
+        bool classLogged;
 
         static void Better(double[] b, int i, double t) { if (t > 0 && t < 3600 && (double.IsNaN(b[i]) || t < b[i])) b[i] = t; }
 
@@ -174,6 +175,13 @@ namespace FedeDashboard
         {
             strip = false;
             if (!(t > 0) || t > 3600) return Grey;
+            // tuo migliore: quello visto dal plugin e quello che sa il gioco (giro migliore, anche di prima che SimHub partisse)
+            if (!genericMode)
+            {
+                double b1 = N(raw("CurrentPlayer.mBestSector1")), b2 = N(raw("CurrentPlayer.mBestSector2")), bl = N(raw("CurrentPlayer.mBestLapTime"));
+                double g = i == 0 ? b1 : (i == 1 ? (b1 > 0 && b2 > b1 ? b2 - b1 : double.NaN) : (b2 > 0 && bl > b2 ? bl - b2 : double.NaN));
+                if (g > 0 && g < 3600 && (double.IsNaN(myBest[i]) || g < myBest[i])) myBest[i] = g;
+            }
             bool personal = double.IsNaN(myBest[i]) || t <= myBest[i] + 0.0005;
             if (personal) myBest[i] = double.IsNaN(myBest[i]) ? t : Math.Min(myBest[i], t);
             if (!personal) return Yellow;
@@ -188,10 +196,17 @@ namespace FedeDashboard
         {
             nextOthers = DateTime.MinValue; TrackOthers(DateTime.Now);   // dati freschi al momento del confronto
             string myClass = Str(raw("CurrentPlayer.mVehicleClass"));
+            if (!classLogged && others.Count > 0)
+            {
+                classLogged = true;
+                var cl = new System.Collections.Generic.HashSet<string>();
+                foreach (var e in others.Values) cl.Add((string)e[0]);
+                FedeLog.Write("Settori: tua classe '" + myClass + "', classi in pista: " + string.Join(", ", cl));
+            }
             double best = double.NaN;
             foreach (var e in others.Values)
             {
-                if (myClass.Length > 0 && (string)e[0] != myClass) continue;
+                if (myClass.Length > 0 && !string.Equals((string)e[0], myClass, StringComparison.OrdinalIgnoreCase)) continue;
                 double t = ((double[])e[1])[i];
                 if (t > 0 && (double.IsNaN(best) || t < best)) best = t;
             }
